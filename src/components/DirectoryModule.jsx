@@ -1231,108 +1231,133 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                       </div>
                     </div>
 
-                    {/* Children List in this Family - Separated clearly by their Grades */}
-                    <div className="space-y-2 my-2 flex-1 overflow-y-auto pr-1 max-h-[220px] custom-scrollbar">
+                    {/* Children List in this Family - Grouped and Separated clearly by their Grades */}
+                    <div className="space-y-3 my-2 flex-1 overflow-y-auto pr-1 max-h-[300px] custom-scrollbar">
                       <div className="text-[10px] font-black text-slate-500 border-b border-slate-100 pb-1 flex items-center justify-between">
-                        <span>قائمة الطلاب المسجلين بالصفوف:</span>
-                        <span>{family.members.length}</span>
+                        <span>قائمة الطلاب مفصولين حسب الصفوف:</span>
+                        <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-mono">{family.members.length} تلاميذ</span>
                       </div>
-                      {family.members.map((member) => {
-                        return (
-                          <div key={member.id} className="bg-[#F8FAFC] border border-slate-200 p-2.5 rounded-xl space-y-1.5 text-xs">
-                            <div className="flex items-center justify-between gap-1">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <div className="w-6 h-6 rounded-full bg-[#0284C7]/10 text-[#0284C7] font-black text-[10px] flex items-center justify-center shrink-0 border border-[#0284C7]">
-                                  {(member.name || 'ط')[0]}
-                                </div>
-                                <div className="truncate">
-                                  <h5 className="text-[11px] font-black text-[#0F172A] truncate">
-                                    {isAr ? member.name : member.nameEn}
-                                  </h5>
-                                  <span className="text-[9px] font-mono text-slate-400">ID: {member.id}</span>
-                                </div>
-                              </div>
 
-                              {/* Prominent Grade Badge (Separating student in their Grade!) */}
-                              <span className="bg-sky-50 text-[#0284C7] text-[9px] px-2 py-0.5 rounded-md font-extrabold border border-sky-200 shrink-0">
-                                {member.grade} ({member.classRoom ? `شعبة ${member.classRoom}` : 'شعبة أ'})
+                      {(() => {
+                        // Group siblings by their Grade
+                        const gradeGroups = {};
+                        family.members.forEach(m => {
+                          const grpKey = `${m.grade || 'غير محدد'} - ${m.classRoom ? `شعبة ${m.classRoom}` : 'شعبة عامة'}`;
+                          if (!gradeGroups[grpKey]) gradeGroups[grpKey] = [];
+                          gradeGroups[grpKey].push(m);
+                        });
+
+                        return Object.entries(gradeGroups).map(([gradeTitle, studentsInGrade], gIdx) => (
+                          <div key={gIdx} className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-2.5 space-y-2">
+                            {/* Grade Separation Header Badge */}
+                            <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-xl border border-sky-200 shadow-2xs">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-[#0284C7]"></span>
+                                <span className="text-[11px] font-black text-[#0284C7]">
+                                  📚 {gradeTitle}
+                                </span>
+                              </div>
+                              <span className="text-[9px] bg-sky-50 text-[#0284C7] font-bold px-2 py-0.5 rounded-md border border-sky-100">
+                                {studentsInGrade.length} {studentsInGrade.length > 1 ? 'تلاميذ' : 'تلميذ'}
                               </span>
                             </div>
 
-                            {/* Credentials & Quick Actions */}
-                            <div className="flex items-center justify-between gap-1 text-[9px] font-mono bg-white p-1 rounded-lg border border-slate-100">
-                              <div className="truncate">
-                                <span className="text-slate-400 font-sans">🔑: </span>
-                                <span className="font-bold text-[#0284C7]">{member.username}</span>
-                              </div>
-                              <div className="truncate">
-                                <span className="text-slate-400 font-sans">🔒: </span>
-                                <span className="font-bold text-red-600">{member.password}</span>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  onClick={() => setShowStudentDetailModal(member)}
-                                  className="p-1 bg-sky-50 hover:bg-sky-100 text-[#0284C7] rounded-md cursor-pointer"
-                                  title="معاينة"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                </button>
-                                {currentRole === 'admin' && (
-                                  <>
-                                    <button
-                                      onClick={() => handleOpenEditStudentModal(member)}
-                                      className="p-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-md cursor-pointer"
-                                      title="تعديل"
-                                    >
-                                      <Edit3 className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => updateStudent(member.id, { frozen: !member.frozen })}
-                                      className={`p-1 rounded-md cursor-pointer ${member.frozen ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-                                      title={member.frozen ? 'إلغاء التجميد' : 'تجميد'}
-                                    >
-                                      ❄️
-                                    </button>
-                                    <button
-                                      onClick={() => deleteStudent(member.id)}
-                                      className="p-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md cursor-pointer"
-                                      title="حذف"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
+                            {/* Students in this specific Grade */}
+                            <div className="space-y-2">
+                              {studentsInGrade.map((member) => (
+                                <div key={member.id} className="bg-white border border-slate-200 p-2 rounded-xl space-y-1.5 text-xs shadow-2xs">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <div className="w-6 h-6 rounded-full bg-[#0284C7]/10 text-[#0284C7] font-black text-[10px] flex items-center justify-center shrink-0 border border-[#0284C7]">
+                                        {(member.name || 'ط')[0]}
+                                      </div>
+                                      <div className="truncate">
+                                        <h5 className="text-[11px] font-black text-[#0F172A] truncate">
+                                          {isAr ? member.name : member.nameEn}
+                                        </h5>
+                                        <span className="text-[9px] font-mono text-slate-400">ID: {member.id}</span>
+                                      </div>
+                                    </div>
 
-                            {/* Member Financial Row & Quick Edit Paid Button */}
-                            <div className="flex items-center justify-between text-[10px] bg-white p-1.5 rounded-lg border border-slate-100 font-mono">
-                              <span className="text-slate-500">
-                                {(member.isSpecialCase || isFamilySpecialCase) ? (
-                                  <span className="text-amber-700 font-bold font-sans bg-amber-50 px-2 py-0.5 rounded border border-amber-200">⭐ حالة خاصة ($0)</span>
-                                ) : (
-                                  <>قسط: <b className="text-slate-700">${member.tuitionTotal ?? 700}</b></>
-                                )}
-                              </span>
-                              <span className="text-blue-600 font-bold">
-                                مدفوع: ${member.tuitionPaid || 0}
-                              </span>
-                              {currentRole === 'admin' && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setQuickEditPaidStudent(member);
-                                    setQuickPaidAmount((member.tuitionPaid || 0).toString());
-                                  }}
-                                  className="text-[9px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 cursor-pointer font-bold font-sans transition-colors"
-                                >
-                                  💳 تعديل المدفوع
-                                </button>
-                              )}
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        onClick={() => setShowStudentDetailModal(member)}
+                                        className="p-1 bg-sky-50 hover:bg-sky-100 text-[#0284C7] rounded-md cursor-pointer"
+                                        title="معاينة"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                      </button>
+                                      {currentRole === 'admin' && (
+                                        <>
+                                          <button
+                                            onClick={() => handleOpenEditStudentModal(member)}
+                                            className="p-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-md cursor-pointer"
+                                            title="تعديل"
+                                          >
+                                            <Edit3 className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => updateStudent(member.id, { frozen: !member.frozen })}
+                                            className={`p-1 rounded-md cursor-pointer ${member.frozen ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                                            title={member.frozen ? 'إلغاء التجميد' : 'تجميد'}
+                                          >
+                                            ❄️
+                                          </button>
+                                          <button
+                                            onClick={() => deleteStudent(member.id)}
+                                            className="p-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md cursor-pointer"
+                                            title="حذف"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Credentials */}
+                                  <div className="flex items-center justify-between gap-1 text-[9px] font-mono bg-slate-50 p-1 rounded-lg border border-slate-100">
+                                    <div className="truncate">
+                                      <span className="text-slate-400 font-sans">🔑: </span>
+                                      <span className="font-bold text-[#0284C7]">{member.username}</span>
+                                    </div>
+                                    <div className="truncate">
+                                      <span className="text-slate-400 font-sans">🔒: </span>
+                                      <span className="font-bold text-red-600">{member.password}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Member Financial Row & Quick Edit Paid Button */}
+                                  <div className="flex items-center justify-between text-[10px] bg-slate-50/80 p-1.5 rounded-lg border border-slate-100 font-mono">
+                                    <span className="text-slate-500">
+                                      {(member.isSpecialCase || isFamilySpecialCase) ? (
+                                        <span className="text-amber-700 font-bold font-sans bg-amber-50 px-2 py-0.5 rounded border border-amber-200">⭐ حالة خاصة ($0)</span>
+                                      ) : (
+                                        <>قسط: <b className="text-slate-700">${member.tuitionTotal ?? 700}</b></>
+                                      )}
+                                    </span>
+                                    <span className="text-blue-600 font-bold">
+                                      مدفوع: ${member.tuitionPaid || 0}
+                                    </span>
+                                    {currentRole === 'admin' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setQuickEditPaidStudent(member);
+                                          setQuickPaidAmount((member.tuitionPaid || 0).toString());
+                                        }}
+                                        className="text-[9px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 cursor-pointer font-bold font-sans transition-colors"
+                                      >
+                                        💳 تعديل المدفوع
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        );
-                      })}
+                        ));
+                      })()}
                     </div>
                   </div>
                 );
