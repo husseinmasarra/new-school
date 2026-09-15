@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
+import { openWhatsAppMessage } from '../utils/exportUtils';
 import { 
   Send, 
   Target, 
@@ -24,8 +25,12 @@ import {
   Trash2,
   FileText,
   AlertCircle,
-  Eye
+  Eye,
+  Edit3
 } from 'lucide-react';
+
+const DEFAULT_TUITION_TITLE = 'تذكير بموعد استحقاق القسط الشهري المستحق';
+const DEFAULT_TUITION_TEXT = 'السلام عليكم ورحمة الله وبركاته ولي امر ( {اسم_التلميذ} ) نود تذكيركم بضرورة تسديد القسط الشهري المستحق يرجى التسديد في اقرب وقت شاكرين تعاونكم الكريم';
 
 export const MessagesModule = () => {
   const { 
@@ -38,13 +43,23 @@ export const MessagesModule = () => {
     students = [], 
     teachers = [], 
     systemUsers = [],
-    siteSettings = {}
+    siteSettings = {},
+    updateSiteSettings
   } = useApp();
 
   const isAr = lang === 'ar';
   const safeStudents  = students  || [];
   const safeTeachers  = teachers  || [];
   const safeUsers     = systemUsers || [];
+
+  // Administration Financial Reminder Template (written and saved by administration)
+  const adminTuitionTitle = siteSettings?.tuitionReminderTitle || DEFAULT_TUITION_TITLE;
+  const adminTuitionText = siteSettings?.tuitionReminderText || DEFAULT_TUITION_TEXT;
+
+  // Custom Administration Reminder Modal State
+  const [showCustomReminderModal, setShowCustomReminderModal] = useState(false);
+  const [customReminderTitle, setCustomReminderTitle] = useState(adminTuitionTitle);
+  const [customReminderText, setCustomReminderText] = useState(adminTuitionText);
 
   // Form State
   const [title,      setTitle]    = useState('');
@@ -72,6 +87,15 @@ export const MessagesModule = () => {
   const filteredRecipients = allRecipients.filter(r =>
     r.label.toLowerCase().includes(recipientSearch.toLowerCase())
   );
+
+  // List of students with unpaid dues for financial reminders
+  const unpaidStudentsList = useMemo(() => {
+    return safeStudents.filter(s => {
+      const total = Number(s.tuitionTotal || 0) - Number(s.discountAmount || 0);
+      const paid = Number(s.tuitionPaid || 0);
+      return (total - paid) > 0;
+    });
+  }, [safeStudents]);
 
   const toggleRecipient = (id) => {
     setSelectedRecipients(prev => {
@@ -153,8 +177,8 @@ export const MessagesModule = () => {
       setTargetType('unpaid_tuition');
       setCategory('financial');
       setPriority('urgent');
-      setTitle('تذكير بموعد استحقاق قسط المدرسة ($ USD)');
-      setContent('نحيطكم علماً بضرورة سداد المتبقي من القسط المالي المدرسي قبل نهاية الشهر الحالي لضمان استمرارية الخدمات والدخول للبوابة.');
+      setTitle(adminTuitionTitle);
+      setContent(adminTuitionText.replace(/\{اسم_التلميذ\}|\{اسم_الطالب\}/g, 'التلميذ المحترم'));
     } else if (templateType === 'trip') {
       setRecipientMode('group');
       setTargetType('all');
@@ -326,6 +350,21 @@ export const MessagesModule = () => {
 
         {(currentRole === 'admin' || currentRole === 'teacher') && (
           <div className="flex flex-wrap gap-2">
+            {currentRole === 'admin' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomReminderTitle(adminTuitionTitle);
+                  setCustomReminderText(adminTuitionText);
+                  setShowCustomReminderModal(true);
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow cursor-pointer transition-all"
+                title="كتابة وصياغة نص التذكير المالي المعتمد للإدارة"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{isAr ? 'كتابة نص التذكير المالي (الإدارة) ✍️' : 'Admin Reminder Text'}</span>
+              </button>
+            )}
             <button onClick={() => handleQuickTemplate('tuition')}
               className="btn-mustard flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shadow cursor-pointer">
               <CreditCard className="w-3.5 h-3.5" />
@@ -455,6 +494,90 @@ export const MessagesModule = () => {
 
               <div className="px-3 py-1.5 bg-[#F8FAFC] border-t border-[#E2E8F0] text-[10px] text-slate-500">
                 تم تحديد <span className="font-bold text-[#0284C7]">{selectedRecipients.size}</span> مستلم
+              </div>
+            </div>
+          )}
+
+          {/* Admin Financial Reminder Banner & Controls */}
+          {(category === 'financial' || targetType === 'unpaid_tuition') && (
+            <div className="bg-amber-50/90 border border-amber-300 p-4 rounded-2xl space-y-2.5 animate-fade-in text-[#0F172A]">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span className="text-xs font-bold text-amber-950">
+                    {isAr ? 'نص التذكير المالي (صياغة وكتابة الإدارة):' : 'Admin Financial Reminder Text:'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTitle(adminTuitionTitle);
+                      setContent(adminTuitionText.replace(/\{اسم_التلميذ\}|\{اسم_الطالب\}/g, 'التلميذ المحترم'));
+                    }}
+                    className="text-[11px] font-bold bg-white text-amber-900 border border-amber-300 px-2.5 py-1 rounded-lg hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>{isAr ? 'تحميل نص الإدارة المعتمد' : 'Load Admin Text'}</span>
+                  </button>
+
+                  {currentRole === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!content) {
+                          alert(isAr ? 'يرجى كتابة نص التذكير أولاً' : 'Please enter reminder text');
+                          return;
+                        }
+                        updateSiteSettings({
+                          tuitionReminderTitle: title || DEFAULT_TUITION_TITLE,
+                          tuitionReminderText: content
+                        });
+                        alert(isAr ? '✅ تم حفظ واعتماد هذا النص كتذكير مالي رسمي صادر من الإدارة!' : 'Saved as official admin reminder!');
+                      }}
+                      className="text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                    >
+                      <Check className="w-3 h-3" />
+                      <span>{isAr ? 'حفظ النص الحالي كمعتمد للإدارة 💾' : 'Save as Admin Text'}</span>
+                    </button>
+                  )}
+
+                  {currentRole === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomReminderTitle(title || adminTuitionTitle);
+                        setCustomReminderText(content || adminTuitionText);
+                        setShowCustomReminderModal(true);
+                      }}
+                      className="text-[11px] font-bold bg-sky-50 text-[#0284C7] hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>{isAr ? 'تخصيص متقدم مع المتأخرين ⚙️' : 'Advanced Workspace'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200/60">
+                <span className="text-[10px] font-bold text-amber-800">
+                  {isAr ? 'إدراج متغيرات ذكية سريعة في النص:' : 'Insert Variables:'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setContent(prev => prev + ' {اسم_التلميذ} ')}
+                  className="text-[10px] font-mono font-bold bg-white text-amber-800 border border-amber-300 px-2 py-0.5 rounded cursor-pointer hover:bg-amber-100"
+                >
+                  + &#123;اسم_التلميذ&#125;
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContent(prev => prev + ' {المبلغ_المستحق} ')}
+                  className="text-[10px] font-mono font-bold bg-white text-amber-800 border border-amber-300 px-2 py-0.5 rounded cursor-pointer hover:bg-amber-100"
+                >
+                  + &#123;المبلغ_المستحق&#125;
+                </button>
               </div>
             </div>
           )}
@@ -951,6 +1074,214 @@ export const MessagesModule = () => {
                   <span>خاتم وتوقيع</span>
                   <span>الإدارة العامة الرسمية</span>
                 </div>
+              </div>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ─── MODAL: ADMINISTRATION FINANCIAL REMINDER WORKSPACE ─────────────── */}
+      {showCustomReminderModal && createPortal(
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-white border-2 border-amber-400 rounded-3xl p-6 max-w-2xl w-full max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl text-[#0F172A] animate-scale-up">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl border border-amber-200">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#032541]">
+                    {isAr ? 'كتابة وصياغة نص التذكير المالي المعتمد للإدارة ✍️' : 'Admin Financial Reminder Workspace'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {isAr ? 'تخصيص النص الرسمي للتذكير بالأقساط والتعاميم ورسائل الواتساب الصادرة من الإدارة.' : 'Customize the official administration tuition reminder text.'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowCustomReminderModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Inputs Workspace */}
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  {isAr ? 'عنوان التذكير المالي (الإدارة):' : 'Reminder Title:'}
+                </label>
+                <input
+                  type="text"
+                  value={customReminderTitle}
+                  onChange={(e) => setCustomReminderTitle(e.target.value)}
+                  placeholder="مثال: تذكير بموعد استحقاق القسط الشهري المستحق"
+                  className="w-full bg-[#F8FAFC] border border-slate-300 text-xs font-bold text-[#0F172A] rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700">
+                    {isAr ? 'نص رسالة التذكير المالي (صياغة الإدارة المعتمدة):' : 'Reminder Message Body:'}
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {customReminderText.length} {isAr ? 'حرف' : 'chars'}
+                  </span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={customReminderText}
+                  onChange={(e) => setCustomReminderText(e.target.value)}
+                  placeholder="اكتب هنا صيغة التذكير المالي المعتمدة لدى الإدارة..."
+                  className="w-full bg-[#F8FAFC] border border-slate-300 text-xs font-medium text-[#0F172A] rounded-xl p-3 focus:outline-none focus:border-amber-500 leading-relaxed"
+                />
+              </div>
+
+              {/* Dynamic Variables Toolbar */}
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl space-y-1.5">
+                <span className="text-[11px] font-bold text-amber-900 block">
+                  {isAr ? '🏷️ المتغيرات الذكية (انقر للإدراج في النص):' : 'Dynamic Placeholders:'}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCustomReminderText(prev => prev + ' {اسم_التلميذ} ')}
+                    className="text-[10px] font-mono font-bold bg-white text-amber-800 border border-amber-300 px-2.5 py-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-all shadow-2xs"
+                  >
+                    + &#123;اسم_التلميذ&#125;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomReminderText(prev => prev + ' {المبلغ_المستحق} ')}
+                    className="text-[10px] font-mono font-bold bg-white text-amber-800 border border-amber-300 px-2.5 py-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-all shadow-2xs"
+                  >
+                    + &#123;المبلغ_المستحق&#125;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomReminderText(prev => prev + ' {الصف} ')}
+                    className="text-[10px] font-mono font-bold bg-white text-amber-800 border border-amber-300 px-2.5 py-1 rounded-lg hover:bg-amber-100 cursor-pointer transition-all shadow-2xs"
+                  >
+                    + &#123;الصف&#125;
+                  </button>
+                </div>
+                <p className="text-[10px] text-amber-800/80 mt-1">
+                  {isAr ? 'المتغيرات مثل {اسم_التلميذ} و {المبلغ_المستحق} يتم استبدالها تلقائياً باسم كل تلميذ والمبلغ المتبقي عليه عند الإرسال.' : 'Variables will be dynamically replaced.'}
+                </p>
+              </div>
+
+              {/* Live Preview Card */}
+              <div className="bg-white border border-slate-200 p-3.5 rounded-2xl space-y-1.5 shadow-xs">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                  {isAr ? '👁️ معاينة كيف ستظهر الرسالة لولي الأمر:' : 'Parent Message Preview:'}
+                </span>
+                <h4 className="text-xs font-black text-[#0284C7]">{customReminderTitle}</h4>
+                <p className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100 whitespace-pre-line leading-relaxed">
+                  {customReminderText
+                    .replace(/\{اسم_التلميذ\}|\{اسم_الطالب\}|\( اسم التلميذ \)/g, 'محمد خالد مسرة')
+                    .replace(/\{المبلغ_المستحق\}|\{المبلغ_المتبقي\}/g, '$250 USD')
+                    .replace(/\{الصف\}/g, 'الصف السادس الابتدائي')}
+                </p>
+              </div>
+
+              {/* Unpaid Students Fast WhatsApp Reminders */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden space-y-2 p-3 bg-[#F8FAFC]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#032541] flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-amber-600" />
+                    <span>{isAr ? `التلاميذ غير المسددين للأقساط (${unpaidStudentsList.length}):` : `Unpaid Students (${unpaidStudentsList.length}):`}</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {isAr ? 'إرسال مباشر عبر واتساب بنص الإدارة' : 'Send via WhatsApp'}
+                  </span>
+                </div>
+
+                <div className="max-h-36 overflow-y-auto divide-y divide-slate-100 bg-white border border-slate-200 rounded-xl p-1">
+                  {unpaidStudentsList.length === 0 ? (
+                    <p className="text-center text-[11px] text-slate-400 py-3">{isAr ? 'لا يوجد تلاميذ متأخرين عن السداد حالياً 🎉' : 'No unpaid students'}</p>
+                  ) : (
+                    unpaidStudentsList.map(stu => {
+                      const rem = Math.max(0, (stu.tuitionTotal || 0) - (stu.discountAmount || 0) - (stu.tuitionPaid || 0));
+                      return (
+                        <div key={stu.id} className="flex items-center justify-between p-2 text-[11px] hover:bg-amber-50/40 transition-colors">
+                          <div>
+                            <span className="font-bold text-slate-900 block">{stu.name}</span>
+                            <span className="text-[10px] text-slate-400">{stu.grade} • <strong className="text-red-600 font-mono">${rem} متبقي</strong></span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const waMsg = customReminderText
+                                .replace(/\{اسم_التلميذ\}|\{اسم_الطالب\}|\( اسم التلميذ \)/g, stu.name)
+                                .replace(/\{المبلغ_المستحق\}|\{المبلغ_المتبقي\}/g, `$${rem} USD`)
+                                .replace(/\{الصف\}/g, stu.grade);
+                              openWhatsAppMessage(stu.parentPhone || stu.phone || '+961 70 000 000', waMsg);
+                            }}
+                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200 font-bold cursor-pointer flex items-center gap-1 shadow-2xs"
+                            title="إرسال واتساب مباشر بنص الإدارة"
+                          >
+                            <Share2 className="w-3 h-3 text-emerald-600" />
+                            <span>واتساب الإدارة 📲</span>
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowCustomReminderModal(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                {isAr ? 'إلغاء' : 'Cancel'}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateSiteSettings({
+                      tuitionReminderTitle: customReminderTitle,
+                      tuitionReminderText: customReminderText
+                    });
+                    alert(isAr ? '✅ تم حفظ واعتماد نص التذكير المالي للإدارة بنجاح!' : 'Admin reminder text saved!');
+                  }}
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{isAr ? 'حفظ واعتماد نص الإدارة 💾' : 'Save Admin Text'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateSiteSettings({
+                      tuitionReminderTitle: customReminderTitle,
+                      tuitionReminderText: customReminderText
+                    });
+                    setTitle(customReminderTitle);
+                    setContent(customReminderText.replace(/\{اسم_التلميذ\}|\{اسم_الطالب\}/g, 'أبنائكم الأعزاء'));
+                    setCategory('financial');
+                    setTargetType('unpaid_tuition');
+                    setRecipientMode('group');
+                    setShowCustomReminderModal(false);
+                  }}
+                  className="bg-[#0284C7] hover:bg-[#0369A1] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isAr ? 'تطبيق في نموذج التعميم 📝' : 'Use in Message'}</span>
+                </button>
               </div>
             </div>
 
