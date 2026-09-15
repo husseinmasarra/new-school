@@ -129,21 +129,21 @@ const MainContent = () => {
       {/* Page Content Body inside its own dedicated space */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'dashboard' && <Dashboard setActiveTab={setActiveTab} />}
-        {activeTab === 'idcard' && (currentRole === 'admin' || currentRole === 'student' || currentRole === 'parent') && <StudentCardPage setActiveTab={setActiveTab} />}
-        {activeTab === 'classes' && (currentRole === 'admin' || currentRole === 'teacher') && <ClassesModule />}
-        {activeTab === 'schedule' && (currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'student' || currentRole === 'parent') && <ClassesModule initialSubTab="timetable" />}
+        {activeTab === 'idcard' && (currentRole === 'admin' || currentRole === 'student' || currentRole === 'parent' || currentRole === 'vice_principal') && <StudentCardPage setActiveTab={setActiveTab} />}
+        {activeTab === 'classes' && (currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'vice_principal') && <ClassesModule />}
+        {activeTab === 'schedule' && (currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'student' || currentRole === 'parent' || currentRole === 'vice_principal') && <ClassesModule initialSubTab="timetable" />}
         {activeTab === 'messages' && <MessagesModule />}
         {activeTab === 'agenda' && <AgendaModule />}
         {activeTab === 'exams' && <ExamsModule />}
         {activeTab === 'documents' && currentRole === 'admin' && <DocumentsModule />}
         {activeTab === 'bus' && <BusModule />}
-        {activeTab === 'tuition' && currentRole === 'admin' && <TuitionModule />}
+        {activeTab === 'tuition' && (currentRole === 'admin' || currentRole === 'vice_principal') && <TuitionModule />}
         {activeTab === 'finance' && currentRole === 'admin' && <FinanceModule />}
         {activeTab === 'tutoring' && <TutoringModule />}
         {activeTab === 'subjects' && <SubjectsModule />}
         {activeTab === 'reports' && <ReportsModule />}
-        {activeTab === 'directory' && (currentRole === 'admin' || currentRole === 'teacher') && <DirectoryModule initialSubTab="students" />}
-        {activeTab === 'teachers' && (currentRole === 'admin' || currentRole === 'teacher') && <DirectoryModule initialSubTab="teachers" />}
+        {activeTab === 'directory' && (currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'vice_principal') && <DirectoryModule initialSubTab="students" />}
+        {activeTab === 'teachers' && (currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'vice_principal') && <DirectoryModule initialSubTab="teachers" />}
         {activeTab === 'attendance' && <AttendanceModule />}
         {activeTab === 'behavior' && <BehaviorModule />}
         {activeTab === 'settings' && currentRole === 'admin' && <SettingsModule />}

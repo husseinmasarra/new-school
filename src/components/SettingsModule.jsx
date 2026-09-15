@@ -125,6 +125,9 @@ export const SettingsModule = () => {
     if (role === 'admin') {
       setNewUserRoleTitle('مدير عام النظام');
       setNewUserPermissions(['manage_all', 'manage_finance', 'manage_users', 'print_cards']);
+    } else if (role === 'vice_principal') {
+      setNewUserRoleTitle('مساعد مدير');
+      setNewUserPermissions(['add_student', 'record_payment', 'send_reminders', 'print_cards']);
     } else if (role === 'teacher') {
       setNewUserRoleTitle('مدرس معتمد');
       setNewUserPermissions(['send_lessons', 'manage_grades', 'send_messages', 'print_cards']);
@@ -806,6 +809,7 @@ export const SettingsModule = () => {
                 <select value={newUserRole} onChange={e => handleRoleChange(e.target.value)}
                   className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer">
                   <option value="admin">🛡️ مدير عام (Admin)</option>
+                  <option value="vice_principal">⭐ مساعد مدير (Vice Principal)</option>
                   <option value="teacher">📚 مدرس (Teacher)</option>
                   <option value="driver">🚌 سائق (Driver)</option>
                 </select>

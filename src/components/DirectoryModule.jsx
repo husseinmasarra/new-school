@@ -689,8 +689,8 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
           </div>
         </div>
 
-        {/* Admin Action Buttons */}
-        {currentRole === 'admin' && (
+        {/* Admin and Vice Principal Action Buttons */}
+        {(currentRole === 'admin' || currentRole === 'vice_principal') && (
           <div className="flex flex-wrap items-center gap-2">
             {activeTab === 'students' && (
               <>
@@ -721,7 +721,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
               </>
             )}
 
-            {activeTab === 'teachers' && (
+            {activeTab === 'teachers' && currentRole === 'admin' && (
               <>
                 <button
                   onClick={handlePrintTeachersTable}

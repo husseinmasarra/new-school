@@ -142,6 +142,26 @@ export const SubjectsModule = () => {
     alert(isAr ? 'تم إرسال الدرس بنجاح لصف وشعبة الطلاب! 🟢' : 'Lesson posted successfully!');
   };
 
+  const isStudentOrParent = currentRole === 'student' || currentRole === 'parent';
+
+  // Filter subjects: if student/parent, only show subjects that have lessons for student's grade/section
+  const displayedSubjects = safeSubjects.filter((sub) => {
+    const subjectLessons = agenda.filter(a => {
+      const matchesSubject = a.subject === sub.name || (a.subject && a.subject.includes(sub.name));
+      if (isStudentOrParent) {
+        const matchesGrade = isGradeMatch(a.grade, currentStudent?.grade);
+        const matchesSection = isSecMatch(a.classRoom, currentStudent?.classRoom || currentStudent?.classroom);
+        return matchesSubject && matchesGrade && matchesSection;
+      }
+      return matchesSubject;
+    });
+
+    if (isStudentOrParent) {
+      return subjectLessons.length > 0;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6 animate-fade-in text-[#0F172A]">
       
@@ -154,9 +174,9 @@ export const SubjectsModule = () => {
           <div>
             <h2 className="text-xl font-bold text-[#0284C7]">{t('navSubjects')}</h2>
             <p className="text-xs text-slate-500 mt-1">
-              {isAr 
-                ? "انقر على كرت أي مادة لمشاهدة وإرسال الدروس والواجبات المخصصة لكل صف وشعبة."
-                : "Click any subject card to view and send grade/section specific lessons."}
+              {isStudentOrParent
+                ? (isAr ? 'المواد الدراسية النشطة التي تتوفر بها دروس وواجبات لصفك الدراسي.' : 'Enrolled subjects with active lessons.')
+                : (isAr ? 'انقر على كرت أي مادة لمشاهدة وإرسال الدروس والواجبات المخصصة لكل صف وشعبة.' : 'Click any subject card to view and send grade/section specific lessons.')}
             </p>
           </div>
         </div>
@@ -172,14 +192,29 @@ export const SubjectsModule = () => {
         )}
       </div>
 
+      {/* Empty State for Student */}
+      {displayedSubjects.length === 0 && (
+        <div className="bg-white border border-[#E2E8F0] rounded-3xl p-12 text-center text-slate-500 shadow-sm">
+          <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-700">
+            {isAr ? 'لا توجد مواد متاح بها دروس حالياً' : 'No subjects with lessons available yet'}
+          </h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+            {isAr 
+              ? 'تظهر المواد الدراسية للتلميذ تلقائياً فور قيام المعلم بنشر دروس أو واجبات خاصة بصفك وشعبتك.'
+              : 'Subjects will automatically appear here once teachers upload lessons for your class.'}
+          </p>
+        </div>
+      )}
+
       {/* Full-Color Subjects Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {safeSubjects.map((sub) => {
+        {displayedSubjects.map((sub) => {
           const cardBg = sub.color || '#0284C7';
           // Filter subject lessons for this subject
           const subjectLessons = agenda.filter(a => {
             const matchesSubject = a.subject === sub.name || (a.subject && a.subject.includes(sub.name));
-            if (currentRole === 'student' || currentRole === 'parent') {
+            if (isStudentOrParent) {
               const matchesGrade = isGradeMatch(a.grade, currentStudent?.grade);
               const matchesSection = isSecMatch(a.classRoom, currentStudent?.classRoom || currentStudent?.classroom);
               return matchesSubject && matchesGrade && matchesSection;

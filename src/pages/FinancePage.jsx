@@ -66,9 +66,9 @@ export const FinancePage = () => {
   // WhatsApp Reminder Generator
   const sendWhatsAppReminder = (student) => {
     const text = encodeURIComponent(
-      `تحية طيبة حضرة ولي أمر الطالب/ـة ${student.name} المحترم،\nنود تذكيركم من إدارة ${schoolInfo.name} بضرورة تسديد المبلغ المتبقي من القسط المدرسي والبالغ ($${student.remainingAmount} USD).\nشاكرين تعاونكم الكريم.`
+      `السلام عليكم ورحمة الله وبركاته ولي امر ( ${student.name} ) نود تذكيركم بضرورة تسديد القسط الشهري المستحق يرجى التسديد في اقرب وقت شاكرين تعاونكم الكريم`
     );
-    const cleanPhone = student.parentPhone.replace(/[^0-9]/g, '');
+    const cleanPhone = (student.parentPhone || student.phone || '').replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
   };
 

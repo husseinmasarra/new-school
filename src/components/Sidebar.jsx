@@ -138,8 +138,8 @@ export const Sidebar = ({ activeTab: activeTabProp, setActiveTab: setActiveTabPr
           </button>
 
           {/* ── 1. الصفوف والجداول الدراسية ── */}
-          {/* 1.1 الصفوف والشعب الدراسية (للإدارة والمعلمين) */}
-          {(currentRole === 'admin' || currentRole === 'teacher') && (
+          {/* 1.1 الصفوف والشعب الدراسية (للإدارة والمعلمين ومساعد المدير) */}
+          {(currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'vice_principal') && (
             <button
               onClick={() => handleNavClick('classes', 'academic')}
               className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -307,8 +307,8 @@ export const Sidebar = ({ activeTab: activeTabProp, setActiveTab: setActiveTabPr
           </button>
 
           {/* ── 4. شؤون الطلاب والكادر البشري ── */}
-          {/* 4.1 شؤون الطلاب (للإدارة والمعلمين) */}
-          {(currentRole === 'admin' || currentRole === 'teacher') && (
+          {/* 4.1 شؤون الطلاب (للإدارة والمعلمين ومساعد المدير) */}
+          {(currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'vice_principal') && (
             <div className="space-y-1">
               <button
                 onClick={() => toggleSection('students', 'directory', 'academic')}
@@ -342,8 +342,8 @@ export const Sidebar = ({ activeTab: activeTabProp, setActiveTab: setActiveTabPr
             </div>
           )}
 
-          {/* 4.2 كادر المعلمين (للإدارة والمعلمين) */}
-          {(currentRole === 'admin' || currentRole === 'teacher') && (
+          {/* 4.2 كادر المعلمين (للإدارة والمعلمين ومساعد المدير) */}
+          {(currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'vice_principal') && (
             <div className="space-y-1">
               <button
                 onClick={() => toggleSection('teachers', 'teachers', 'academic')}
@@ -378,8 +378,8 @@ export const Sidebar = ({ activeTab: activeTabProp, setActiveTab: setActiveTabPr
 
 
 
-          {/* ── 5. الشؤون المالية والرواتب (للإدارة فقط) ── */}
-          {currentRole === 'admin' && (
+          {/* ── 5. الشؤون المالية والرواتب (للإدارة ومساعد المدير) ── */}
+          {(currentRole === 'admin' || currentRole === 'vice_principal') && (
             <div className="space-y-1">
               <button
                 onClick={() => toggleSection('finance', 'tuition', 'financial')}
@@ -391,7 +391,7 @@ export const Sidebar = ({ activeTab: activeTabProp, setActiveTab: setActiveTabPr
               >
                 <div className="flex items-center gap-3">
                   <Wallet className="w-5 h-5 text-[#EF4444]" />
-                  <span>{isAr ? 'الشؤون المالية والرواتب' : 'Staff & Finance'}</span>
+                  <span>{isAr ? 'أقساط الطلاب والمالية' : 'Tuition & Finance'}</span>
                 </div>
                 {openSections.finance ? <ChevronUp className="w-4 h-4 text-white/80" /> : <ChevronDown className="w-4 h-4 text-white/80" />}
               </button>
@@ -402,10 +402,12 @@ export const Sidebar = ({ activeTab: activeTabProp, setActiveTab: setActiveTabPr
                     <CreditCard className="w-3.5 h-3.5 text-[#EF4444]" />
                     <span>{isAr ? 'أقساط الطلاب والخصومات' : 'Tuition & Installments'}</span>
                   </button>
-                  <button onClick={() => handleNavClick('finance', 'financial')} className="w-full text-right rtl:text-right ltr:text-left py-1.5 text-white/90 hover:text-white flex items-center gap-2 cursor-pointer">
-                    <TrendingUp className="w-3.5 h-3.5 text-sky-200" />
-                    <span>{isAr ? 'رواتب الموظفين والنفقات' : 'Staff Payroll & Expenses'}</span>
-                  </button>
+                  {currentRole === 'admin' && (
+                    <button onClick={() => handleNavClick('finance', 'financial')} className="w-full text-right rtl:text-right ltr:text-left py-1.5 text-white/90 hover:text-white flex items-center gap-2 cursor-pointer">
+                      <TrendingUp className="w-3.5 h-3.5 text-sky-200" />
+                      <span>{isAr ? 'رواتب الموظفين والنفقات' : 'Staff Payroll & Expenses'}</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>

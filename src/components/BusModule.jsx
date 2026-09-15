@@ -24,6 +24,7 @@ export const BusModule = () => {
   } = useApp();
 
   const isAr = lang === 'ar';
+  const canManageBus = currentRole === 'admin' || currentRole === 'vice_principal';
   const safeStudents = students || [];
   const safeBuses = buses || [];
 
@@ -45,6 +46,10 @@ export const BusModule = () => {
   const [selectedStudentForBus, setSelectedStudentForBus] = useState(safeStudents[0]?.id || '');
   const [targetBusIdForAssign, setTargetBusIdForAssign] = useState(safeBuses[0]?.id || '');
   const [assignToast, setAssignToast] = useState(false);
+
+  // Dedicated Bus Riders Management Modal (Add / Remove)
+  const [managingBusRiders, setManagingBusRiders] = useState(null);
+  const [selectedStudentToAdd, setSelectedStudentToAdd] = useState('');
 
   const handleAddBusSubmit = (e) => {
     e.preventDefault();
@@ -104,8 +109,8 @@ export const BusModule = () => {
           </div>
         </div>
 
-        {/* Admin Action Buttons Only */}
-        {currentRole === 'admin' && (
+        {/* Bus Action Buttons */}
+        {canManageBus && (
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowAssignModal(true)}
@@ -218,6 +223,21 @@ export const BusModule = () => {
                       <Users className="w-4 h-4 text-[#0284C7]" />
                       <span>{isAr ? `الطلاب المخصصون للحافلة (${busStudents.length}):` : `Assigned Students (${busStudents.length}):`}</span>
                     </span>
+
+                    {canManageBus && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManagingBusRiders(bus);
+                          setSelectedStudentToAdd('');
+                        }}
+                        className="text-[11px] font-bold text-[#0284C7] bg-[#0284C7]/10 hover:bg-[#0284C7] hover:text-white px-2.5 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                        title={isAr ? "تعديل ركاب الحافلة (إضافة / إزالة)" : "Manage Bus Riders"}
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span>{isAr ? 'تعديل الركاب (إضافة / إزالة)' : 'Manage Riders'}</span>
+                      </button>
+                    )}
                   </div>
 
                   {busStudents.length === 0 ? (
@@ -230,7 +250,7 @@ export const BusModule = () => {
                         <div key={stu.id} className="flex items-center gap-1.5 bg-white border border-[#E2E8F0] px-2.5 py-1 rounded-xl text-[11px] shadow-sm">
                           <img src={stu.avatar} alt={stu.name} className="w-5 h-5 rounded-full object-cover border border-[#0284C7]" />
                           <span className="font-bold text-[#0F172A]">{isAr ? stu.name : stu.nameEn}</span>
-                          {currentRole === 'admin' && (
+                          {canManageBus && (
                             <button
                               type="button"
                               onClick={() => assignStudentToBus(stu.id, null)}
@@ -361,6 +381,136 @@ export const BusModule = () => {
               <button type="submit" className="px-5 py-2 btn-mustard rounded-xl text-xs font-bold shadow cursor-pointer">{t('save')}</button>
             </div>
           </form>
+        </div>,
+        document.body
+      )}
+
+      {/* Dedicated Bus Riders Management Modal (Add / Remove) */}
+      {managingBusRiders && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A] relative max-h-[90vh] flex flex-col">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-[#0284C7]/10 text-[#0284C7] rounded-xl">
+                  <Bus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#0284C7]">
+                    {isAr ? `تعديل ركاب: ${managingBusRiders.busNumber}` : `Manage: ${managingBusRiders.busNumberEn}`}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {isAr ? `السائق: ${managingBusRiders.driverName} • ${managingBusRiders.routeName}` : `Driver: ${managingBusRiders.driverNameEn}`}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setManagingBusRiders(null)} 
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Section 1: Add Student to this Bus */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-2xl space-y-3">
+              <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <UserPlus className="w-4 h-4 text-[#0284C7]" />
+                <span>{isAr ? 'إضافة تلميذ إلى هذه الحافلة:' : 'Add Student to this Bus:'}</span>
+              </h4>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={selectedStudentToAdd}
+                  onChange={(e) => setSelectedStudentToAdd(e.target.value)}
+                  className="flex-1 bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer"
+                >
+                  <option value="">{isAr ? '-- اختر تلميذاً لإضافته للحافلة --' : '-- Select student to add --'}</option>
+                  {safeStudents
+                    .filter(s => s.busId !== managingBusRiders.id)
+                    .map(s => (
+                      <option key={s.id} value={s.id}>
+                        {isAr ? s.name : s.nameEn} ({isAr ? s.grade : s.gradeEn}) {s.busId ? (isAr ? '• (مخصص لحافلة أخرى)' : '• (other bus)') : ''}
+                      </option>
+                    ))}
+                </select>
+
+                <button
+                  type="button"
+                  disabled={!selectedStudentToAdd}
+                  onClick={() => {
+                    if (selectedStudentToAdd) {
+                      assignStudentToBus(selectedStudentToAdd, managingBusRiders.id);
+                      setSelectedStudentToAdd('');
+                    }
+                  }}
+                  className="btn-mustard px-4 py-2 rounded-xl text-xs font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 shrink-0 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{isAr ? 'إضافة للحافلة' : 'Add to Bus'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 2: Current Riders List */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-[150px]">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700 py-1">
+                <span>{isAr ? 'التلاميذ الحاليون في الحافلة:' : 'Current Bus Students:'}</span>
+                <span className="bg-[#0284C7]/10 text-[#0284C7] px-2 py-0.5 rounded-md font-bold">
+                  {safeStudents.filter(s => s.busId === managingBusRiders.id).length} {isAr ? 'تلميذ' : 'students'}
+                </span>
+              </div>
+
+              {safeStudents.filter(s => s.busId === managingBusRiders.id).length === 0 ? (
+                <p className="text-xs text-slate-400 italic text-center py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  {isAr ? 'لا يوجد ركاب مخصصون لهذه الحافلة حالياً. استخدم القائمة أعلاه لإضافة تلاميذ.' : 'No students assigned yet.'}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {safeStudents
+                    .filter(s => s.busId === managingBusRiders.id)
+                    .map(stu => (
+                      <div 
+                        key={stu.id} 
+                        className="bg-white border border-[#E2E8F0] p-2.5 rounded-xl flex items-center justify-between gap-2 shadow-xs hover:border-slate-300 transition-all"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <img src={stu.avatar} alt={stu.name} className="w-8 h-8 rounded-full object-cover border border-[#0284C7] shrink-0" />
+                          <div className="truncate">
+                            <span className="text-xs font-bold text-slate-900 block truncate">{isAr ? stu.name : stu.nameEn}</span>
+                            <span className="text-[10px] text-slate-500 font-medium block">{isAr ? stu.grade : stu.gradeEn} • {stu.phone || stu.parentPhone}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => assignStudentToBus(stu.id, null)}
+                          className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                          title={isAr ? "إزالة من هذه الحافلة" : "Remove from this bus"}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{isAr ? 'إزالة من الحافلة' : 'Remove'}</span>
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <button 
+                type="button" 
+                onClick={() => setManagingBusRiders(null)} 
+                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+              >
+                {t('close') || 'إغلاق'}
+              </button>
+            </div>
+
+          </div>
         </div>,
         document.body
       )}

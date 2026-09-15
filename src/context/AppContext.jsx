@@ -86,6 +86,9 @@ export const systemPermissionOptions = [
   { id: 'manage_all', name: 'التحكم الكامل في إعدادات النظام', nameEn: 'Full System & Settings Control', category: 'admin' },
   { id: 'manage_finance', name: 'إدارة المالية والأقساط ودفع الرواتب', nameEn: 'Financial & Payroll Access', category: 'admin' },
   { id: 'manage_users', name: 'إدارة المستخدمين وإعطاء الصلاحيات', nameEn: 'User & Permission Management', category: 'admin' },
+  { id: 'add_student', name: 'إضافة وتسجيل تلميذ جديد', nameEn: 'Add & Register Student', category: 'vice_principal' },
+  { id: 'record_payment', name: 'إدخال وقبض الدفعات المالية (بدون تعديل)', nameEn: 'Record Payments (No Edit)', category: 'vice_principal' },
+  { id: 'send_reminders', name: 'إرسال رسائل وتذكيرات الأقساط بالواتساب', nameEn: 'Send Reminders', category: 'vice_principal' },
   { id: 'send_lessons', name: 'إرسال الدروس والواجبات المنزلية', nameEn: 'Post Lessons & Homework', category: 'teacher' },
   { id: 'manage_grades', name: 'رصد درجات وعلامات الطلاب', nameEn: 'Manage Student Grades', category: 'teacher' },
   { id: 'send_messages', name: 'إرسال التنبيهات والرسائل المباشرة', nameEn: 'Send Notifications & Messages', category: 'teacher' },
@@ -106,6 +109,18 @@ export const initialSystemUsers = [
     phone: "+961 01 888 999",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     permissions: ['manage_all', 'manage_finance', 'manage_users', 'send_lessons', 'manage_bus', 'print_cards']
+  },
+  {
+    id: "USR-02",
+    name: "مساعد المدير",
+    nameEn: "Vice Principal",
+    username: "vice_principal",
+    password: "123123123",
+    role: "vice_principal",
+    roleTitle: "مساعد مدير",
+    phone: "+961 01 888 777",
+    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
+    permissions: ['add_student', 'record_payment', 'send_reminders', 'print_cards']
   }
 ];
 
@@ -1528,14 +1543,18 @@ export const AppProvider = ({ children }) => {
     setSystemUsers((prev) => {
       const updated = [newUser, ...prev];
       localStorage.setItem('school_system_users', JSON.stringify(updated));
+      dbSaveCollection('school_system_users', updated);
       return updated;
     });
   };
 
   const updateSystemUserPermissions = (userId, newPermissions) => {
-    setSystemUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, permissions: newPermissions } : u))
-    );
+    setSystemUsers((prev) => {
+      const updated = prev.map((u) => (u.id === userId ? { ...u, permissions: newPermissions } : u));
+      localStorage.setItem('school_system_users', JSON.stringify(updated));
+      dbSaveCollection('school_system_users', updated);
+      return updated;
+    });
   };
 
   const deleteSystemUser = (userId) => {

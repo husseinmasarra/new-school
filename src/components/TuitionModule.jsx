@@ -225,8 +225,8 @@ export const TuitionModule = () => {
   const handleSendWhatsAppReminder = (stu) => {
     const parentPhone = stu.parentPhone || stu.phone || '+961 70 000 000';
     const msg = isAr
-      ? `الى ولي امر التلميذ ( ${stu.name} ) نود تذكيركم بضرورة تسديد القسط الشهري المستحق يرجى التسديد في اقرب وقت شاكرين تعاونكم الكريم`
-      : `To the parent of student (${stu.nameEn || stu.name}), we kindly remind you to settle the due monthly tuition payment at your earliest convenience. Thank you for your cooperation!`;
+      ? `السلام عليكم ورحمة الله وبركاته ولي امر ( ${stu.name} ) نود تذكيركم بضرورة تسديد القسط الشهري المستحق يرجى التسديد في اقرب وقت شاكرين تعاونكم الكريم`
+      : `Peace be upon you. Dear guardian of student (${stu.nameEn || stu.name}), we kindly remind you to settle the due monthly tuition payment at your earliest convenience. Thank you for your cooperation!`;
     openWhatsAppMessage(parentPhone, msg);
   };
 
@@ -554,11 +554,13 @@ export const TuitionModule = () => {
                             <span className="font-bold block">{entry.desc} — ${entry.amount} USD</span>
                             <span className="text-[9px] text-emerald-600">{entry.date} • {entry.method === 'fresh_cash' ? 'نقداً' : 'تحويل'}</span>
                           </div>
-                          <button onClick={() => handleDeleteHistoryEntry(stu.id, entry.id, entry.amount)}
-                            className="text-emerald-400 hover:text-red-600 transition-colors cursor-pointer"
-                            title="حذف القيد وخصمه من المدفوع">
-                            <X className="w-3 h-3" />
-                          </button>
+                          {currentRole === 'admin' && (
+                            <button onClick={() => handleDeleteHistoryEntry(stu.id, entry.id, entry.amount)}
+                              className="text-emerald-400 hover:text-red-600 transition-colors cursor-pointer"
+                              title="حذف القيد وخصمه من المدفوع">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -596,19 +598,21 @@ export const TuitionModule = () => {
                       <span>الإيصال 🖨️</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedStudentForEditPayment(stu);
-                        setEditPaidAmount((stu.tuitionPaid || 0).toString());
-                        setEditPaidReason('تصحيح خطأ في تسجيل الدفعة');
-                      }}
-                      className="py-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow"
-                      title="تعديل أو تصحيح الدفعة في حال حدوث خطأ"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>تعديل الدفعة ✏️</span>
-                    </button>
+                    {currentRole === 'admin' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedStudentForEditPayment(stu);
+                          setEditPaidAmount((stu.tuitionPaid || 0).toString());
+                          setEditPaidReason('تصحيح خطأ في تسجيل الدفعة');
+                        }}
+                        className="py-1.5 px-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow"
+                        title="تعديل أو تصحيح الدفعة في حال حدوث خطأ"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>تعديل الدفعة ✏️</span>
+                      </button>
+                    )}
 
                     <button onClick={() => setSelectedStudentForPay(stu)}
                       className="btn-mustard py-1.5 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow">

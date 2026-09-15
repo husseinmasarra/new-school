@@ -6,6 +6,7 @@ export const UsersPage = () => {
   const { userRole, setUserRole } = useSchool();
   const [users, setUsers] = useState([
     { id: 'u-1', name: 'إدارة المدرسة العامة', username: 'admin', role: 'مدير عام النظام', status: 'نشط' },
+    { id: 'u-5', name: 'أ. سامر حمود', username: 'samer.h', role: 'مساعد مدير', status: 'نشط' },
     { id: 'u-2', name: 'أ. أحمد منصور', username: 'ahmad.m', role: 'معلم', status: 'نشط' },
     { id: 'u-3', name: 'يوسف العلي (ولي أمر)', username: 'parent_ali', role: 'ولي أمر', status: 'نشط' },
     { id: 'u-4', name: 'أبو خالد سليم', username: 'driver_salim', role: 'سائق حافلة', status: 'نشط' },
@@ -20,7 +21,7 @@ export const UsersPage = () => {
             إدارة المستخدمين والأدوار والصلاحيات
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            إدارة حسابات الدخول، تعيين الصلاحيات (مدير، معلم، ولي أمر، سائق)، والتبديل السريع للتجربة
+            إدارة حسابات الدخول، تعيين الصلاحيات (مدير، مساعد مدير، معلم، ولي أمر، سائق)، والتبديل السريع للتجربة
           </p>
         </div>
 
@@ -33,6 +34,7 @@ export const UsersPage = () => {
             className="bg-white p-1 rounded-lg border border-purple-300 font-bold text-purple-900 focus:outline-none"
           >
             <option value="مدير عام النظام">مدير عام النظام (Admin)</option>
+            <option value="مساعد مدير">مساعد مدير (Vice Principal)</option>
             <option value="معلم">معلم (Teacher)</option>
             <option value="ولي أمر">ولي أمر (Parent)</option>
             <option value="طالب">طالب (Student)</option>
