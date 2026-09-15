@@ -36,6 +36,7 @@ export const SubjectsModule = () => {
     addAgendaItem,
     deleteAgendaItem,
     students = [],
+    teachers = [],
     grades = [],
     selectedStudentId,
     setSelectedStudentId
@@ -112,6 +113,53 @@ export const SubjectsModule = () => {
     return n1 === n2 || n1.includes(n2) || n2.includes(n1);
   };
 
+  // Find active teacher record and assigned classrooms & subjects
+  const activeTeacher = (teachers || []).find((t) => 
+    t.id === currentUser?.id || 
+    t.username === currentUser?.username || 
+    t.name === currentUser?.name
+  ) || (currentRole === 'teacher' ? currentUser : null);
+
+  const teacherAssignedList = (currentRole === 'teacher')
+    ? (
+        activeTeacher?.assignedClassrooms?.length > 0 
+          ? activeTeacher.assignedClassrooms 
+          : activeTeacher?.assignedClasses?.length > 0
+          ? activeTeacher.assignedClasses
+          : (currentUser?.assignedClassrooms || currentUser?.assignedClasses || [])
+      )
+    : [];
+
+  const teacherSubjectList = (currentRole === 'teacher')
+    ? (
+        activeTeacher?.subjects?.length > 0 
+          ? activeTeacher.subjects 
+          : activeTeacher?.subject 
+          ? [activeTeacher.subject] 
+          : activeTeacher?.specialty 
+          ? [activeTeacher.specialty] 
+          : (currentUser?.subjects || (currentUser?.subject ? [currentUser.subject] : []))
+      )
+    : [];
+
+  const isTeacherAssignedToSubject = (subjectName) => {
+    if (currentRole !== 'teacher') return true;
+    if (teacherSubjectList.length === 0) return true;
+    return teacherSubjectList.some(s => isSubjectMatch(s, subjectName));
+  };
+
+  const allSections = ['أ', 'ب', 'ج', 'د'];
+  const getSectionsForGrade = (targetGradeName) => {
+    return allSections.filter((secLetter) => {
+      if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
+      return teacherAssignedList.some((assignedStr) => {
+        const gradeOk = isGradeMatch(targetGradeName, assignedStr);
+        const secLetterAssigned = getSectionLetter(assignedStr);
+        return gradeOk && (!secLetterAssigned || secLetterAssigned === secLetter);
+      });
+    });
+  };
+
   // Compile full list of grades available
   const allGradeNames = Array.from(new Set([
     ...safeGrades.map(g => g.name),
@@ -124,6 +172,19 @@ export const SubjectsModule = () => {
     'الصف السادس'
   ])).filter(Boolean);
 
+  const availableGradesForTeacher = allGradeNames.filter((gName) => {
+    if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
+    return teacherAssignedList.some((assignedStr) => isGradeMatch(gName, assignedStr));
+  });
+
+  const defaultInitialGrade = (currentRole === 'teacher' && availableGradesForTeacher.length > 0)
+    ? availableGradesForTeacher[0]
+    : (allGradeNames[0] || 'الصف الأول');
+
+  const defaultInitialSection = (currentRole === 'teacher')
+    ? (getSectionsForGrade(defaultInitialGrade)[0] || 'أ')
+    : 'أ';
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState('');
   const [nameEn, setNameEn] = useState('');
@@ -135,8 +196,8 @@ export const SubjectsModule = () => {
   const [selectedSubjectForLessons, setSelectedSubjectForLessons] = useState(null);
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonContent, setNewLessonContent] = useState('');
-  const [newLessonGrade, setNewLessonGrade] = useState(allGradeNames[0] || 'الصف الأول');
-  const [newLessonSection, setNewLessonSection] = useState('أ');
+  const [newLessonGrade, setNewLessonGrade] = useState(defaultInitialGrade);
+  const [newLessonSection, setNewLessonSection] = useState(defaultInitialSection);
   const [newLessonType, setNewLessonType] = useState('lesson');
   const [newLessonDate, setNewLessonDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newLessonTeacher, setNewLessonTeacher] = useState(currentUser?.name || 'أ. معلم المادة');
@@ -146,6 +207,7 @@ export const SubjectsModule = () => {
   const [modalSectionFilter, setModalSectionFilter] = useState('all');
 
   const canManageLessons = currentRole === 'admin' || currentRole === 'vice_principal' || currentRole === 'teacher';
+  const canPostInCurrentSubject = currentRole === 'admin' || currentRole === 'vice_principal' || (currentRole === 'teacher' && isTeacherAssignedToSubject(selectedSubjectForLessons?.name));
   const isStudentOrParent = currentRole === 'student' || currentRole === 'parent';
 
   const handleSubjectImageUpload = (e) => {
@@ -184,11 +246,47 @@ export const SubjectsModule = () => {
     setShowAddModal(false);
   };
 
+  const openSubjectModal = (sub) => {
+    setSelectedSubjectForLessons(sub);
+    if (currentRole === 'teacher') {
+      const targetGrade = availableGradesForTeacher.length > 0 ? availableGradesForTeacher[0] : (allGradeNames[0] || 'الصف الأول');
+      setNewLessonGrade(targetGrade);
+      const secs = getSectionsForGrade(targetGrade);
+      setNewLessonSection(secs[0] || 'أ');
+      setNewLessonTeacher(currentUser?.name || activeTeacher?.name || 'أ. معلم المادة');
+    }
+  };
+
   const handlePostSubjectLesson = (e) => {
     e.preventDefault();
     if (!newLessonTitle || !selectedSubjectForLessons) return;
 
     const sectionVal = getSectionLetter(newLessonSection) || newLessonSection || 'أ';
+
+    if (currentRole === 'teacher') {
+      if (!isTeacherAssignedToSubject(selectedSubjectForLessons.name)) {
+        alert(isAr 
+          ? `عذراً، بصفتك معلماً لا يمكنك نشر دروس لمادة (${selectedSubjectForLessons.name}) لأنها غير مسندة لتخصصك التدريسي.` 
+          : 'You are not assigned to teach this subject.');
+        return;
+      }
+      if (teacherAssignedList.length > 0) {
+        const isGradeValid = teacherAssignedList.some(a => isGradeMatch(newLessonGrade, a));
+        if (!isGradeValid) {
+          alert(isAr 
+            ? `عذراً، الصف (${newLessonGrade}) غير موكل إليك.` 
+            : 'Grade not assigned to you.');
+          return;
+        }
+        const allowedSecs = getSectionsForGrade(newLessonGrade);
+        if (allowedSecs.length > 0 && !allowedSecs.includes(sectionVal)) {
+          alert(isAr 
+            ? `عذراً، الشعبة (${sectionVal}) غير مسندة إليك لهذا الصف.` 
+            : 'Section not assigned to you.');
+          return;
+        }
+      }
+    }
 
     addAgendaItem({
       title: newLessonTitle,
@@ -276,6 +374,36 @@ export const SubjectsModule = () => {
         </div>
       </div>
 
+      {/* Teacher Status & Subject Restrictions Banner */}
+      {currentRole === 'teacher' && (
+        <div className="bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#0284C7] text-white flex items-center justify-center font-bold shadow text-lg">
+              👨‍🏫
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-600">{isAr ? 'الأستاذ(ة):' : 'Teacher:'}</span>
+                <span className="text-sm font-black text-[#0284C7]">{activeTeacher?.name || currentUser?.name}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <span className="text-[11px] font-bold bg-white text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                  {isAr ? `المواد المصرحة: ${teacherSubjectList.length > 0 ? teacherSubjectList.join('، ') : 'كل المواد'}` : `Subjects: ${teacherSubjectList.join(', ')}`}
+                </span>
+                <span className="text-[11px] font-bold bg-white text-[#0284C7] px-2.5 py-0.5 rounded-lg border border-sky-200">
+                  {isAr ? `الصفوف والشُعب الموكلة: ${teacherAssignedList.length > 0 ? teacherAssignedList.join('، ') : 'كل الصفوف'}` : `Classes: ${teacherAssignedList.join(', ')}`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <span className="text-xs text-sky-800 font-bold bg-white/90 px-3 py-1.5 rounded-xl border border-sky-200 flex items-center gap-1.5 shadow-sm">
+            <span>🎯</span>
+            <span>{isAr ? 'يمكنك نشر الدروس حصراً لمادتك والصفوف والشُعب الموكلة إليك' : 'Publish restricted to your assigned subjects and sections'}</span>
+          </span>
+        </div>
+      )}
+
       {/* Student/Parent Identification Badge */}
       {isStudentOrParent && (
         <div className="bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
@@ -340,7 +468,7 @@ export const SubjectsModule = () => {
           return (
             <div
               key={sub.id}
-              onClick={() => setSelectedSubjectForLessons(sub)}
+              onClick={() => openSubjectModal(sub)}
               className="interactive-card rounded-3xl p-6 shadow-xl relative overflow-hidden text-white transition-all transform hover:scale-[1.02] flex flex-col justify-between min-h-[190px] cursor-pointer group"
               style={{
                 backgroundColor: cardBg,
@@ -370,18 +498,32 @@ export const SubjectsModule = () => {
                   </div>
                 </div>
 
-                {currentRole === 'admin' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteSubject(sub.id);
-                    }}
-                    className="p-2 bg-white/20 hover:bg-red-600 text-white rounded-xl backdrop-blur-md transition-all cursor-pointer border border-white/20"
-                    title={t('delete')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {currentRole === 'teacher' && (
+                    <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black shadow-sm flex items-center gap-1 ${
+                      isTeacherAssignedToSubject(sub.name) 
+                        ? 'bg-emerald-500 text-white' 
+                        : 'bg-white/20 text-white/90 backdrop-blur-sm'
+                    }`}>
+                      {isTeacherAssignedToSubject(sub.name) 
+                        ? (isAr ? 'مادتك المسندة 🎯' : 'Assigned') 
+                        : (isAr ? 'استعراض فقط 👁️' : 'View Only')}
+                    </span>
+                  )}
+
+                  {currentRole === 'admin' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSubject(sub.id);
+                      }}
+                      className="p-2 bg-white/20 hover:bg-red-600 text-white rounded-xl backdrop-blur-md transition-all cursor-pointer border border-white/20"
+                      title={t('delete')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Bottom Footer Badge Tag */}
@@ -481,137 +623,167 @@ export const SubjectsModule = () => {
 
             {/* Teacher / Admin / Vice Principal Add Lesson Form */}
             {canManageLessons && (
-              <form onSubmit={handlePostSubjectLesson} className="bg-[#F8FAFC] border-2 border-dashed border-[#0284C7]/40 p-4 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h4 className="text-xs font-black text-[#0284C7] flex items-center gap-1.5">
-                    <Send className="w-4 h-4 text-[#0284C7]" />
-                    <span>{isAr ? `إضافة درس جديد لمادة (${selectedSubjectForLessons.name}):` : `Add new lesson for ${selectedSubjectForLessons.name}:`}</span>
-                  </h4>
-                  <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-lg">
-                    {isAr ? 'حسب الصف والشعبة' : 'Targeted by Class'}
-                  </span>
-                </div>
+              canPostInCurrentSubject ? (
+                <form onSubmit={handlePostSubjectLesson} className="bg-[#F8FAFC] border-2 border-dashed border-[#0284C7]/40 p-4 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h4 className="text-xs font-black text-[#0284C7] flex items-center gap-1.5">
+                      <Send className="w-4 h-4 text-[#0284C7]" />
+                      <span>{isAr ? `إضافة درس جديد لمادة (${selectedSubjectForLessons.name}):` : `Add new lesson for ${selectedSubjectForLessons.name}:`}</span>
+                    </h4>
+                    <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-lg">
+                      {isAr ? 'حسب الصف والشعبة' : 'Targeted by Class'}
+                    </span>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Teacher context banner inside form */}
+                  {currentRole === 'teacher' && (
+                    <div className="bg-sky-50 border border-sky-200 p-2.5 rounded-xl text-xs space-y-1">
+                      <div className="flex items-center justify-between font-bold text-[#0284C7]">
+                        <span>👨‍🏫 الأستاذ: {activeTeacher?.name || currentUser?.name}</span>
+                        <span className="bg-white px-2 py-0.5 rounded border border-sky-300 text-[10px]">محدد المادة والشعبة</span>
+                      </div>
+                      <div className="text-slate-600 text-[11px]">
+                        <strong>الصفوف والشُعب الموكلة:</strong> {teacherAssignedList.length > 0 ? teacherAssignedList.join('، ') : 'كل الصفوف'}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        {isAr ? 'عنوان الدرس الشامل' : 'Lesson Title'} <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newLessonTitle}
+                        onChange={(e) => setNewLessonTitle(e.target.value)}
+                        placeholder={isAr ? 'مثال: جمع الكسور العشرية...' : 'e.g. Fractions addition...'}
+                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                          {isAr ? 'الصف الدراسي' : 'Grade'}
+                        </label>
+                        <select
+                          value={newLessonGrade}
+                          onChange={(e) => {
+                            const newG = e.target.value;
+                            setNewLessonGrade(newG);
+                            const secs = getSectionsForGrade(newG);
+                            if (secs.length > 0 && !secs.includes(newLessonSection)) {
+                              setNewLessonSection(secs[0]);
+                            }
+                          }}
+                          className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold cursor-pointer"
+                        >
+                          {(currentRole === 'teacher' && availableGradesForTeacher.length > 0 ? availableGradesForTeacher : allGradeNames).map((gName, idx) => (
+                            <option key={idx} value={gName}>{gName}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                          {isAr ? 'الشعبة المستهدفة' : 'Section'} <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={newLessonSection}
+                          onChange={(e) => setNewLessonSection(e.target.value)}
+                          className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold cursor-pointer"
+                        >
+                          {getSectionsForGrade(newLessonGrade).map((secLetter) => (
+                            <option key={secLetter} value={secLetter}>{isAr ? `الشعبة (${secLetter})` : `Section ${secLetter}`}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-2 font-bold flex items-center gap-2">
+                      <span>📌</span>
+                      <span>تحديد الصف والشعبة إلزامي: نظراً لاختلاف الدروس بين الشُعب، يتم توجيه ونشر هذا الدرس حصراً للشعبة والصف المحددين.</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        {isAr ? 'نوع النشاط' : 'Activity Type'}
+                      </label>
+                      <select
+                        value={newLessonType}
+                        onChange={(e) => setNewLessonType(e.target.value)}
+                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-bold cursor-pointer"
+                      >
+                        <option value="lesson">{isAr ? 'درس وشرح كتابي 📖' : 'Lesson & Explanation'}</option>
+                        <option value="homework">{isAr ? 'واجب منزلي ✍️' : 'Homework Task'}</option>
+                        <option value="exam">{isAr ? 'اختبار ومراجعة 📝' : 'Review & Exam'}</option>
+                        <option value="competition">{isAr ? 'مسابقة وتحدي 🏆' : 'Challenge & Quiz'}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        {isAr ? 'تاريخ النشر' : 'Date'}
+                      </label>
+                      <input
+                        type="date"
+                        value={newLessonDate}
+                        onChange={(e) => setNewLessonDate(e.target.value)}
+                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        {isAr ? 'اسم الأستاذ / المرسل' : 'Teacher Name'}
+                      </label>
+                      <input
+                        type="text"
+                        value={newLessonTeacher}
+                        onChange={(e) => setNewLessonTeacher(e.target.value)}
+                        placeholder="اسم المعلم..."
+                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-semibold"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      {isAr ? 'عنوان الدرس الشامل' : 'Lesson Title'} <span className="text-red-500">*</span>
+                      {isAr ? 'تفاصيل الدرس والأنشطة والواجبات المطلوبة' : 'Lesson details and homework instructions'}
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={newLessonTitle}
-                      onChange={(e) => setNewLessonTitle(e.target.value)}
-                      placeholder={isAr ? 'مثال: جمع الكسور العشرية...' : 'e.g. Fractions addition...'}
+                    <textarea
+                      rows="3"
+                      value={newLessonContent}
+                      onChange={(e) => setNewLessonContent(e.target.value)}
+                      placeholder={isAr ? 'اكتب الشرح وأرقام الصفحات والأنشطة المطلوب إنجازها...' : 'Write lesson notes and homework exercises...'}
                       className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        {isAr ? 'الصف الدراسي' : 'Grade'}
-                      </label>
-                      <select
-                        value={newLessonGrade}
-                        onChange={(e) => setNewLessonGrade(e.target.value)}
-                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold"
-                      >
-                        {allGradeNames.map((gName, idx) => (
-                          <option key={idx} value={gName}>{gName}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        {isAr ? 'الشعبة المستهدفة' : 'Section'} <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={newLessonSection}
-                        onChange={(e) => setNewLessonSection(e.target.value)}
-                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold cursor-pointer"
-                      >
-                        <option value="أ">الشعبة (أ)</option>
-                        <option value="ب">الشعبة (ب)</option>
-                        <option value="ج">الشعبة (ج)</option>
-                        <option value="د">الشعبة (د)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-2 font-bold flex items-center gap-2">
-                    <span>📌</span>
-                    <span>تحديد الصف والشعبة إلزامي: نظراً لاختلاف الدروس بين الشُعب، يتم توجيه ونشر هذا الدرس حصراً للشعبة والصف المحددين.</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      {isAr ? 'نوع النشاط' : 'Activity Type'}
-                    </label>
-                    <select
-                      value={newLessonType}
-                      onChange={(e) => setNewLessonType(e.target.value)}
-                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-bold"
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto"
                     >
-                      <option value="lesson">{isAr ? 'درس وشرح كتابي 📖' : 'Lesson & Explanation'}</option>
-                      <option value="homework">{isAr ? 'واجب منزلي ✍️' : 'Homework Task'}</option>
-                      <option value="exam">{isAr ? 'اختبار ومراجعة 📝' : 'Review & Exam'}</option>
-                      <option value="competition">{isAr ? 'مسابقة وتحدي 🏆' : 'Challenge & Quiz'}</option>
-                    </select>
+                      <Plus className="w-4 h-4" />
+                      <span>{isAr ? 'نشر الدرس وإرساله للطلاب 🚀' : 'Publish Lesson to Students 🚀'}</span>
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      {isAr ? 'تاريخ النشر' : 'Date'}
-                    </label>
-                    <input
-                      type="date"
-                      value={newLessonDate}
-                      onChange={(e) => setNewLessonDate(e.target.value)}
-                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-bold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      {isAr ? 'اسم الأستاذ / المرسل' : 'Teacher Name'}
-                    </label>
-                    <input
-                      type="text"
-                      value={newLessonTeacher}
-                      onChange={(e) => setNewLessonTeacher(e.target.value)}
-                      placeholder="اسم المعلم..."
-                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-semibold"
-                    />
+                </form>
+              ) : (
+                <div className="bg-amber-50 border border-amber-300 p-4 rounded-2xl flex items-start gap-3 text-xs text-amber-900 shadow-sm">
+                  <span className="text-xl">⚠️</span>
+                  <div className="space-y-1">
+                    <p className="font-bold text-sm text-amber-800">صلاحية النشر مقيدة للمعلم</p>
+                    <p>مادة <strong>({selectedSubjectForLessons.name})</strong> غير مسندة لتخصصك التدريسي.</p>
+                    <p className="text-[11px] text-amber-700">المواد المصرحة لك حالياً: <strong>{teacherSubjectList.length > 0 ? teacherSubjectList.join('، ') : 'لا توجد مواد مسندة'}</strong>. يمكنك فقط استعراض الدروس المرفوعة أدناه دون صلاحية نشر دروس جديدة لهذه المادة.</p>
                   </div>
                 </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                    {isAr ? 'تفاصيل الدرس والأنشطة والواجبات المطلوبة' : 'Lesson details and homework instructions'}
-                  </label>
-                  <textarea
-                    rows="3"
-                    value={newLessonContent}
-                    onChange={(e) => setNewLessonContent(e.target.value)}
-                    placeholder={isAr ? 'اكتب الشرح وأرقام الصفحات والأنشطة المطلوب إنجازها...' : 'Write lesson notes and homework exercises...'}
-                    className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>{isAr ? 'نشر الدرس وإرساله للطلاب 🚀' : 'Publish Lesson to Students 🚀'}</span>
-                  </button>
-                </div>
-              </form>
+              )
             )}
 
             {/* Filter Bar for Teachers/Admins */}
@@ -629,7 +801,7 @@ export const SubjectsModule = () => {
                     className="bg-white border border-slate-200 text-slate-700 rounded-xl px-2.5 py-1 font-bold text-xs"
                   >
                     <option value="all">{isAr ? 'جميع الصفوف' : 'All Grades'}</option>
-                    {allGradeNames.map((g, idx) => (
+                    {(currentRole === 'teacher' && availableGradesForTeacher.length > 0 ? availableGradesForTeacher : allGradeNames).map((g, idx) => (
                       <option key={idx} value={g}>{g}</option>
                     ))}
                   </select>

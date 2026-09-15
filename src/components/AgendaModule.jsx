@@ -185,11 +185,52 @@ export const AgendaModule = () => {
     return n1 === n2 || (Boolean(n1) && Boolean(n2) && (n1.includes(n2) || n2.includes(n1)));
   };
 
-  // Find active teacher record and assigned classrooms
-  const activeTeacher = (teachers || []).find((t) => t.id === currentUser?.id || t.username === currentUser?.username || t.name === currentUser?.name) || (teachers || [])[0];
+  // Find active teacher record and assigned classrooms & subjects
+  const activeTeacher = (teachers || []).find((t) => 
+    t.id === currentUser?.id || 
+    t.username === currentUser?.username || 
+    t.name === currentUser?.name
+  ) || (currentRole === 'teacher' ? currentUser : null);
+
   const teacherAssignedList = (currentRole === 'teacher')
-    ? (currentUser?.assignedClassrooms || currentUser?.assignedClasses || activeTeacher?.assignedClassrooms || [])
+    ? (currentUser?.assignedClassrooms || currentUser?.assignedClasses || activeTeacher?.assignedClassrooms || activeTeacher?.assignedClasses || activeTeacher?.classes || [])
     : [];
+
+  const normSubject = (str) => (str || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/[ة]/g, 'ه')
+    .replace(/[ى]/g, 'ي')
+    .replace(/^ال/, '')
+    .replace(/[\s\-_]/g, '');
+
+  const isSubjectMatch = (s1, s2) => {
+    if (!s1 || !s2) return false;
+    const n1 = normSubject(s1);
+    const n2 = normSubject(s2);
+    return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+  };
+
+  const teacherSubjectList = (currentRole === 'teacher')
+    ? (
+        activeTeacher?.subjects?.length > 0 
+          ? activeTeacher.subjects 
+          : activeTeacher?.subject 
+          ? [activeTeacher.subject] 
+          : activeTeacher?.specialty 
+          ? [activeTeacher.specialty] 
+          : (currentUser?.subjects || (currentUser?.subject ? [currentUser.subject] : []))
+      )
+    : [];
+
+  const availableSubjectsForRole = (currentRole === 'teacher' && teacherSubjectList.length > 0)
+    ? Object.keys(activityBank).filter((subName) => teacherSubjectList.some(s => isSubjectMatch(s, subName)))
+    : Object.keys(activityBank);
+
+  const finalAvailableSubjects = (currentRole === 'teacher' && teacherSubjectList.length > 0)
+    ? Array.from(new Set([...teacherSubjectList, ...availableSubjectsForRole]))
+    : Object.keys(activityBank);
 
   // Active student resolution
   const activeStudent = safeStudents.find(s => 
@@ -398,7 +439,12 @@ export const AgendaModule = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalGrade, setModalGrade] = useState('');
   const [modalClass, setModalClass] = useState('');
-  const [subject, setSubject] = useState('الرياضيات');
+  const [subject, setSubject] = useState(() => {
+    if (currentRole === 'teacher' && finalAvailableSubjects.length > 0) {
+      return finalAvailableSubjects[0];
+    }
+    return 'الرياضيات';
+  });
   const [title, setTitle] = useState('');
   const [titleEn, setTitleEn] = useState('');
   const [homework, setHomework] = useState('');
@@ -437,14 +483,15 @@ export const AgendaModule = () => {
   };
 
   // ── Smart Full Week Schedule Batch Generator ──────────────────────
-  // ── Smart Full Week Schedule Batch Generator ──────────────────────
   const handleBatchGenerateWeek = () => {
-    const subjectsList = Object.keys(activityBank);
+    const subjectsList = (currentRole === 'teacher' && finalAvailableSubjects.length > 0)
+      ? finalAvailableSubjects
+      : Object.keys(activityBank);
     let addedCount = 0;
     const cleanSec = getSectionLetter(selectedClass) || selectedClass || 'أ';
 
     subjectsList.forEach((subName) => {
-      const bank = activityBank[subName];
+      const bank = activityBank[subName] || activityBank["الرياضيات"];
       // Add 1 homework
       const hw = bank.homework[Math.floor(Math.random() * bank.homework.length)];
       addAgendaItem({
@@ -458,7 +505,8 @@ export const AgendaModule = () => {
         homework: hw.homework,
         homeworkEn: hw.homework,
         dueDate: selectedDate,
-        activityType: 'homework'
+        activityType: 'homework',
+        teacherName: currentUser?.name || activeTeacher?.name || 'أ. معلم المادة'
       });
 
       // Add 1 exam or competition for 3 main subjects
@@ -477,7 +525,8 @@ export const AgendaModule = () => {
           dueDate: selectedDate,
           activityType: 'competition',
           examDuration: comp.duration,
-          totalScore: comp.score
+          totalScore: comp.score,
+          teacherName: currentUser?.name || activeTeacher?.name || 'أ. معلم المادة'
         });
         addedCount++;
       }
@@ -495,6 +544,23 @@ export const AgendaModule = () => {
     const targetGradeVal = modalGrade || selectedGrade;
     const targetSecVal = getSectionLetter(modalClass || selectedClass) || modalClass || selectedClass || 'أ';
 
+    // Validation for teacher: grade, section, subject
+    if (currentRole === 'teacher') {
+      if (teacherSubjectList.length > 0 && !teacherSubjectList.some(s => isSubjectMatch(s, subject))) {
+        alert(isAr ? `عذراً، بصفتك معلماً، يمكنك فقط نشر دروس لموادك المعتمدة: (${teacherSubjectList.join('، ')})` : 'You can only publish lessons for your assigned subjects.');
+        return;
+      }
+      if (availableGradesForRole.length > 0 && !availableGradesForRole.some(g => isGradeMatch(g.name, targetGradeVal))) {
+        alert(isAr ? `عذراً، يمكنك فقط نشر الدروس في الصفوف المسندة إليك.` : 'You can only publish to your assigned grades.');
+        return;
+      }
+      const allowedSecs = getSectionsForGrade(targetGradeVal);
+      if (allowedSecs.length > 0 && !allowedSecs.includes(targetSecVal)) {
+        alert(isAr ? `عذراً، الشعبة (${targetSecVal}) غير مسندة إليك في هذا الصف.` : 'This section is not assigned to you.');
+        return;
+      }
+    }
+
     addAgendaItem({
       date: selectedDate,
       grade: targetGradeVal,
@@ -509,6 +575,7 @@ export const AgendaModule = () => {
       activityType,
       examDuration: examDuration || null,
       totalScore: totalScore || null,
+      teacherName: currentUser?.name || activeTeacher?.name || 'أ. معلم المادة'
     });
 
     setTitle('');
@@ -518,7 +585,7 @@ export const AgendaModule = () => {
     setExamDuration('');
     setTotalScore('');
     setShowAddModal(false);
-    setToastMessage(isAr ? `✅ تم إرسال ونشر الدرس حصراً لـ (${targetGradeVal} - الشعبة ${targetSecVal}) بنجاح!` : 'Lesson published for target grade & section!');
+    setToastMessage(isAr ? `✅ تم إرسال ونشر درس (${subject}) حصراً لـ (${targetGradeVal} - الشعبة ${targetSecVal}) بنجاح!` : 'Lesson published for target grade & section!');
     setTimeout(() => setToastMessage(''), 3500);
   };
 
@@ -1056,6 +1123,21 @@ export const AgendaModule = () => {
               <span>تحديد الصف والشعبة إلزامي: نظراً لاختلاف المناهج والدروس بين الشُعب، يتم إرسال هذا الدرس حصراً لطلاب الشعبة والصف المحددين.</span>
             </div>
 
+            {/* Teacher assignment banner when currentRole is teacher */}
+            {currentRole === 'teacher' && (
+              <div className="bg-sky-50 border border-sky-200 p-2.5 rounded-2xl text-xs space-y-1">
+                <div className="flex items-center justify-between font-bold text-[#0284C7]">
+                  <span>👨‍🏫 صلاحيات المعلم: {activeTeacher?.name || currentUser?.name}</span>
+                  <span className="bg-white px-2 py-0.5 rounded-lg border border-sky-300 text-[10px]">محدد المادة والشعبة</span>
+                </div>
+                <div className="text-slate-600 text-[11px] flex flex-wrap gap-2">
+                  <span><strong>المواد المصرحة:</strong> {teacherSubjectList.length > 0 ? teacherSubjectList.join('، ') : 'كل المواد'}</span>
+                  <span>•</span>
+                  <span><strong>الصفوف الموكلة:</strong> {teacherAssignedList.length > 0 ? teacherAssignedList.join('، ') : 'كل الصفوف'}</span>
+                </div>
+              </div>
+            )}
+
             {/* Target Grade & Section Selector */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-2xl">
               <div className="space-y-1">
@@ -1096,7 +1178,7 @@ export const AgendaModule = () => {
                 }}
                 className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] cursor-pointer"
               >
-                {Object.keys(activityBank).map((subName) => (
+                {finalAvailableSubjects.map((subName) => (
                   <option key={subName} value={subName}>{subName}</option>
                 ))}
               </select>
@@ -1477,7 +1559,7 @@ export const AgendaModule = () => {
                   onChange={(e) => setEditClass(e.target.value)}
                   className="w-full bg-white dark:bg-zinc-800 border border-[#E2E8F0] dark:border-zinc-700 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] cursor-pointer"
                 >
-                  {allSections.map((secLetter) => (
+                  {getSectionsForGrade(editGrade).map((secLetter) => (
                     <option key={secLetter} value={secLetter}>{isAr ? `الشعبة (${secLetter})` : `Section ${secLetter}`}</option>
                   ))}
                 </select>
@@ -1518,7 +1600,7 @@ export const AgendaModule = () => {
                 onChange={(e) => setEditSubject(e.target.value)}
                 className="w-full bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-700 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs font-bold focus:outline-none"
               >
-                {Object.keys(activityBank).map((sub) => (
+                {finalAvailableSubjects.map((sub) => (
                   <option key={sub} value={sub} className="bg-white dark:bg-zinc-900 text-[#0F172A] dark:text-white">{sub}</option>
                 ))}
               </select>
