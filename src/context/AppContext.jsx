@@ -22,7 +22,8 @@ import {
   initialNotificationsList,
   initialStudyResources
 } from '../initialData';
-import { initialSchoolSettings, dbLoadCollection, dbSaveCollection, dbInitOnce } from '../services/dbService';
+import { initialSchoolSettings, dbLoadCollection, dbSaveCollection, dbInitOnce, syncFromCloud } from '../services/dbService';
+import { supabase } from '../services/supabaseClient';
 
 // Run one-time seed on very first app launch (never runs again after that)
 dbInitOnce({
@@ -609,36 +610,35 @@ export const AppProvider = ({ children }) => {
 
   const [isInitializingSync, setIsInitializingSync] = useState(true);
 
-  // 1. Load database from server on mount
+  // 1. Load database from Supabase Cloud on mount (with realtime subscription)
   useEffect(() => {
-    fetch('/api/db/load', {
-      headers: { 'x-sync-token': 'sp-secure-wifi-sync-token-2026' }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && Object.keys(data).length > 0) {
-          // Server has data -> use it and overwrite local
-          Object.entries(data).forEach(([key, val]) => {
-            localStorage.setItem(key, JSON.stringify(val));
-          });
-          if (data.school_subjects) setSubjects(data.school_subjects);
-          if (data.school_grades) setGrades(data.school_grades);
-          if (data.school_classrooms) setClassrooms(data.school_classrooms);
-          if (data.school_students) setStudents(data.school_students);
-          if (data.school_teachers) setTeachers(data.school_teachers);
-          if (data.school_staff) setStaffEmployees(data.school_staff);
-          if (data.school_exams) setExams(data.school_exams);
-          if (data.school_expenses) setExpenses(data.school_expenses);
-          if (data.school_buses) setBuses(data.school_buses);
-          if (data.school_messages) setMessages(data.school_messages);
-          if (data.school_agenda) setAgenda(data.school_agenda);
-          if (data.school_tutoring) setTutoringCourses(data.school_tutoring);
-          if (data.school_push_notifs) setPushNotifs(data.school_push_notifs);
-          if (data.school_system_users) setSystemUsers(data.school_system_users);
-          if (data.school_settings) setSiteSettings(data.school_settings);
+    let channel = null;
+
+    async function initCloudSync() {
+      try {
+        const cloudData = await syncFromCloud();
+        if (cloudData && Object.keys(cloudData).length > 0) {
+          if (cloudData.school_subjects) setSubjects(cloudData.school_subjects);
+          if (cloudData.school_grades) setGrades(cloudData.school_grades);
+          if (cloudData.school_classrooms) setClassrooms(cloudData.school_classrooms);
+          if (cloudData.school_students) setStudents(cloudData.school_students);
+          if (cloudData.school_teachers) setTeachers(cloudData.school_teachers);
+          if (cloudData.school_staff) setStaffEmployees(cloudData.school_staff);
+          if (cloudData.school_exams) setExams(cloudData.school_exams);
+          if (cloudData.school_expenses) setExpenses(cloudData.school_expenses);
+          if (cloudData.school_buses) setBuses(cloudData.school_buses);
+          if (cloudData.school_messages) setMessages(cloudData.school_messages);
+          if (cloudData.school_agenda) setAgenda(cloudData.school_agenda);
+          if (cloudData.school_tutoring) setTutoringCourses(cloudData.school_tutoring);
+          if (cloudData.school_push_notifs) setPushNotifs(cloudData.school_push_notifs);
+          if (cloudData.school_system_users) setSystemUsers(cloudData.school_system_users);
+          if (cloudData.school_settings) setSiteSettings(cloudData.school_settings);
+          if (cloudData.school_daily_marks) setDailyMarks(cloudData.school_daily_marks);
+          if (cloudData.school_attendance) setAttendance(cloudData.school_attendance);
+          if (cloudData.school_behavior) setBehaviorRecords(cloudData.school_behavior);
         } else {
-          // Server has NO data -> upload current local state to initialize server database!
-          const dbPayload = {
+          // Cloud empty -> initial upload of current state to seed cloud
+          const seedPayload = {
             school_subjects: subjects,
             school_grades: grades,
             school_classrooms: classrooms,
@@ -653,26 +653,65 @@ export const AppProvider = ({ children }) => {
             school_tutoring: tutoringCourses,
             school_push_notifs: pushNotifs,
             school_system_users: systemUsers,
-            school_settings: siteSettings
+            school_settings: siteSettings,
+            school_daily_marks: dailyMarks,
+            school_attendance: attendance,
+            school_behavior: behaviorRecords
           };
-          fetch('/api/db/save', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'x-sync-token': 'sp-secure-wifi-sync-token-2026'
-            },
-            body: JSON.stringify(dbPayload)
-          }).catch(err => console.error('Failed to initialize server database:', err));
+          Object.entries(seedPayload).forEach(([key, val]) => {
+            dbSaveCollection(key, val);
+          });
         }
+      } catch (err) {
+        console.error('[Cloud Sync] Init error:', err);
+      } finally {
         setIsInitializingSync(false);
-      })
-      .catch(err => {
-        console.error('Failed to load database from server:', err);
-        setIsInitializingSync(false);
-      });
+      }
+
+      // Realtime listener: receive updates from any other device instantly!
+      try {
+        channel = supabase
+          .channel('public:app_storage')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'app_storage' }, (payload) => {
+            const row = payload.new;
+            if (!row || !row.key) return;
+            const k = row.key;
+            const v = row.value;
+            localStorage.setItem(k, JSON.stringify(v));
+
+            if (k === 'school_students') setStudents(v);
+            else if (k === 'school_subjects') setSubjects(v);
+            else if (k === 'school_grades') setGrades(v);
+            else if (k === 'school_classrooms') setClassrooms(v);
+            else if (k === 'school_teachers') setTeachers(v);
+            else if (k === 'school_staff') setStaffEmployees(v);
+            else if (k === 'school_exams') setExams(v);
+            else if (k === 'school_expenses') setExpenses(v);
+            else if (k === 'school_buses') setBuses(v);
+            else if (k === 'school_messages') setMessages(v);
+            else if (k === 'school_agenda') setAgenda(v);
+            else if (k === 'school_tutoring') setTutoringCourses(v);
+            else if (k === 'school_push_notifs') setPushNotifs(v);
+            else if (k === 'school_system_users') setSystemUsers(v);
+            else if (k === 'school_settings') setSiteSettings(v);
+            else if (k === 'school_daily_marks') setDailyMarks(v);
+            else if (k === 'school_attendance') setAttendance(v);
+            else if (k === 'school_behavior') setBehaviorRecords(v);
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('[Realtime] Subscription error:', err);
+      }
+    }
+
+    initCloudSync();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
-  // 2. Save database to server & localStorage whenever any collection changes
+  // 2. Save database to Supabase & localStorage whenever any collection changes
   useEffect(() => {
     if (isInitializingSync) return;
 
@@ -691,23 +730,15 @@ export const AppProvider = ({ children }) => {
       school_tutoring: tutoringCourses,
       school_push_notifs: pushNotifs,
       school_system_users: systemUsers,
-      school_settings: siteSettings
+      school_settings: siteSettings,
+      school_daily_marks: dailyMarks,
+      school_attendance: attendance,
+      school_behavior: behaviorRecords
     };
 
-    // Save to localStorage
     Object.entries(dbPayload).forEach(([key, val]) => {
-      localStorage.setItem(key, JSON.stringify(val));
+      dbSaveCollection(key, val);
     });
-
-    // Save to dev server
-    fetch('/api/db/save', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-sync-token': 'sp-secure-wifi-sync-token-2026'
-      },
-      body: JSON.stringify(dbPayload)
-    }).catch(err => console.error('Failed to save database to server:', err));
   }, [
     isInitializingSync,
     subjects,
@@ -724,7 +755,10 @@ export const AppProvider = ({ children }) => {
     tutoringCourses,
     pushNotifs,
     systemUsers,
-    siteSettings
+    siteSettings,
+    dailyMarks,
+    attendance,
+    behaviorRecords
   ]);
 
   // Keep currentUser separate

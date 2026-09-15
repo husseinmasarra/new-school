@@ -66,27 +66,57 @@ export function dbInitOnce(seedData) {
   return true;
 }
 
+import { supabaseGet, supabaseSet, supabaseGetAll } from './supabaseClient';
+
 /**
- * Load a collection from localStorage.
- * If the key has never been set, return the fallback default value.
- * IMPORTANT: An empty array [] in localStorage is valid and respected.
+ * Load a collection from localStorage with cloud fallback.
  */
 export function dbLoadCollection(key, defaultValue) {
   const data = dbRead(key);
   if (data === null) {
-    // Key never existed → use default AND save it now
     dbWrite(key, defaultValue);
+    // Background sync initial seed to cloud
+    supabaseSet(key, defaultValue).catch(() => {});
     return defaultValue;
   }
-  // Key exists (even if empty array) → always respect the stored value
   return data;
 }
 
 /**
- * Save a collection immediately (synchronous + async backup via useEffect)
+ * Save a collection immediately to LocalStorage AND sync to Supabase Cloud
  */
 export function dbSaveCollection(key, value) {
+  // 1. Instant local write for 0ms UI lag
   dbWrite(key, value);
+
+  // 2. Cloud sync in background to Supabase
+  supabaseSet(key, value).catch(err => {
+    console.warn(`[Cloud Sync] Failed to sync ${key} to Supabase:`, err);
+  });
+}
+
+/**
+ * Sync all data from Supabase Cloud down to local browser
+ * Used when app opens or on mobile
+ */
+export async function syncFromCloud() {
+  try {
+    const cloudData = await supabaseGetAll();
+    if (!cloudData || Object.keys(cloudData).length === 0) {
+      return null;
+    }
+
+    Object.entries(cloudData).forEach(([k, v]) => {
+      if (v !== null && v !== undefined) {
+        dbWrite(k, v);
+      }
+    });
+
+    return cloudData;
+  } catch (err) {
+    console.warn('[Cloud Sync] Error downloading cloud data:', err);
+    return null;
+  }
 }
 
 /**
