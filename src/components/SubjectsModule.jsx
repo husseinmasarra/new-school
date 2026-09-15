@@ -12,7 +12,15 @@ import {
   Calendar,
   UserCheck,
   Send,
-  X
+  X,
+  GraduationCap,
+  Sparkles,
+  Users,
+  CheckCircle2,
+  Clock,
+  Filter,
+  Layers,
+  Search
 } from 'lucide-react';
 
 export const SubjectsModule = () => {
@@ -26,8 +34,11 @@ export const SubjectsModule = () => {
     deleteSubject,
     agenda = [],
     addAgendaItem,
+    deleteAgendaItem,
     students = [],
-    grades = []
+    grades = [],
+    selectedStudentId,
+    setSelectedStudentId
   } = useApp();
 
   const isAr = lang === 'ar';
@@ -35,31 +46,86 @@ export const SubjectsModule = () => {
   const safeStudents = students || [];
   const safeGrades = grades || [];
 
-  // Active student if student or parent logged in
-  const currentStudent = safeStudents.find(s => s.id === currentUser?.id || s.name === currentUser?.name) || safeStudents[0];
+  // Active student resolution
+  const activeStudent = safeStudents.find(s => 
+    s.id === selectedStudentId || 
+    s.id === currentUser?.id || 
+    s.id === currentUser?.studentId || 
+    s.name === currentUser?.name || 
+    s.username === currentUser?.username
+  ) || (currentUser?.role === 'student' ? currentUser : null) || safeStudents[0];
 
-  const normStr = (str) => (str || '')
+  // Helper section letter extraction: handles "الشعبة (أ)", "أ", "شعبة ب", etc.
+  const getSectionLetter = (str) => {
+    if (!str) return '';
+    const clean = String(str).replace(/[أإآ]/g, 'ا');
+    const m = clean.match(/[\(\s\-\_]([ابجدA-Z])[\)\s\-\_]?$/) || clean.match(/([ابجدA-Z])/g);
+    return m ? m[m.length - 1] : '';
+  };
+
+  // Grade normalization helper
+  const normGradeStr = (str) => (str || '')
+    .trim()
     .toLowerCase()
     .replace(/[أإآ]/g, 'ا')
+    .replace(/[ة]/g, 'ه')
+    .replace(/[ى]/g, 'ي')
     .replace('الابتدائي', '')
     .replace('المتوسط', '')
     .replace('الثانوي', '')
+    .replace('الصف', '')
     .replace('الشعبة', '')
-    .replace(/[\(\)\s]/g, '');
+    .replace(/[\(\)\-\_\s]/g, '');
 
   const isGradeMatch = (g1, g2) => {
     if (!g1 || !g2) return true;
-    const n1 = normStr(g1);
-    const n2 = normStr(g2);
-    return !n1 || !n2 || n1.includes(n2) || n2.includes(n1);
+    const n1 = normGradeStr(g1);
+    const n2 = normGradeStr(g2);
+    return !n1 || !n2 || n1 === n2 || n1.includes(n2) || n2.includes(n1);
   };
 
-  const isSecMatch = (s1, s2) => {
-    if (!s1 || !s2) return true;
-    const n1 = normStr(s1);
-    const n2 = normStr(s2);
-    return !n1 || !n2 || n1.includes(n2) || n2.includes(n1);
+  const isSecMatch = (lessonSec, studentSec) => {
+    if (!lessonSec || lessonSec === 'جميع الشُعب' || lessonSec === 'الكل' || lessonSec === 'all' || lessonSec === 'عام') {
+      return true;
+    }
+    if (!studentSec) return true;
+    const lLetter = getSectionLetter(lessonSec);
+    const sLetter = getSectionLetter(studentSec);
+    if (lLetter && sLetter) {
+      return lLetter === sLetter;
+    }
+    const n1 = normGradeStr(lessonSec);
+    const n2 = normGradeStr(studentSec);
+    return !n1 || !n2 || n1 === n2 || n1.includes(n2) || n2.includes(n1);
   };
+
+  const normSubject = (str) => (str || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/[ة]/g, 'ه')
+    .replace(/[ى]/g, 'ي')
+    .replace(/^ال/, '')
+    .replace(/[\s\-_]/g, '');
+
+  const isSubjectMatch = (s1, s2) => {
+    if (!s1 || !s2) return false;
+    const n1 = normSubject(s1);
+    const n2 = normSubject(s2);
+    return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+  };
+
+  // Compile full list of grades available
+  const allGradeNames = Array.from(new Set([
+    ...safeGrades.map(g => g.name),
+    ...safeStudents.map(s => s.grade).filter(Boolean),
+    'الصف الاول',
+    'الصف الثاني',
+    'الصف الثالث',
+    'الصف الرابع',
+    'الصف الخامس',
+    'الصف السادس'
+  ])).filter(Boolean);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState('');
@@ -72,19 +138,18 @@ export const SubjectsModule = () => {
   const [selectedSubjectForLessons, setSelectedSubjectForLessons] = useState(null);
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonContent, setNewLessonContent] = useState('');
-  const [newLessonGrade, setNewLessonGrade] = useState(safeGrades[0]?.name || 'الصف السادس الابتدائي');
-  const [newLessonSection, setNewLessonSection] = useState('أ');
+  const [newLessonGrade, setNewLessonGrade] = useState(allGradeNames[0] || 'الصف الأول');
+  const [newLessonSection, setNewLessonSection] = useState('جميع الشُعب');
+  const [newLessonType, setNewLessonType] = useState('lesson');
+  const [newLessonDate, setNewLessonDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newLessonTeacher, setNewLessonTeacher] = useState(currentUser?.name || 'أ. معلم المادة');
 
-  const presetColors = [
-    { hex: '#0284C7', label: isAr ? 'أزرق سماوي (Sky Blue)' : 'Sky Blue' },
-    { hex: '#10b981', label: isAr ? 'أخضر زمردي (Emerald)' : 'Emerald Green' },
-    { hex: '#a855f7', label: isAr ? 'بنفسجي (Purple)' : 'Purple' },
-    { hex: '#EF4444', label: isAr ? 'أحمر قرمزي (Vibrant Red)' : 'Vibrant Red' },
-    { hex: '#f97316', label: isAr ? 'برتقالي (Orange)' : 'Orange' },
-    { hex: '#06b6d4', label: isAr ? 'سماوي (Cyan)' : 'Cyan' },
-    { hex: '#f59e0b', label: isAr ? 'ذهبي (Mustard Gold)' : 'Mustard Gold' },
-    { hex: '#ec4899', label: isAr ? 'وردي (Pink)' : 'Pink' }
-  ];
+  // Filters for teachers/admins inside modal
+  const [modalGradeFilter, setModalGradeFilter] = useState('all');
+  const [modalSectionFilter, setModalSectionFilter] = useState('all');
+
+  const canManageLessons = currentRole === 'admin' || currentRole === 'vice_principal' || currentRole === 'teacher';
+  const isStudentOrParent = currentRole === 'student' || currentRole === 'parent';
 
   const handleSubjectImageUpload = (e) => {
     const file = e.target.files[0];
@@ -126,38 +191,36 @@ export const SubjectsModule = () => {
     e.preventDefault();
     if (!newLessonTitle || !selectedSubjectForLessons) return;
 
+    const sectionVal = newLessonSection === 'جميع الشُعب' ? 'جميع الشُعب' : (getSectionLetter(newLessonSection) || newLessonSection);
+
     addAgendaItem({
       title: newLessonTitle,
       subject: selectedSubjectForLessons.name,
       grade: newLessonGrade,
-      classRoom: newLessonSection,
-      date: new Date().toISOString().split('T')[0],
-      homework: newLessonContent || 'شرح المادة وحل الأنشطة.',
-      activityType: 'lesson',
-      teacherName: currentUser?.name || 'أ. معلم المادة'
+      classRoom: sectionVal,
+      date: newLessonDate || new Date().toISOString().split('T')[0],
+      homework: newLessonContent || 'شرح المادة ومتابعة التمارين.',
+      activityType: newLessonType || 'lesson',
+      teacherName: newLessonTeacher || currentUser?.name || 'أ. معلم المادة'
     });
 
     setNewLessonTitle('');
     setNewLessonContent('');
-    alert(isAr ? 'تم إرسال الدرس بنجاح لصف وشعبة الطلاب! 🟢' : 'Lesson posted successfully!');
+    alert(isAr 
+      ? `تم بنجاح نشر الدرس لـ (${newLessonGrade} - ${newLessonSection})! 🟢` 
+      : 'Lesson published successfully for target grade and section!');
   };
 
-  const isStudentOrParent = currentRole === 'student' || currentRole === 'parent';
-
-  // Filter subjects: if student/parent, only show subjects that have lessons for student's grade/section
+  // Filter subjects: if student/parent, only show subjects that have lessons for student's specific grade and section
   const displayedSubjects = safeSubjects.filter((sub) => {
-    const subjectLessons = agenda.filter(a => {
-      const matchesSubject = a.subject === sub.name || (a.subject && a.subject.includes(sub.name));
-      if (isStudentOrParent) {
-        const matchesGrade = isGradeMatch(a.grade, currentStudent?.grade);
-        const matchesSection = isSecMatch(a.classRoom, currentStudent?.classRoom || currentStudent?.classroom);
-        return matchesSubject && matchesGrade && matchesSection;
-      }
-      return matchesSubject;
-    });
-
     if (isStudentOrParent) {
-      return subjectLessons.length > 0;
+      const studentLessons = agenda.filter(a => {
+        const matchesSubject = isSubjectMatch(a.subject, sub.name);
+        const matchesGrade = isGradeMatch(a.grade, activeStudent?.grade);
+        const matchesSection = isSecMatch(a.classRoom, activeStudent?.classRoom || activeStudent?.classroom);
+        return matchesSubject && matchesGrade && matchesSection;
+      });
+      return studentLessons.length > 0;
     }
     return true;
   });
@@ -165,7 +228,7 @@ export const SubjectsModule = () => {
   return (
     <div className="space-y-6 animate-fade-in text-[#0F172A]">
       
-      {/* Banner */}
+      {/* Top Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm text-[#0F172A]">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
@@ -175,34 +238,87 @@ export const SubjectsModule = () => {
             <h2 className="text-xl font-bold text-[#0284C7]">{t('navSubjects')}</h2>
             <p className="text-xs text-slate-500 mt-1">
               {isStudentOrParent
-                ? (isAr ? 'المواد الدراسية النشطة التي تتوفر بها دروس وواجبات لصفك الدراسي.' : 'Enrolled subjects with active lessons.')
-                : (isAr ? 'انقر على كرت أي مادة لمشاهدة وإرسال الدروس والواجبات المخصصة لكل صف وشعبة.' : 'Click any subject card to view and send grade/section specific lessons.')}
+                ? (isAr ? 'المواد الدراسية التي تحتوي على دروس وشروحات مخصصة لصفك وشعبتك.' : 'Enrolled subjects with active lessons for your class.')
+                : (isAr ? 'انقر على كرت أي مادة لإضافة واستعراض الدروس المخصصة لكل صف وشعبة.' : 'Click any subject card to post and manage grade/section lessons.')}
             </p>
           </div>
         </div>
 
-        {currentRole === 'admin' && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn-mustard flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{isAr ? "إضافة مادة جديدة +" : "Add New Subject +"}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Parent Student Switcher in Top Banner */}
+          {currentRole === 'parent' && safeStudents.length > 1 && (
+            <div className="flex items-center gap-2 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-2xl">
+              <Users className="w-4 h-4 text-[#0284C7]" />
+              <span className="text-xs font-bold text-slate-700">{isAr ? 'الأبناء:' : 'Child:'}</span>
+              <select
+                value={activeStudent?.id}
+                onChange={(e) => {
+                  if (setSelectedStudentId) setSelectedStudentId(e.target.value);
+                }}
+                className="bg-white border border-sky-300 text-sky-900 rounded-xl px-2.5 py-1 text-xs font-bold cursor-pointer outline-none"
+              >
+                {safeStudents.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.grade} - شعبة {s.classRoom || 'أ'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {currentRole === 'admin' && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn-mustard flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isAr ? "إضافة مادة جديدة +" : "Add New Subject +"}</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Student/Parent Identification Badge */}
+      {isStudentOrParent && (
+        <div className="bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#0284C7] text-white flex items-center justify-center font-bold shadow">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-600">{isAr ? 'عزيزي التلميذ(ة):' : 'Student:'}</span>
+                <span className="text-sm font-black text-[#0284C7]">{activeStudent?.name}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[11px] font-bold bg-white text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                  {isAr ? `الصف: ${activeStudent?.grade || 'غير محدد'}` : `Grade: ${activeStudent?.grade}`}
+                </span>
+                <span className="text-[11px] font-bold bg-white text-[#0284C7] px-2.5 py-0.5 rounded-lg border border-sky-200">
+                  {isAr ? `الشعبة: ${activeStudent?.classRoom ? `(${activeStudent.classRoom})` : '(أ)'}` : `Section: ${activeStudent?.classRoom || 'A'}`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <span className="text-xs text-sky-700 font-semibold bg-white/80 px-3 py-1.5 rounded-xl border border-sky-100 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>{isAr ? 'تظهر لك فقط المواد التي نشرت لها دروس تناسب صفك وشعبتك' : 'Only subjects with lessons for your class are displayed'}</span>
+          </span>
+        </div>
+      )}
 
       {/* Empty State for Student */}
       {displayedSubjects.length === 0 && (
         <div className="bg-white border border-[#E2E8F0] rounded-3xl p-12 text-center text-slate-500 shadow-sm">
           <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-700">
-            {isAr ? 'لا توجد مواد متاح بها دروس حالياً' : 'No subjects with lessons available yet'}
+            {isAr ? 'لا توجد مواد متاح بها دروس لصفك حالياً' : 'No subjects with lessons available yet'}
           </h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
             {isAr 
-              ? 'تظهر المواد الدراسية للتلميذ تلقائياً فور قيام المعلم بنشر دروس أو واجبات خاصة بصفك وشعبتك.'
-              : 'Subjects will automatically appear here once teachers upload lessons for your class.'}
+              ? `لم يقم المعلمون بعد بنشر دروس أو واجبات لـ (${activeStudent?.grade || 'صفك'} - الشعبة ${activeStudent?.classRoom || 'أ'}). ستظهر المواد تلقائياً فور رفع الدروس.`
+              : 'Subjects will automatically appear here once teachers upload lessons matching your grade and section.'}
           </p>
         </div>
       )}
@@ -211,12 +327,13 @@ export const SubjectsModule = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayedSubjects.map((sub) => {
           const cardBg = sub.color || '#0284C7';
+          
           // Filter subject lessons for this subject
           const subjectLessons = agenda.filter(a => {
-            const matchesSubject = a.subject === sub.name || (a.subject && a.subject.includes(sub.name));
+            const matchesSubject = isSubjectMatch(a.subject, sub.name);
             if (isStudentOrParent) {
-              const matchesGrade = isGradeMatch(a.grade, currentStudent?.grade);
-              const matchesSection = isSecMatch(a.classRoom, currentStudent?.classRoom || currentStudent?.classroom);
+              const matchesGrade = isGradeMatch(a.grade, activeStudent?.grade);
+              const matchesSection = isSecMatch(a.classRoom, activeStudent?.classRoom || activeStudent?.classroom);
               return matchesSubject && matchesGrade && matchesSection;
             }
             return matchesSubject;
@@ -226,10 +343,10 @@ export const SubjectsModule = () => {
             <div
               key={sub.id}
               onClick={() => setSelectedSubjectForLessons(sub)}
-              className="interactive-card rounded-3xl p-6 shadow-xl relative overflow-hidden text-white transition-all transform hover:scale-[1.02] flex flex-col justify-between min-h-[180px] cursor-pointer group"
+              className="interactive-card rounded-3xl p-6 shadow-xl relative overflow-hidden text-white transition-all transform hover:scale-[1.02] flex flex-col justify-between min-h-[190px] cursor-pointer group"
               style={{
                 backgroundColor: cardBg,
-                backgroundImage: `linear-gradient(135deg, ${cardBg} 0%, rgba(0, 0, 0, 0.35) 100%)`
+                backgroundImage: `linear-gradient(135deg, ${cardBg} 0%, rgba(0, 0, 0, 0.4) 100%)`
               }}
             >
               {/* Header with Photo Image & Title */}
@@ -291,6 +408,8 @@ export const SubjectsModule = () => {
       {selectedSubjectForLessons && createPortal(
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <div className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-2xl w-full space-y-5 shadow-2xl animate-scale-up text-[#0F172A] relative max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-3">
                 <div 
@@ -304,7 +423,9 @@ export const SubjectsModule = () => {
                     {isAr ? `دروس مادة: ${selectedSubjectForLessons.name}` : `Lessons: ${selectedSubjectForLessons.nameEn}`}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {isAr ? 'عرض الدروس المخصصة حسب الصف والشعبة' : 'Subject specific lessons per grade and section'}
+                    {isStudentOrParent 
+                      ? (isAr ? 'استعراض الدروس الخاصة بصفك وشعبتك بالتحديد' : 'Lessons tailored specifically to your class and section')
+                      : (isAr ? 'إضافة واستعراض الدروس المخصصة حسب الصف والشعبة' : 'Post and manage lessons by grade and section')}
                   </p>
                 </div>
               </div>
@@ -318,101 +439,310 @@ export const SubjectsModule = () => {
               </button>
             </div>
 
-            {/* Teacher / Admin Add Lesson Form */}
-            {(currentRole === 'admin' || currentRole === 'teacher') && (
-              <form onSubmit={handlePostSubjectLesson} className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-2xl space-y-3">
-                <h4 className="text-xs font-bold text-[#0284C7] flex items-center gap-1.5">
-                  <Send className="w-4 h-4 text-[#0284C7]" />
-                  <span>{isAr ? 'إضافة إرسال درس جديد لهذه المادة:' : 'Post new lesson for this subject:'}</span>
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    required
-                    value={newLessonTitle}
-                    onChange={(e) => setNewLessonTitle(e.target.value)}
-                    placeholder={isAr ? 'عنوان الدرس الشامل...' : 'Lesson title...'}
-                    className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
-                  />
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={newLessonGrade}
-                      onChange={(e) => setNewLessonGrade(e.target.value)}
-                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold"
-                    >
-                      {safeGrades.map(g => (
-                        <option key={g.id} value={g.name}>{g.name}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={newLessonSection}
-                      onChange={(e) => setNewLessonSection(e.target.value)}
-                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold"
-                    >
-                      <option value="أ">الشعبة أ</option>
-                      <option value="ب">الشعبة ب</option>
-                      <option value="ج">الشعبة ج</option>
-                    </select>
+            {/* Student & Parent Context Banner inside modal */}
+            {isStudentOrParent && (
+              <div className="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 bg-[#0284C7] text-white rounded-xl shadow-sm">
+                    <GraduationCap className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <span className="font-bold text-slate-800">
+                      {isAr ? 'التلميذ(ة):' : 'Student:'}{' '}
+                      <span className="text-[#0284C7] font-black">{activeStudent?.name}</span>
+                    </span>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                      <span className="bg-white px-2 py-0.5 rounded border border-slate-200 font-bold">
+                        {isAr ? `الصف: ${activeStudent?.grade || 'غير محدد'}` : `Grade: ${activeStudent?.grade}`}
+                      </span>
+                      <span className="bg-white px-2 py-0.5 rounded border border-slate-200 font-bold text-[#0284C7]">
+                        {isAr ? `الشعبة: ${activeStudent?.classRoom ? `(${activeStudent.classRoom})` : '(أ)'}` : `Section: ${activeStudent?.classRoom || 'A'}`}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <textarea
-                  rows="2"
-                  value={newLessonContent}
-                  onChange={(e) => setNewLessonContent(e.target.value)}
-                  placeholder={isAr ? 'تفاصيل الدرس والواجبات المطلوبة...' : 'Lesson details and homework...'}
-                  className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
-                />
+                {currentRole === 'parent' && safeStudents.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-600">{isAr ? 'تبديل التلميذ:' : 'Switch:'}</span>
+                    <select
+                      value={activeStudent?.id}
+                      onChange={(e) => {
+                        if (setSelectedStudentId) setSelectedStudentId(e.target.value);
+                      }}
+                      className="bg-white border border-slate-300 text-slate-800 rounded-xl px-2.5 py-1 text-xs font-bold shadow-sm outline-none"
+                    >
+                      {safeStudents.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.grade})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
 
-                <button
-                  type="submit"
-                  className="btn-mustard px-4 py-2 rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>{isAr ? 'إرسال الدرس للطلاب 🚀' : 'Post Lesson 🚀'}</span>
-                </button>
+            {/* Teacher / Admin / Vice Principal Add Lesson Form */}
+            {canManageLessons && (
+              <form onSubmit={handlePostSubjectLesson} className="bg-[#F8FAFC] border-2 border-dashed border-[#0284C7]/40 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h4 className="text-xs font-black text-[#0284C7] flex items-center gap-1.5">
+                    <Send className="w-4 h-4 text-[#0284C7]" />
+                    <span>{isAr ? `إضافة درس جديد لمادة (${selectedSubjectForLessons.name}):` : `Add new lesson for ${selectedSubjectForLessons.name}:`}</span>
+                  </h4>
+                  <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-lg">
+                    {isAr ? 'حسب الصف والشعبة' : 'Targeted by Class'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                      {isAr ? 'عنوان الدرس الشامل' : 'Lesson Title'} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newLessonTitle}
+                      onChange={(e) => setNewLessonTitle(e.target.value)}
+                      placeholder={isAr ? 'مثال: جمع الكسور العشرية...' : 'e.g. Fractions addition...'}
+                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        {isAr ? 'الصف الدراسي' : 'Grade'}
+                      </label>
+                      <select
+                        value={newLessonGrade}
+                        onChange={(e) => setNewLessonGrade(e.target.value)}
+                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold"
+                      >
+                        {allGradeNames.map((gName, idx) => (
+                          <option key={idx} value={gName}>{gName}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        {isAr ? 'الشعبة' : 'Section'}
+                      </label>
+                      <select
+                        value={newLessonSection}
+                        onChange={(e) => setNewLessonSection(e.target.value)}
+                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold"
+                      >
+                        <option value="جميع الشُعب">جميع الشُعب (عام)</option>
+                        <option value="أ">الشعبة (أ)</option>
+                        <option value="ب">الشعبة (ب)</option>
+                        <option value="ج">الشعبة (ج)</option>
+                        <option value="د">الشعبة (د)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                      {isAr ? 'نوع النشاط' : 'Activity Type'}
+                    </label>
+                    <select
+                      value={newLessonType}
+                      onChange={(e) => setNewLessonType(e.target.value)}
+                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-bold"
+                    >
+                      <option value="lesson">{isAr ? 'درس وشرح كتابي 📖' : 'Lesson & Explanation'}</option>
+                      <option value="homework">{isAr ? 'واجب منزلي ✍️' : 'Homework Task'}</option>
+                      <option value="exam">{isAr ? 'اختبار ومراجعة 📝' : 'Review & Exam'}</option>
+                      <option value="competition">{isAr ? 'مسابقة وتحدي 🏆' : 'Challenge & Quiz'}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                      {isAr ? 'تاريخ النشر' : 'Date'}
+                    </label>
+                    <input
+                      type="date"
+                      value={newLessonDate}
+                      onChange={(e) => setNewLessonDate(e.target.value)}
+                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                      {isAr ? 'اسم الأستاذ / المرسل' : 'Teacher Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={newLessonTeacher}
+                      onChange={(e) => setNewLessonTeacher(e.target.value)}
+                      placeholder="اسم المعلم..."
+                      className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                    {isAr ? 'تفاصيل الدرس والأنشطة والواجبات المطلوبة' : 'Lesson details and homework instructions'}
+                  </label>
+                  <textarea
+                    rows="3"
+                    value={newLessonContent}
+                    onChange={(e) => setNewLessonContent(e.target.value)}
+                    placeholder={isAr ? 'اكتب الشرح وأرقام الصفحات والأنشطة المطلوب إنجازها...' : 'Write lesson notes and homework exercises...'}
+                    className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{isAr ? 'نشر الدرس وإرساله للطلاب 🚀' : 'Publish Lesson to Students 🚀'}</span>
+                  </button>
+                </div>
               </form>
+            )}
+
+            {/* Filter Bar for Teachers/Admins */}
+            {canManageLessons && (
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8FAFC] p-3 rounded-2xl border border-slate-200 text-xs">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-slate-500" />
+                  <span className="font-bold text-slate-700">{isAr ? 'فلترة الدروس:' : 'Filter Lessons:'}</span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={modalGradeFilter}
+                    onChange={(e) => setModalGradeFilter(e.target.value)}
+                    className="bg-white border border-slate-200 text-slate-700 rounded-xl px-2.5 py-1 font-bold text-xs"
+                  >
+                    <option value="all">{isAr ? 'جميع الصفوف' : 'All Grades'}</option>
+                    {allGradeNames.map((g, idx) => (
+                      <option key={idx} value={g}>{g}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={modalSectionFilter}
+                    onChange={(e) => setModalSectionFilter(e.target.value)}
+                    className="bg-white border border-slate-200 text-slate-700 rounded-xl px-2.5 py-1 font-bold text-xs"
+                  >
+                    <option value="all">{isAr ? 'جميع الشُعب' : 'All Sections'}</option>
+                    <option value="أ">الشعبة (أ)</option>
+                    <option value="ب">الشعبة (ب)</option>
+                    <option value="ج">الشعبة (ج)</option>
+                    <option value="د">الشعبة (د)</option>
+                  </select>
+                </div>
+              </div>
             )}
 
             {/* List of Lessons */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-700">قائمة الدروس المرفوعة لهذه المادة:</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-700 flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-[#0284C7]" />
+                  <span>
+                    {isStudentOrParent
+                      ? (isAr ? 'قائمة الدروس المخصصة لصفك وشعبتك:' : 'Lessons for your class and section:')
+                      : (isAr ? 'قائمة الدروس المرفوعة لهذه المادة:' : 'Lessons posted for this subject:')}
+                  </span>
+                </h4>
+              </div>
+
               {(() => {
                 const subjectLessons = agenda.filter(a => {
-                  const matchesSubject = a.subject === selectedSubjectForLessons.name || (a.subject && a.subject.includes(selectedSubjectForLessons.name));
-                  if (currentRole === 'student' || currentRole === 'parent') {
-                    const matchesGrade = isGradeMatch(a.grade, currentStudent?.grade);
-                    const matchesSection = isSecMatch(a.classRoom, currentStudent?.classRoom || currentStudent?.classroom);
+                  const matchesSubject = isSubjectMatch(a.subject, selectedSubjectForLessons.name);
+                  
+                  if (isStudentOrParent) {
+                    const matchesGrade = isGradeMatch(a.grade, activeStudent?.grade);
+                    const matchesSection = isSecMatch(a.classRoom, activeStudent?.classRoom || activeStudent?.classroom);
                     return matchesSubject && matchesGrade && matchesSection;
                   }
-                  return matchesSubject;
+
+                  // Teacher/Admin filters
+                  const matchesGrade = modalGradeFilter === 'all' || isGradeMatch(a.grade, modalGradeFilter);
+                  const matchesSection = modalSectionFilter === 'all' || isSecMatch(a.classRoom, modalSectionFilter);
+
+                  return matchesSubject && matchesGrade && matchesSection;
                 });
 
                 if (subjectLessons.length === 0) {
                   return (
-                    <div className="p-8 text-center bg-[#F8FAFC] rounded-2xl border border-slate-200 text-slate-400 font-bold text-xs space-y-1">
-                      <BookOpen className="w-8 h-8 mx-auto opacity-30 text-[#0284C7]" />
-                      <p>لا توجد دروس مرفوعة حالياً لهذه المادة بهذا الصف والشعبة.</p>
+                    <div className="p-8 text-center bg-[#F8FAFC] rounded-2xl border border-slate-200 text-slate-400 font-bold text-xs space-y-2">
+                      <BookOpen className="w-10 h-10 mx-auto opacity-30 text-[#0284C7]" />
+                      <p className="text-slate-600 font-extrabold text-sm">
+                        {isStudentOrParent 
+                          ? (isAr ? `لا توجد دروس أو واجبات لـ (${activeStudent?.grade || 'صفك'} - الشعبة ${activeStudent?.classRoom || 'أ'}) حالياً.` : 'No lessons for your grade and section.')
+                          : (isAr ? 'لا توجد دروس مرفوعة تطابق الفلترة المحددة.' : 'No lessons matching selected filters.')}
+                      </p>
+                      <p className="text-xs text-slate-400 font-medium">
+                        {isStudentOrParent 
+                          ? (isAr ? 'سيتم إشعارك فور قيام الأستاذ برفع دروس جديدة.' : 'You will be notified once new lessons are posted.')
+                          : (isAr ? 'استخدم النموذج أعلاه لإضافة ونشر درس جديد.' : 'Use form above to post a new lesson.')}
+                      </p>
                     </div>
                   );
                 }
 
                 return subjectLessons.map((item) => (
-                  <div key={item.id} className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-2xl space-y-2 text-xs">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <h5 className="font-extrabold text-[#0284C7] text-sm">{item.title}</h5>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">
-                        {item.grade} ({item.classRoom || 'أ'})
-                      </span>
+                  <div key={item.id} className="bg-[#F8FAFC] hover:bg-slate-50/80 border border-[#E2E8F0] p-4 rounded-2xl space-y-2 text-xs transition-all shadow-sm">
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-2.5">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h5 className="font-black text-[#0284C7] text-sm">{item.title}</h5>
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            {item.activityType === 'homework' ? '✍️ واجب منزلي' : item.activityType === 'exam' ? '📝 اختبار' : item.activityType === 'competition' ? '🏆 مسابقة' : '📖 شرح درس'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold mt-1">
+                          <span className="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md">
+                            {item.grade || 'صف عام'}
+                          </span>
+                          <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">
+                            {isAr ? `الشعبة: ${item.classRoom ? (item.classRoom === 'جميع الشُعب' ? 'جميع الشُعب' : `(${item.classRoom})`) : '(أ)'}` : `Section: ${item.classRoom || 'A'}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {canManageLessons && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(isAr ? `هل أنت متأكد من حذف هذا الدرس (${item.title})؟` : `Delete lesson (${item.title})?`)) {
+                              deleteAgendaItem(item.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title={isAr ? 'حذف الدرس' : 'Delete Lesson'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
-                    <p className="text-slate-700 leading-relaxed font-medium">{item.homework || item.description}</p>
+                    <p className="text-slate-700 leading-relaxed font-semibold bg-white p-3 rounded-xl border border-slate-100">
+                      {item.homework || item.description || (isAr ? 'شرح الدرس ومتابعة التطبيقات.' : 'Lesson explanation.')}
+                    </p>
 
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1">
-                      <span>المرسل: {item.teacherName || 'أ. معلم المادة'}</span>
-                      <span>التاريخ: {item.date || new Date().toISOString().split('T')[0]}</span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-1">
+                      <span className="flex items-center gap-1 font-bold text-slate-500">
+                        <UserCheck className="w-3.5 h-3.5 text-[#0284C7]" />
+                        <span>{isAr ? `المرسل: ${item.teacherName || 'أ. معلم المادة'}` : `Teacher: ${item.teacherName}`}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{item.date || new Date().toISOString().split('T')[0]}</span>
+                      </span>
                     </div>
                   </div>
                 ));

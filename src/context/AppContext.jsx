@@ -1257,7 +1257,7 @@ export const AppProvider = ({ children }) => {
   const deleteAgendaItem = (itemId) => {
     setAgenda((prev) => {
       const updated = prev.filter((a) => a.id !== itemId);
-      localStorage.setItem('school_agenda', JSON.stringify(updated));
+      dbSaveCollection('school_agenda', updated);
       return updated;
     });
   };
