@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المرجع الأكاديمي والتعليمي - مدرسة الدعم التعليمي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.321.0/dist/umd/lucide.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+        body {
+            background-color: #0F172A;
+            color: #E2E8F0;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 280px;
+            background: #1E293B;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 30px 20px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            overflow-y: auto;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 900;
+            color: #38BDF8;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94A3B8;
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .nav-item a:hover, .nav-item.active a {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38BDF8;
+        }
+        .main-content {
+            margin-right: 280px;
+            flex: 1;
+            padding: 50px 80px;
+            max-width: 1000px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .header-title h1 {
+            font-size: 32px;
+            font-weight: 900;
+            color: white;
+            background: linear-gradient(135deg, #FFFFFF, #94A3B8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .print-btn {
+            background: #0284C7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+            transition: all 0.3s ease;
+        }
+        .print-btn:hover {
+            background: #0ea5e9;
+            transform: translateY(-2px);
+        }
+        .section-card {
+            background: #1E293B;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
+        }
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .role-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            transition: transform 0.3s ease;
+        }
+        .role-card:hover {
+            transform: translateY(-5px);
+            border-color: #38BDF8;
+        }
+        .role-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .role-icon {
+            color: #38BDF8;
+        }
+        .role-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+        .role-list {
+            list-style: none;
+            padding-right: 15px;
+        }
+        .role-list li {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #94A3B8;
+            position: relative;
+        }
+        .role-list li::before {
+            content: "•";
+            color: #38BDF8;
+            position: absolute;
+            right: -15px;
+            font-weight: bold;
+        }
+        .tab-detail {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 12px;
+            border-right: 4px solid #38BDF8;
+        }
+        .tab-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .tab-desc {
+            font-size: 15px;
+            color: #94A3B8;
+            line-height: 1.6;
+        }
+        .alert-box {
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        .alert-icon {
+            color: #38BDF8;
+            flex-shrink: 0;
+        }
+        .alert-text {
+            font-size: 15px;
+            color: #CBD5E1;
+            line-height: 1.6;
+        }
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: relative;
+                border-left: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .main-content {
+                margin-right: 0;
+                padding: 30px 20px;
+            }
+        }
+        @media print {
+            .sidebar, .print-btn {
+                display: none !important;
+            }
+            body {
+                background-color: white;
+                color: black;
+            }
+            .main-content {
+                margin-right: 0;
+                padding: 0;
+            }
+            .section-card {
+                background: white;
+                color: black;
+                box-shadow: none;
+                border: none;
+                page-break-inside: avoid;
+            }
+            .section-title, .role-name, .tab-name {
+                color: black !important;
+            }
+            .role-card {
+                background: white;
+                color: black;
+                border: 1px solid #ccc;
+            }
+            .tab-detail {
+                border-right-color: #0284C7;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="brand">
+            <i data-lucide="book-open"></i>
+            <span>المرجع التعليمي</span>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item active"><a href="#section-roles"><i data-lucide="users"></i> الأدوار والصلاحيات</a></li>
+            <li class="nav-item"><a href="#section-tabs"><i data-lucide="layout"></i> دليل التبويبات</a></li>
+            <li class="nav-item"><a href="#section-mobile"><i data-lucide="smartphone"></i> تطبيق الهاتف</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <div class="header-title">
+                <h1>دليل وتشغيل المنصة التعليمية</h1>
+            </div>
+            <button class="print-btn" onclick="window.print()">
+                <i data-lucide="printer"></i>
+                <span>طباعة الدليل</span>
+            </button>
+        </div>
+
+        <!-- Section 1: Roles and Permissions -->
+        <div class="section-card" id="section-roles">
+            <h2 class="section-title"><i data-lucide="shield-check"></i> 1. الهيكل الأساسي للأدوار والصلاحيات</h2>
+            <div class="role-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <i data-lucide="award" class="role-icon"></i>
+                        <span class="role-name">👑 المدير (Admin)</span>
+                    </div>
+                    <ul class="role-list">
+                        <li>تغيير إعدادات المنظومة العامة والشعار.</li>
+                        <li>إضافة وتعديل حسابات المعلمين والطلاب وتخصيص الفصول.</li>
+                        <li>التحكم بجدول أوقات الفطور واستراحة الفسحة.</li>
+                        <li>إدارة وحذف سجلات الأرشيف المالي والأجندة.</li>
+                    </ul>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <i data-lucide="users-2" class="role-icon"></i>
+                        <span class="role-name">👩‍🏫 المعلم (Teacher)</span>
+                    </div>
+                    <ul class="role-list">
+                        <li>رصد الحضور والغياب اليومي للطلاب.</li>
+                        <li>إدخال علامات ودرجات الطلاب بالمشاريع والاختبارات.</li>
+                        <li>تسجيل الملاحظات السلوكية والانضباطية.</li>
+                        <li>مشاركة الواجبات والمرفقات الدراسية عبر المكتبة.</li>
+                    </ul>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <i data-lucide="baby" class="role-icon"></i>
+                        <span class="role-name">👶 الطالب وولي الأمر</span>
+                    </div>
+                    <ul class="role-list">
+                        <li>متابعة الأجندة والواجبات المنزلية اليومية.</li>
+                        <li>تنزيل المناهج والمرفقات التعليمية مباشرة.</li>
+                        <li>متابعة تقارير الحضور وكشف العلامات.</li>
+                        <li>استعراض الأقساط وطباعة إيصال الدفع النظيف.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Tabs Guide -->
+        <div class="section-card" id="section-tabs">
+            <h2 class="section-title"><i data-lucide="layers"></i> 2. دليل التبويبات والصفحات التفصيلي</h2>
+            
+            <div class="tab-detail">
+                <div class="tab-name">📊 لوحة التحكم (Dashboard)</div>
+                <div class="tab-desc">توفر رؤية شاملة للمدير عن أعداد الطلاب والمعلمين، ونسب الحضور والغياب اليومي عبر رسوم بيانية ممتازة، بالإضافة إلى لوحة شرف تفاعلية لعرض أسماء المتفوقين دراسياً وسلوكياً.</div>
+            </div>
+
+            <div class="tab-detail">
+                <div class="tab-name">📅 الأجندة والواجبات (Agenda)</div>
+                <div class="tab-desc">تم إعداد الجدول ليناسب أيام العمل الفعلية للمدرسة حيث تم إزالة يوم الجمعة نهائياً. تتيح للمدرسين جدولة الواجبات والاختبارات للطلاب، وعند الحذف يتم إزالتها نهائياً دون استعادة تلقائية.</div>
+            </div>
+
+            <div class="tab-detail">
+                <div class="tab-name">📝 رصد العلامات (Grades & Scores)</div>
+                <div class="tab-desc">تمنع المنظومة إظهار أي مواد أو طلاب وهميين، وتقوم بعرض العلامات بترميز لوني ذكي (الأخضر للعلامات المرتفعة، الأصفر للمتوسطة، والأحمر للتنبيهية).</div>
+            </div>
+
+            <div class="tab-detail">
+                <div class="tab-name">💸 الأقساط والمدفوعات (Tuition Fees)</div>
+                <div class="tab-desc">تتيح للمدير تسجيل وتعديل الدفعات المالية وطباعة إيصالات دفع نظيفة ومحسنة، مع حظر عرض هذه الصلاحية المالية لحسابات الطلاب حفاظاً على الخصوصية وحصرها لأولياء الأمور فقط.</div>
+            </div>
+        </div>
+
+        <!-- Section 3: Mobile App -->
+        <div class="section-card" id="section-mobile">
+            <h2 class="section-title"><i data-lucide="smartphone"></i> 3. تطبيق الهاتف المحمول (APK)</h2>
+            <div class="alert-box">
+                <i data-lucide="info" class="alert-icon"></i>
+                <div class="alert-text">
+                    التطبيق مهيأ بالكامل ليعمل كـ WebView مرآة للموقع الإلكتروني، وتمت إضافة ملحق MIME خاص بالـ APK لضمان تنزيل الملف بامتداد ".apk" مباشرة بدون إعادة تسمية لملف مضغوط (".zip") من متصفحات الهواتف المحمولة.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

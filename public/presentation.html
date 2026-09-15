@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عرض تقديمي - مدرسة الدعم التعليمي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.321.0/dist/umd/lucide.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+        body {
+            background-color: #0B132B;
+            color: #FFFFFF;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .presentation-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px;
+        }
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            height: 80vh;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 40px;
+            align-items: center;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+        .slide.active {
+            display: grid;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+        .slide-tag {
+            background: linear-gradient(135deg, #0284C7, #0EA5E9);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-size: 14px;
+            font-weight: 700;
+            width: fit-content;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        .slide-title {
+            font-size: 38px;
+            font-weight: 900;
+            line-height: 1.3;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #FFFFFF, #E2E8F0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .slide-desc {
+            font-size: 18px;
+            color: #94A3B8;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+        .feature-list {
+            list-style: none;
+            display: grid;
+            gap: 15px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            color: #CBD5E1;
+        }
+        .feature-icon {
+            color: #38BDF8;
+            flex-shrink: 0;
+        }
+        .slide-visual {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .slide-visual img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+            transition: transform 0.5s ease;
+        }
+        .slide-visual img:hover {
+            transform: scale(1.03);
+        }
+        /* Navigation & Controls */
+        .controls {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background: rgba(11, 19, 43, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-btn:hover {
+            background: #0284C7;
+            border-color: #0284C7;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);
+        }
+        .progress-container {
+            display: flex;
+            gap: 8px;
+        }
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .progress-dot.active {
+            background: #38BDF8;
+            width: 32px;
+            border-radius: 99px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        .brand {
+            font-weight: 900;
+            font-size: 20px;
+            color: #38BDF8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        /* Mobile adjustments */
+        @media (max-width: 900px) {
+            .slide {
+                grid-template-columns: 1fr;
+                height: 85vh;
+                padding: 20px;
+                gap: 20px;
+                overflow-y: auto;
+            }
+            .slide-visual {
+                height: 250px;
+            }
+            .slide-title {
+                font-size: 26px;
+            }
+            .slide-desc {
+                font-size: 15px;
+            }
+            .controls {
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="presentation-container">
+        <!-- Slide 1 -->
+        <div class="slide active" id="slide-0">
+            <div class="slide-content">
+                <div class="slide-tag">الرؤية والتحول</div>
+                <h2 class="slide-title">منصة مدرسة الدعم التعليمية الرقمية</h2>
+                <p class="slide-desc">بوابة تعليمية ذكية متكاملة لإدارة العمليات الأكاديمية والتواصل الفوري بين المدرسة والمعلمين والطلاب وأولياء الأمور.</p>
+                <ul class="feature-list">
+                    <li class="feature-item"><i data-lucide="check-circle" class="feature-icon"></i> تحول رقمي كامل 100% دون سجلات ورقية.</li>
+                    <li class="feature-item"><i data-lucide="check-circle" class="feature-icon"></i> واجهات جذابة ومخصصة لكل مستخدم.</li>
+                    <li class="feature-item"><i data-lucide="check-circle" class="feature-icon"></i> تدعم الوضعين الليلي والنهاري واللغتين.</li>
+                </ul>
+            </div>
+            <div class="slide-visual">
+                <img src="data:image/png;base64,${db_b64}" alt="الرؤية">
+            </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide" id="slide-1">
+            <div class="slide-content">
+                <div class="slide-tag">لوحة البيانات والتحليلات</div>
+                <h2 class="slide-title">تحليلات إحصائية متقدمة لدعم القرار</h2>
+                <p class="slide-desc">متابعة دقيقة للأداء الأكاديمي والمالي ونسب الحضور والغياب مع رسومات بيانية ذكية ومباشرة.</p>
+                <ul class="feature-list">
+                    <li class="feature-item"><i data-lucide="pie-chart" class="feature-icon"></i> رسومات تفاعلية لنسب الحضور اليومي والشهرية.</li>
+                    <li class="feature-item"><i data-lucide="award" class="feature-icon"></i> لوحة شرف ذكية لتكريم الطلاب المتفوقين.</li>
+                    <li class="feature-item"><i data-lucide="trending-up" class="feature-icon"></i> تقارير مالية مخصصة للأقساط والمدفوعات.</li>
+                </ul>
+            </div>
+            <div class="slide-visual">
+                <img src="data:image/png;base64,${db_b64}" alt="التحليلات">
+            </div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide" id="slide-2">
+            <div class="slide-content">
+                <div class="slide-tag">الرقابة والتقييم</div>
+                <h2 class="slide-title">رصد الحضور والسلوك اليومي</h2>
+                <p class="slide-desc">آلية رصد سريعة وفورية لحضور وغياب الطلاب والمدرسين مع تسجيل وتوثيق السلوك التوجيهي.</p>
+                <ul class="feature-list">
+                    <li class="feature-item"><i data-lucide="calendar" class="feature-icon"></i> جدول دراسي ذكي خالٍ من يوم الجمعة.</li>
+                    <li class="feature-item"><i data-lucide="message-square" class="feature-icon"></i> إشعارات فورية لأولياء الأمور بالملاحظات السلوكية.</li>
+                    <li class="feature-item"><i data-lucide="file-text" class="feature-icon"></i> مكتبة متكاملة للمرفقات والمناهج والواجبات.</li>
+                </ul>
+            </div>
+            <div class="slide-visual">
+                <img src="data:image/png;base64,${att_b64}" alt="الحضور">
+            </div>
+        </div>
+
+        <!-- Slide 4 -->
+        <div class="slide" id="slide-3">
+            <div class="slide-content">
+                <div class="slide-tag">تطبيق الهاتف الذكي</div>
+                <h2 class="slide-title">تطبيق رسمي للتنزيل المباشر (APK)</h2>
+                <p class="slide-desc">تطبيق متكامل متوافق مع كافة أحجام الشاشات ومهيأ للرفع على متجر جوجل بلاي الرسمي.</p>
+                <ul class="feature-list">
+                    <li class="feature-item"><i data-lucide="download" class="feature-icon"></i> زر تنزيل مباشر بنقرة واحدة لملف الـ APK دون تعقيد.</li>
+                    <li class="feature-item"><i data-lucide="bell-ring" class="feature-icon"></i> إشعارات منسقة في منتصف شاشة الهاتف تماماً.</li>
+                    <li class="feature-item"><i data-lucide="smartphone" class="feature-icon"></i> أداء سريع وخفيف يدعم حفظ الجداول أوفلاين.</li>
+                </ul>
+            </div>
+            <div class="slide-visual">
+                <img src="data:image/png;base64,${mob_b64}" alt="تطبيق الهاتف">
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="brand">
+            <i data-lucide="graduation-cap"></i>
+            <span>مدرسة الدعم التعليمي</span>
+        </div>
+        <div class="progress-container" id="dots-container"></div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="prevSlide()"><i data-lucide="chevron-right"></i></button>
+            <button class="nav-btn" onclick="nextSlide()"><i data-lucide="chevron-left"></i></button>
+        </div>
+    </div>
+
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dotsContainer = document.getElementById('dots-container');
+
+        // Create Dots
+        slides.forEach((_, idx) => {
+            const dot = document.createElement('div');
+            dot.className = `progress-dot ${idx === 0 ? 'active' : ''}`;
+            dot.onclick = () => showSlide(idx);
+            dotsContainer.appendChild(dot);
+        });
+
+        const dots = document.querySelectorAll('.progress-dot');
+
+        function showSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+            
+            currentSlide = index;
+            if (currentSlide >= slides.length) currentSlide = 0;
+            if (currentSlide < 0) currentSlide = slides.length - 1;
+
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        // Auto change slide every 8s
+        setInterval(nextSlide, 8000);
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') nextSlide();
+            if (e.key === 'ArrowRight') prevSlide();
+        });
+    </script>
+</body>
+</html>

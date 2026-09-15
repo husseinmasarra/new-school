@@ -1,0 +1,22 @@
+{
+  "short_name": "مدرسة الدعم التعليمي",
+  "name": "مدرسة الدعم التعليمي - منصة الإدارة الرقمية الذكية",
+  "icons": [
+    {
+      "src": "./emblem.png?v=100",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./pwa-192x192.png?v=100",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "./",
+  "background_color": "#0284C7",
+  "theme_color": "#0284C7",
+  "display": "standalone",
+  "orientation": "portrait"
+}
