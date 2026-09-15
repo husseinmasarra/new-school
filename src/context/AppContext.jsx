@@ -1215,6 +1215,14 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const deleteMessage = (msgId) => {
+    setMessages((prev) => {
+      const updated = prev.filter((m) => m.id !== msgId);
+      dbSaveCollection('school_messages', updated);
+      return updated;
+    });
+  };
+
   const addAgendaItem = (item) => {
     const newItem = {
       id: `AGN-${Math.floor(100 + Math.random() * 900)}`,
@@ -1762,6 +1770,7 @@ export const AppProvider = ({ children }) => {
     gradeHomeworkSubmission,
     tutoringCourses,
     addMessage,
+    deleteMessage,
     addAgendaItem,
     updateAgendaItem,
     deleteAgendaItem,

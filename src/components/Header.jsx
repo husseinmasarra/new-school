@@ -38,7 +38,8 @@ export const Header = ({ activeTab, setActiveTab, setIsSidebarOpen }) => {
     markAllNotificationsRead,
     clearNotifications,
     teachers = [],
-    subjects = []
+    subjects = [],
+    messages = []
   } = useApp();
 
   const isAr = lang === 'ar';
@@ -137,7 +138,16 @@ export const Header = ({ activeTab, setActiveTab, setIsSidebarOpen }) => {
     (sub.nameEn && matchesSearch(sub.nameEn))
   ).slice(0, 6) : [];
 
-  const hasAnyResults = filteredPages.length > 0 || filteredStudents.length > 0 || filteredTeachers.length > 0 || filteredSubjects.length > 0;
+  const filteredMessages = searchQuery.trim() ? (messages || []).filter(msg => 
+    matchesSearch(msg.title) || 
+    matchesSearch(msg.content) || 
+    matchesSearch(msg.senderName) || 
+    matchesSearch(msg.targetValue) ||
+    matchesSearch(msg.category) ||
+    matchesSearch(msg.date)
+  ).slice(0, 6) : [];
+
+  const hasAnyResults = filteredPages.length > 0 || filteredStudents.length > 0 || filteredTeachers.length > 0 || filteredSubjects.length > 0 || filteredMessages.length > 0;
 
   useEffect(() => {
     const handleBeforeInstall = (e) => {
@@ -624,6 +634,45 @@ export const Header = ({ activeTab, setActiveTab, setIsSidebarOpen }) => {
                   </div>
                 </div>
               )}
+
+              {/* Group 5: Circulars & Announcements (التواصل والتعاميم) */}
+              {filteredMessages.length > 0 && (
+                <div className="space-y-1.5">
+                  <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1 border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <span>📢</span>
+                    <span>{lang === 'ar' ? 'التواصل والتعاميم المدرسية' : 'Circulars & Announcements'}</span>
+                  </h4>
+                  <div className="space-y-1.5">
+                    {filteredMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        onClick={() => {
+                          setActiveTab('messages');
+                          setIsSearchOpen(false);
+                          setSearchQuery('');
+                        }}
+                        className="flex items-start gap-2.5 p-2.5 rounded-2xl hover:bg-sky-50 dark:hover:bg-slate-800/60 border border-transparent hover:border-sky-100 dark:hover:border-slate-700 cursor-pointer transition-all text-slate-800 dark:text-slate-200"
+                      >
+                        <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center font-bold text-sm shrink-0">
+                          {msg.priority === 'urgent' ? '🚨' : '📢'}
+                        </div>
+                        <div className="grow min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-extrabold text-[11px] truncate">{msg.title}</span>
+                            <span className="text-[9px] text-slate-400 font-mono shrink-0">{msg.date}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{msg.content}</p>
+                          <div className="flex items-center gap-2 mt-1 text-[9px] text-slate-400">
+                            <span>المرسل: {msg.senderName}</span>
+                            {msg.targetValue && <span>• إلى: {msg.targetValue}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
 
             </div>
 

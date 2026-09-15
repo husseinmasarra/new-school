@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { 
   Send, 
@@ -11,11 +12,34 @@ import {
   Users,
   UserCheck,
   X,
-  Search
+  Search,
+  Filter,
+  Calendar,
+  Printer,
+  Copy,
+  Check,
+  Share2,
+  RotateCcw,
+  Clock,
+  Trash2,
+  FileText,
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 
 export const MessagesModule = () => {
-  const { lang, t, currentRole, messages, addMessage, students, teachers, systemUsers } = useApp();
+  const { 
+    lang, 
+    t, 
+    currentRole, 
+    messages = [], 
+    addMessage, 
+    deleteMessage,
+    students = [], 
+    teachers = [], 
+    systemUsers = [],
+    siteSettings = {}
+  } = useApp();
 
   const isAr = lang === 'ar';
   const safeStudents  = students  || [];
@@ -60,9 +84,15 @@ export const MessagesModule = () => {
   const selectAll = () => setSelectedRecipients(new Set(filteredRecipients.map(r => r.id)));
   const clearAll  = () => setSelectedRecipients(new Set());
 
-  // Filter Inbox State
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [searchQuery,    setSearchQuery]    = useState('');
+  // ── Smart Search & Filter States ───────────────────────────────────
+  const [searchQuery,       setSearchQuery]       = useState('');
+  const [filterCategory,    setFilterCategory]    = useState('all');
+  const [filterPriority,    setFilterPriority]    = useState('all');
+  const [filterTarget,      setFilterTarget]      = useState('all');
+  const [filterDatePeriod,  setFilterDatePeriod]  = useState('all'); // 'all' | 'today' | 'week' | 'month'
+  const [activeQuickChip,   setActiveQuickChip]   = useState('all');
+  const [copiedMsgId,       setCopiedMsgId]       = useState(null);
+  const [printModalMsg,     setPrintModalMsg]     = useState(null);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -135,12 +165,145 @@ export const MessagesModule = () => {
     }
   };
 
-  // Filter Messages
-  const filteredMessages = messages.filter((msg) => {
-    const matchesCategory = filterCategory === 'all' || msg.category === filterCategory;
-    const matchesSearch   = (msg.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (msg.content || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // ── Smart Search Helpers ──────────────────────────────────────────
+  const normalizeArabic = (text) => {
+    if (!text) return '';
+    return text
+      .toString()
+      .replace(/[أإآا]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/[ىي]/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '') // Tashkeel
+      .toLowerCase()
+      .trim();
+  };
+
+  const isDateInPeriod = (dateStr, period) => {
+    if (!dateStr || period === 'all') return true;
+    try {
+      const msgDate = new Date(dateStr);
+      const today = new Date();
+      if (period === 'today') {
+        return dateStr === today.toISOString().split('T')[0];
+      }
+      if (period === 'week') {
+        const diffTime = today - msgDate;
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 7;
+      }
+      if (period === 'month') {
+        return msgDate.getFullYear() === today.getFullYear() && msgDate.getMonth() === today.getMonth();
+      }
+    } catch {
+      return true;
+    }
+    return true;
+  };
+
+  const highlightMatch = (text, query) => {
+    if (!text || !query || !query.trim()) return text;
+    const cleanQ = query.trim();
+    const words = cleanQ.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return text;
+    try {
+      const pattern = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      const regex = new RegExp(`(${pattern})`, 'gi');
+      const parts = String(text).split(regex);
+      return parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-amber-200 text-amber-950 font-black px-1 rounded mx-0.5">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      );
+    } catch {
+      return text;
+    }
+  };
+
+  const handleCopyMessage = (msg) => {
+    const textToCopy = `📢 ${msg.title}\n\n${msg.content}\n\n📍 الموجه إليهم: ${msg.targetValue || 'الجميع'}\n📅 التاريخ: ${msg.date}\n🏫 المرسل: ${msg.senderName}`;
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedMsgId(msg.id);
+    setTimeout(() => setCopiedMsgId(null), 2500);
+  };
+
+  const handleWhatsAppShare = (msg) => {
+    const text = encodeURIComponent(`📢 *${msg.title}*\n\n${msg.content}\n\n🏫 *${msg.senderName}* | 📅 ${msg.date}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setFilterCategory('all');
+    setFilterPriority('all');
+    setFilterTarget('all');
+    setFilterDatePeriod('all');
+    setActiveQuickChip('all');
+  };
+
+  // Quick statistics counts
+  const allCount = (messages || []).length;
+  const urgentCount = (messages || []).filter(m => m.priority === 'urgent' || m.category === 'urgent').length;
+  const generalCount = (messages || []).filter(m => m.category === 'general').length;
+  const financialCount = (messages || []).filter(m => m.category === 'financial').length;
+  const academicCount = (messages || []).filter(m => m.category === 'academic').length;
+  const weekCount = (messages || []).filter(m => isDateInPeriod(m.date, 'week')).length;
+  const todayCount = (messages || []).filter(m => isDateInPeriod(m.date, 'today')).length;
+
+  // Smart Filtered Messages calculation
+  const filteredMessages = useMemo(() => {
+    return (messages || []).filter((msg) => {
+      // 1. Quick Chip Filter
+      if (activeQuickChip === 'urgent' && msg.priority !== 'urgent' && msg.category !== 'urgent') return false;
+      if (activeQuickChip === 'financial' && msg.category !== 'financial') return false;
+      if (activeQuickChip === 'general' && msg.category !== 'general') return false;
+      if (activeQuickChip === 'academic' && msg.category !== 'academic') return false;
+      if (activeQuickChip === 'week' && !isDateInPeriod(msg.date, 'week')) return false;
+      if (activeQuickChip === 'today' && !isDateInPeriod(msg.date, 'today')) return false;
+
+      // 2. Dropdown Category
+      if (filterCategory !== 'all' && msg.category !== filterCategory) return false;
+
+      // 3. Dropdown Priority
+      if (filterPriority !== 'all' && msg.priority !== filterPriority) return false;
+
+      // 4. Dropdown Target
+      if (filterTarget !== 'all') {
+        if (filterTarget === 'all_school' && msg.targetType !== 'all') return false;
+        if (filterTarget === 'grade' && msg.targetType !== 'grade') return false;
+        if (filterTarget === 'individual' && msg.targetType !== 'individual') return false;
+        if (filterTarget === 'unpaid' && msg.targetType !== 'unpaid_tuition') return false;
+      }
+
+      // 5. Date Period
+      if (filterDatePeriod !== 'all' && !isDateInPeriod(msg.date, filterDatePeriod)) return false;
+
+      // 6. Smart Multi-Word Text Search
+      if (searchQuery.trim()) {
+        const queryWords = normalizeArabic(searchQuery).split(/\s+/).filter(Boolean);
+        const corpus = normalizeArabic([
+          msg.title,
+          msg.content,
+          msg.senderName,
+          msg.targetValue,
+          msg.category === 'financial' ? 'مالي اقساط دفعة تسديد' : '',
+          msg.category === 'academic' ? 'اكاديمي دراسي تعليمي امتحانات' : '',
+          msg.category === 'urgent' ? 'عاجل طارئ هام تنبيه' : '',
+          msg.priority === 'urgent' ? 'عاجل فوري' : 'عادي',
+          msg.date
+        ].join(' '));
+
+        const matchesAll = queryWords.every(w => corpus.includes(w));
+        if (!matchesAll) return false;
+      }
+
+      return true;
+    });
+  }, [messages, searchQuery, filterCategory, filterPriority, filterTarget, filterDatePeriod, activeQuickChip]);
+
 
   return (
     <div className="space-y-6 animate-fade-in text-[#0F172A]">
@@ -325,68 +488,476 @@ export const MessagesModule = () => {
         </form>
       )}
 
-      {/* Inbox */}
-      <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl space-y-4 shadow-sm text-[#0F172A]">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
-            <Bell className="w-5 h-5 text-[#0284C7]" />
-            <span>{t('inbox')} ({filteredMessages.length})</span>
-          </h3>
-          <div className="flex items-center gap-2">
-            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-              placeholder="بحث في الرسائل..."
-              className="bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-[#0284C7] w-40" />
-            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-              className="bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-1.5 text-xs focus:outline-none">
-              <option value="all">الكل</option>
-              <option value="general">عامة</option>
-              <option value="academic">أكاديمية</option>
-              <option value="financial">مالية</option>
-              <option value="urgent">عاجلة</option>
-            </select>
+      {/* Smart Search & Inbox Section */}
+      <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl space-y-5 shadow-sm text-[#0F172A]">
+        
+        {/* Inbox Header & Summary */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
+              <Megaphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-[#0284C7] flex items-center gap-2">
+                <span>{isAr ? 'صندوق التعاميم والتواصل المدرسي' : t('inbox')}</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
+                  {filteredMessages.length} {isAr ? 'تعميم' : 'messages'}
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {isAr ? 'البحث الذكي، الفلترة المتعددة، والطباعة الرسمية للتعاميم والإعلانات.' : 'Smart search, multi-filters and official circular printing.'}
+              </p>
+            </div>
+          </div>
+
+          {(searchQuery || filterCategory !== 'all' || filterPriority !== 'all' || filterTarget !== 'all' || filterDatePeriod !== 'all' || activeQuickChip !== 'all') && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 rounded-xl transition-all cursor-pointer shadow-sm"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{isAr ? 'إعادة ضبط الفلاتر' : 'Reset Filters'}</span>
+            </button>
+          )}
+        </div>
+
+        {/* ── Smart Search Engine Bar ───────────────────────────────── */}
+        <div className="space-y-3">
+          <div className="relative flex items-center">
+            <div className="absolute right-4 text-sky-500 pointer-events-none">
+              <Search className="w-5 h-5" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isAr 
+                ? "البحث الذكي في التعاميم: عنوان التعميم، نص المحتوى، اسم المرسل، الصف المستهدف، التاريخ..." 
+                : "Smart search in circulars: title, content, sender, target, date..."}
+              className="w-full bg-[#F8FAFC] border-2 border-slate-200 focus:border-[#0284C7] text-slate-900 rounded-2xl py-3 pr-12 pl-12 text-xs font-semibold focus:outline-none transition-all shadow-inner placeholder:text-slate-400"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute left-4 p-1 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors cursor-pointer"
+                title={isAr ? 'مسح البحث' : 'Clear'}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Quick Filter Chips Toolbar */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+            <button
+              type="button"
+              onClick={() => setActiveQuickChip('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activeQuickChip === 'all'
+                  ? 'bg-[#0284C7] text-white shadow-md'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              }`}
+            >
+              <span>🌟</span>
+              <span>{isAr ? `الكل (${allCount})` : `All (${allCount})`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveQuickChip('urgent')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activeQuickChip === 'urgent'
+                  ? 'bg-red-600 text-white shadow-md'
+                  : 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200'
+              }`}
+            >
+              <span>🚨</span>
+              <span>{isAr ? `عاجل وهام (${urgentCount})` : `Urgent (${urgentCount})`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveQuickChip('general')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activeQuickChip === 'general'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : 'bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200'
+              }`}
+            >
+              <span>📢</span>
+              <span>{isAr ? `إعلانات عامة (${generalCount})` : `General (${generalCount})`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveQuickChip('financial')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activeQuickChip === 'financial'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+              }`}
+            >
+              <span>💳</span>
+              <span>{isAr ? `أقساط ومالية (${financialCount})` : `Financial (${financialCount})`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveQuickChip('academic')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activeQuickChip === 'academic'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              <span>📚</span>
+              <span>{isAr ? `أكاديمية ودراسية (${academicCount})` : `Academic (${academicCount})`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveQuickChip('week')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activeQuickChip === 'week'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+              }`}
+            >
+              <span>📅</span>
+              <span>{isAr ? `تعاميم هذا الأسبوع (${weekCount})` : `This Week (${weekCount})`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveQuickChip('today')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activeQuickChip === 'today'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200'
+              }`}
+            >
+              <span>⏱️</span>
+              <span>{isAr ? `تعاميم اليوم (${todayCount})` : `Today (${todayCount})`}</span>
+            </button>
+          </div>
+
+          {/* Advanced Multi-Criteria Filter Dropdowns */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#F8FAFC] p-3 rounded-2xl border border-slate-200 text-xs">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 block">
+                {isAr ? 'تصنيف التعميم:' : 'Category:'}
+              </label>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none"
+              >
+                <option value="all">{isAr ? 'جميع الفئات' : 'All Categories'}</option>
+                <option value="general">{isAr ? '📢 عامة' : 'General'}</option>
+                <option value="academic">{isAr ? '📚 أكاديمية' : 'Academic'}</option>
+                <option value="financial">{isAr ? '💳 مالية وأقساط' : 'Financial'}</option>
+                <option value="urgent">{isAr ? '🚨 عاجلة' : 'Urgent'}</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 block">
+                {isAr ? 'الأولوية:' : 'Priority:'}
+              </label>
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none"
+              >
+                <option value="all">{isAr ? 'كل الأولويات' : 'All Priorities'}</option>
+                <option value="urgent">{isAr ? '🚨 عاجل فقط' : 'Urgent Only'}</option>
+                <option value="normal">{isAr ? '🟢 عادي' : 'Normal'}</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 block">
+                {isAr ? 'الجهة المستهدفة:' : 'Audience:'}
+              </label>
+              <select
+                value={filterTarget}
+                onChange={(e) => setFilterTarget(e.target.value)}
+                className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none"
+              >
+                <option value="all">{isAr ? 'كل الفئات الموجهة' : 'All Audiences'}</option>
+                <option value="all_school">{isAr ? '🌐 الجميع (عام)' : 'Everyone'}</option>
+                <option value="grade">{isAr ? '🏫 صفوف دراسية' : 'Specific Grade'}</option>
+                <option value="individual">{isAr ? '👤 أفراد محددين' : 'Individuals'}</option>
+                <option value="unpaid">{isAr ? '💳 غير مسددي الأقساط' : 'Unpaid Tuition'}</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 block">
+                {isAr ? 'الفترة الزمنية:' : 'Time Period:'}
+              </label>
+              <select
+                value={filterDatePeriod}
+                onChange={(e) => setFilterDatePeriod(e.target.value)}
+                className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none"
+              >
+                <option value="all">{isAr ? 'كل التواريخ' : 'All Time'}</option>
+                <option value="today">{isAr ? '📅 اليوم' : 'Today'}</option>
+                <option value="week">{isAr ? '📅 آخر 7 أيام' : 'Past 7 Days'}</option>
+                <option value="month">{isAr ? '📅 هذا الشهر' : 'This Month'}</option>
+              </select>
+            </div>
           </div>
         </div>
 
+        {/* ── Results List ──────────────────────────────────────────── */}
         {filteredMessages.length === 0 ? (
-          <div className="text-center py-8 text-xs text-slate-400">
-            {isAr ? 'لا توجد تعاميم أو رسائل مسجلة حالياً.' : 'No messages found.'}
+          <div className="text-center py-12 bg-[#F8FAFC] rounded-3xl border border-slate-200 space-y-3">
+            <AlertCircle className="w-12 h-12 text-slate-300 mx-auto" />
+            <h4 className="text-sm font-extrabold text-slate-700">
+              {isAr ? 'لا توجد تعاميم أو رسائل تطابق معايير البحث الذكي' : 'No circulars or messages match search'}
+            </h4>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              {isAr 
+                ? 'جرب البحث بكلمات أخرى أو قم بإلغاء بعض الفلاتر لعرض كافة التعاميم المتاحة.'
+                : 'Try searching with other keywords or clear applied filters.'}
+            </p>
+            <button
+              onClick={resetFilters}
+              className="btn-mustard px-4 py-2 rounded-xl text-xs font-bold shadow cursor-pointer transition-all inline-flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{isAr ? 'عرض جميع التعاميم' : 'View All Circulars'}</span>
+            </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredMessages.map((msg) => (
-              <div key={msg.id} className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0] space-y-2 hover:border-[#0284C7]/50 transition-all">
+              <div 
+                key={msg.id} 
+                className="bg-[#F8FAFC] hover:bg-slate-50/80 p-5 rounded-3xl border border-[#E2E8F0] space-y-3 hover:border-[#0284C7]/60 transition-all shadow-sm group"
+              >
+                {/* Message Header */}
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold border ${
-                      msg.category === 'financial'  ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                      msg.category === 'urgent'     ? 'bg-red-50 text-red-700 border-red-200' :
-                      msg.category === 'academic'   ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      'bg-[#0284C7]/10 text-[#0284C7] border-[#0284C7]/20'
+                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold border ${
+                      msg.category === 'financial'  ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                      msg.category === 'urgent'     ? 'bg-red-50 text-red-800 border-red-300' :
+                      msg.category === 'academic'   ? 'bg-emerald-50 text-emerald-800 border-emerald-300' :
+                      'bg-[#0284C7]/10 text-[#0284C7] border-[#0284C7]/30'
                     }`}>
-                      {msg.category === 'financial' ? '💳 مالية' : msg.category === 'urgent' ? '🚨 عاجلة' : msg.category === 'academic' ? '📚 أكاديمية' : '📢 عامة'}
+                      {msg.category === 'financial' ? '💳 مالية وأقساط' : msg.category === 'urgent' ? '🚨 عاجلة وهامة' : msg.category === 'academic' ? '📚 دراسية وأكاديمية' : '📢 إعلان عام'}
                     </span>
-                    <span className="text-[11px] font-bold text-[#0F172A]">{msg.senderName}</span>
-                    {msg.priority === 'urgent' && <span className="px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-bold rounded-md animate-pulse">عاجل</span>}
+
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                      <UserCheck className="w-3.5 h-3.5 text-[#0284C7]" />
+                      <span>{highlightMatch(msg.senderName || 'الإدارة', searchQuery)}</span>
+                    </span>
+
+                    {msg.priority === 'urgent' && (
+                      <span className="px-2 py-0.5 bg-red-600 text-white text-[9px] font-black rounded-md animate-pulse">
+                        عاجل 🚨
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  <div className="flex items-center gap-2 text-slate-400 text-xs font-mono">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{highlightMatch(msg.date, searchQuery)}</span>
+                  </div>
+                </div>
+
+                {/* Message Title */}
+                <h4 className="text-sm font-black text-[#0284C7] leading-tight">
+                  {highlightMatch(msg.title, searchQuery)}
+                </h4>
+
+                {/* Message Body Content */}
+                <p className="text-xs text-slate-700 leading-relaxed bg-white p-3.5 rounded-2xl border border-slate-200 font-medium whitespace-pre-line shadow-inner">
+                  {highlightMatch(msg.content, searchQuery)}
+                </p>
+
+                {/* Target & Action Toolbar */}
+                <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-200/60">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                    {msg.targetValue && (
+                      <span className="bg-sky-50 border border-sky-200 text-sky-900 px-2.5 py-0.5 rounded-lg font-bold">
+                        📍 الموجه إليهم: {highlightMatch(msg.targetValue, searchQuery)}
+                      </span>
+                    )}
                     {msg.recipientCount && (
                       <span className="text-[10px] text-[#0284C7] font-bold bg-[#0284C7]/10 px-2 py-0.5 rounded-full">
                         {msg.recipientCount} مستلم
                       </span>
                     )}
-                    <span className="text-[10px] text-slate-400 font-mono">{msg.date}</span>
+                  </div>
+
+                  {/* Circular Actions: Copy, Print, WhatsApp, Delete */}
+                  <div className="flex items-center gap-1.5 ms-auto flex-wrap">
+                    {/* Copy Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyMessage(msg)}
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                      title={isAr ? 'نسخ نص التعميم' : 'Copy'}
+                    >
+                      {copiedMsgId === msg.id ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-700">تم النسخ!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-500" />
+                          <span>{isAr ? 'نسخ' : 'Copy'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Print Official Circular Button */}
+                    <button
+                      type="button"
+                      onClick={() => setPrintModalMsg(msg)}
+                      className="px-2.5 py-1 bg-[#0284C7]/10 hover:bg-[#0284C7]/20 text-[#0284C7] rounded-xl border border-[#0284C7]/30 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                      title={isAr ? 'طباعة التعميم الرسمي' : 'Print Circular'}
+                    >
+                      <Printer className="w-3.5 h-3.5 text-[#0284C7]" />
+                      <span>{isAr ? 'طباعة رسمية' : 'Print'}</span>
+                    </button>
+
+                    {/* WhatsApp Share Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleWhatsAppShare(msg)}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                      title={isAr ? 'مشاركة عبر واتساب' : 'WhatsApp'}
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>واتساب</span>
+                    </button>
+
+                    {/* Delete Message for Admins and Teachers */}
+                    {(currentRole === 'admin' || currentRole === 'teacher') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(isAr ? `هل أنت متأكد من حذف تعميم (${msg.title})؟` : `Delete message (${msg.title})?`)) {
+                            if (deleteMessage) deleteMessage(msg.id);
+                          }
+                        }}
+                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title={isAr ? 'حذف التعميم' : 'Delete'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                <h4 className="text-xs font-bold text-[#0F172A]">{msg.title}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-100">{msg.content}</p>
-                {msg.targetValue && (
-                  <p className="text-[10px] text-slate-400">📍 إلى: {msg.targetValue}</p>
-                )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Official Circular Print Preview Modal */}
+      {printModalMsg && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto print:p-0 print:bg-white">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 shadow-2xl animate-scale-up text-[#0F172A] relative border-4 border-[#0284C7]/20 print:border-none print:shadow-none print:max-w-none">
+            
+            {/* Header with Print / Close Actions */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4 print:hidden">
+              <div className="flex items-center gap-2">
+                <Printer className="w-5 h-5 text-[#0284C7]" />
+                <h3 className="text-base font-black text-[#0284C7]">
+                  {isAr ? 'معاينة وطباعة التعميم الإداري الرسمي' : 'Official Circular Print Preview'}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="btn-mustard flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold shadow cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>{isAr ? 'طباعة فورية 🖨️' : 'Print 🖨️'}</span>
+                </button>
+                <button
+                  onClick={() => setPrintModalMsg(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Official Circular Document */}
+            <div className="p-6 bg-white rounded-2xl border-2 border-slate-300 space-y-6 text-slate-900 shadow-sm print:p-0 print:border-none">
+              
+              {/* Official School Letterhead */}
+              <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
+                <div className="space-y-1 text-right">
+                  <h2 className="text-lg font-black text-[#0284C7]">
+                    {siteSettings.schoolName || (isAr ? 'مدرسة الدعم التعليمي النموذجية' : 'Educational Support School')}
+                  </h2>
+                  <p className="text-xs text-slate-600 font-bold">
+                    {isAr ? 'الإدارة العامة وشؤون الطلاب والتعاميم' : 'General Administration & Student Affairs'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    {isAr ? `العام الدراسي: ${siteSettings.academicYear || '2026/2027'}` : `Year: ${siteSettings.academicYear || '2026/2027'}`}
+                  </p>
+                </div>
+
+                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-slate-300 bg-slate-50 flex items-center justify-center p-1">
+                  {siteSettings.schoolLogo ? (
+                    <img src={siteSettings.schoolLogo} alt="Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <Megaphone className="w-8 h-8 text-[#0284C7]" />
+                  )}
+                </div>
+              </div>
+
+              {/* Document Sub-header */}
+              <div className="flex items-center justify-between text-xs font-mono font-bold bg-slate-100 p-2.5 rounded-xl">
+                <span>{isAr ? `رقم التعميم: ${printModalMsg.id}` : `Ref: ${printModalMsg.id}`}</span>
+                <span>{isAr ? `تاريخ الإصدار: ${printModalMsg.date}` : `Date: ${printModalMsg.date}`}</span>
+                <span>{isAr ? `درجة الأهمية: ${printModalMsg.priority === 'urgent' ? 'عاجل ومؤكد 🚨' : 'عادي 🟢'}` : `Priority: ${printModalMsg.priority}`}</span>
+              </div>
+
+              {/* Circular Target */}
+              <div className="text-xs font-bold text-slate-700 bg-sky-50 border border-sky-200 p-3 rounded-xl">
+                <span>{isAr ? 'إلى حضرة: ' : 'To: '}</span>
+                <span className="text-[#0284C7] font-black">{printModalMsg.targetValue || (isAr ? 'كافة أولياء الأمور والطلاب المحترمين' : 'All Parents & Students')}</span>
+              </div>
+
+              {/* Circular Title */}
+              <div className="text-center py-2 border-y border-dashed border-slate-300">
+                <h3 className="text-base font-black text-slate-950 underline decoration-[#0284C7] underline-offset-8">
+                  {printModalMsg.title}
+                </h3>
+              </div>
+
+              {/* Circular Content */}
+              <div className="text-sm font-medium leading-loose text-slate-800 whitespace-pre-line px-2 text-justify">
+                {printModalMsg.content}
+              </div>
+
+              {/* Official Signature and Seal Area */}
+              <div className="pt-6 border-t border-slate-300 flex items-end justify-between text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-slate-700 block">{isAr ? 'المرسل والمسؤول:' : 'Issued by:'}</span>
+                  <span className="font-black text-slate-900">{printModalMsg.senderName || (isAr ? 'إدارة المدرسة' : 'Administration')}</span>
+                </div>
+
+                <div className="w-36 h-24 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-center p-2 text-[10px] text-slate-400 font-bold">
+                  <span>خاتم وتوقيع</span>
+                  <span>الإدارة العامة الرسمية</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
