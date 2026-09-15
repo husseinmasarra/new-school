@@ -53,6 +53,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
   const [activeTab, setActiveTab] = useState(initialSubTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('all');
+  const [studentsViewMode, setStudentsViewMode] = useState('table'); // 'table' (default) or 'cards'
 
   useEffect(() => {
     if (initialSubTab) {
@@ -815,46 +816,76 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
           </div>
         </div>
 
-        {/* Grade Quick Filter Pills (for Students) */}
+        {/* Grade Quick Filter Pills & View Mode Toggle (for Students) */}
         {activeTab === 'students' && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 px-1 no-scrollbar">
-            <span className="text-[11px] font-bold text-slate-500 shrink-0 ml-1">فلترة الصفوف:</span>
-            <button
-              onClick={() => setSelectedGradeFilter('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
-                selectedGradeFilter === 'all'
-                  ? 'bg-[#0284C7] text-white shadow-xs'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {isAr ? `الكل (${safeStudents.length})` : `All (${safeStudents.length})`}
-            </button>
-            <button
-              onClick={() => setSelectedGradeFilter(selectedGradeFilter === 'special_cases' ? 'all' : 'special_cases')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
-                selectedGradeFilter === 'special_cases'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
-              }`}
-            >
-              ⭐ {isAr ? 'حالات خاصة' : 'Special Cases'} ({safeStudents.filter(s => s.isSpecialCase).length})
-            </button>
-            {safeGrades.map((g) => {
-              const count = safeStudents.filter(s => (s.grade || '').includes(g.name)).length;
-              return (
-                <button
-                  key={g.id || g.name}
-                  onClick={() => setSelectedGradeFilter(selectedGradeFilter === g.name ? 'all' : g.name)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
-                    selectedGradeFilter === g.name
-                      ? 'bg-[#0284C7] text-white shadow-xs'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {isAr ? g.name : (g.nameEn || g.name)} ({count})
-                </button>
-              );
-            })}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 px-1 no-scrollbar flex-wrap">
+              <span className="text-[11px] font-bold text-slate-500 shrink-0 ml-1">فلترة الصفوف:</span>
+              <button
+                onClick={() => setSelectedGradeFilter('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                  selectedGradeFilter === 'all'
+                    ? 'bg-[#0284C7] text-white shadow-xs'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {isAr ? `الكل (${safeStudents.length})` : `All (${safeStudents.length})`}
+              </button>
+              <button
+                onClick={() => setSelectedGradeFilter(selectedGradeFilter === 'special_cases' ? 'all' : 'special_cases')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                  selectedGradeFilter === 'special_cases'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
+                }`}
+              >
+                ⭐ {isAr ? 'حالات خاصة' : 'Special Cases'} ({safeStudents.filter(s => s.isSpecialCase).length})
+              </button>
+              {safeGrades.map((g) => {
+                const count = safeStudents.filter(s => (s.grade || '').includes(g.name)).length;
+                return (
+                  <button
+                    key={g.id || g.name}
+                    onClick={() => setSelectedGradeFilter(selectedGradeFilter === g.name ? 'all' : g.name)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                      selectedGradeFilter === g.name
+                        ? 'bg-[#0284C7] text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {isAr ? g.name : (g.nameEn || g.name)} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* View Mode Toggle: Table or Cards */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0">
+              <button
+                type="button"
+                onClick={() => setStudentsViewMode('table')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                  studentsViewMode === 'table'
+                    ? 'bg-[#0284C7] text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+                title="عرض جدول كشف يبرز ولي الأمر"
+              >
+                <span>📋 كشف جدول أولياء الأمور</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStudentsViewMode('cards')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                  studentsViewMode === 'cards'
+                    ? 'bg-[#0284C7] text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+                title="عرض كروت تفاعلية"
+              >
+                <span>🗂️ كروت</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -896,210 +927,450 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                     </h3>
                   </div>
 
-                  {/* Student Cards Grid (Separated strictly by Grade!) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-                    {gradeStudents.map((stu) => {
-                      const famKey = getStudentFamilyKey(stu);
-                      const siblings = safeStudents.filter(s => s.id !== stu.id && getStudentFamilyKey(s) === famKey);
-                      const hasSiblings = siblings.length > 0;
-                      const stuTuition = stu.isSpecialCase ? 0 : (stu.tuitionTotal ?? 700);
-                      const stuPaid = Number(stu.tuitionPaid) || 0;
-                      const stuDiscount = Number(stu.tuitionDiscount) || 0;
-                      const remainingUSD = Math.max(0, Number(stuTuition) - stuDiscount - stuPaid);
+                  {/* Student View: Interactive Table (Default) or Cards */}
+                  {studentsViewMode === 'table' ? (
+                    <div className="overflow-x-auto bg-white rounded-3xl border border-slate-200/90 shadow-xs">
+                      <table className="w-full text-right text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50/90 text-slate-600 border-b border-slate-200 text-[11px] font-bold">
+                            <th className="py-3 px-3.5 text-center w-12 font-mono">#</th>
+                            <th className="py-3 px-3.5 min-w-[200px]">👨‍💼 {isAr ? 'ولي الأمر (المسؤول الأساسي)' : 'Parent / Guardian'}</th>
+                            <th className="py-3 px-3.5 min-w-[190px]">👤 {isAr ? 'التلميذ المسجل' : 'Student'}</th>
+                            <th className="py-3 px-3.5 text-center w-24">{isAr ? 'الشعبة' : 'Section'}</th>
+                            <th className="py-3 px-3.5 min-w-[150px]">{isAr ? 'هاتف التواصل السريع' : 'Phone / Contact'}</th>
+                            <th className="py-3 px-3.5 text-center min-w-[140px]">{isAr ? 'الوضعية المالية' : 'Tuition / Fees'}</th>
+                            <th className="py-3 px-3.5 text-center min-w-[130px]">{isAr ? 'العائلة / الإخوة' : 'Family / Siblings'}</th>
+                            <th className="py-3 px-3.5 text-center min-w-[140px]">{isAr ? 'إجراءات' : 'Actions'}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {gradeStudents.map((stu, sIdx) => {
+                            const famKey = getStudentFamilyKey(stu);
+                            const siblings = safeStudents.filter(s => s.id !== stu.id && getStudentFamilyKey(s) === famKey);
+                            const hasSiblings = siblings.length > 0;
+                            const stuTuition = stu.isSpecialCase ? 0 : (stu.tuitionTotal ?? 700);
+                            const stuPaid = Number(stu.tuitionPaid) || 0;
+                            const stuDiscount = Number(stu.tuitionDiscount) || 0;
+                            const remainingUSD = Math.max(0, Number(stuTuition) - stuDiscount - stuPaid);
+                            const phoneClean = (stu.parentPhone || stu.phone || '').replace(/[^0-9]/g, '');
 
-                      return (
-                        <div
-                          key={stu.id}
-                          className={`bg-white border-2 p-4.5 rounded-3xl shadow-xs transition-all relative flex flex-col justify-between hover:shadow-md ${
-                            hasSiblings 
-                              ? 'border-sky-300/80 bg-gradient-to-b from-sky-50/15 via-white to-white ring-1 ring-sky-300/20' 
-                              : 'border-[#E2E8F0] hover:border-[#0284C7]/40'
-                          }`}
-                        >
-                          <div className="space-y-3 shrink-0">
-                            {/* Student Header */}
-                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <img
-                                  src={stu.avatar || defaultAvatars[0]}
-                                  alt={stu.name}
-                                  className="w-10 h-10 rounded-2xl object-cover border-2 border-[#0284C7] shrink-0 shadow-xs"
-                                />
-                                <div className="truncate">
-                                  <h4 className="text-xs font-black text-[#0F172A] truncate flex items-center gap-1.5">
-                                    <span>{isAr ? stu.name : stu.nameEn}</span>
-                                  </h4>
-                                  <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
-                                    <span>ID: {stu.id}</span>
-                                    <span>•</span>
-                                    <span className="font-bold text-[#0284C7]">{stu.classRoom ? `الشعبة (${stu.classRoom})` : 'الشعبة (أ)'}</span>
+                            return (
+                              <tr
+                                key={stu.id}
+                                onClick={() => setShowStudentDetailModal(stu)}
+                                className="group hover:bg-sky-50/70 transition-colors cursor-pointer"
+                                title={isAr ? 'اضغط على السطر لعرض التفاصيل الكاملة للتلميذ وولي الأمر' : 'Click row to view student & parent full details'}
+                              >
+                                {/* # Index */}
+                                <td className="py-3.5 px-3.5 text-center font-mono text-slate-400 font-bold text-[11px]">
+                                  {sIdx + 1}
+                                </td>
+
+                                {/* 👨‍💼 ولي الأمر - بارز ومحدد ككيان أساسي */}
+                                <td className="py-3.5 px-3.5">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-2xl bg-sky-100/90 text-[#0284C7] flex items-center justify-center font-black text-base shrink-0 border border-sky-200/80 shadow-xs">
+                                      👨‍💼
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="font-black text-[#0F172A] text-xs flex items-center gap-1.5 truncate">
+                                        <span className="truncate">{stu.parentName || (isAr ? 'غير مسجل' : 'Not Registered')}</span>
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-50 text-[#0284C7] font-bold border border-sky-200/70 shrink-0">
+                                          {isAr ? 'ولي أمر' : 'Guardian'}
+                                        </span>
+                                      </div>
+                                      <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
+                                        <span>📞</span>
+                                        <span>{stu.parentPhone || stu.phone || (isAr ? 'بدون هاتف' : 'No Phone')}</span>
+                                      </div>
+                                    </div>
                                   </div>
+                                </td>
+
+                                {/* 👤 التلميذ */}
+                                <td className="py-3.5 px-3.5">
+                                  <div className="flex items-center gap-2.5">
+                                    <img
+                                      src={stu.avatar || defaultAvatars[0]}
+                                      alt={stu.name}
+                                      className="w-8 h-8 rounded-xl object-cover border border-[#0284C7]/40 shrink-0 shadow-xs"
+                                    />
+                                    <div className="min-w-0">
+                                      <div className="font-bold text-[#0F172A] text-xs flex items-center gap-1.5 truncate">
+                                        <span className="truncate">{isAr ? stu.name : stu.nameEn}</span>
+                                        {stu.frozen && (
+                                          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-red-100 text-red-700 font-black shrink-0">
+                                            ❄️ {isAr ? 'مجمد' : 'Frozen'}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
+                                        <span>ID: {stu.id}</span>
+                                        <span>•</span>
+                                        <span className="text-[#0284C7] font-semibold">{stu.username}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* الشعبة */}
+                                <td className="py-3.5 px-3.5 text-center">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">
+                                    {stu.classRoom ? `${isAr ? 'شعبة' : 'Sec'} (${stu.classRoom})` : `${isAr ? 'شعبة' : 'Sec'} (أ)`}
+                                  </span>
+                                </td>
+
+                                {/* هاتف التواصل وواتساب */}
+                                <td className="py-3.5 px-3.5" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-bold text-[#0284C7] text-xs dir-ltr">
+                                      {stu.parentPhone || stu.phone || '—'}
+                                    </span>
+                                    {phoneClean && (
+                                      <a
+                                        href={`https://wa.me/${phoneClean}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors inline-flex items-center justify-center border border-emerald-200/60"
+                                        title={isAr ? 'مراسلة عبر واتساب' : 'Chat on WhatsApp'}
+                                      >
+                                        💬
+                                      </a>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* الوضعية المالية */}
+                                <td className="py-3.5 px-3.5 text-center">
+                                  {stu.isSpecialCase ? (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-block">
+                                      ⭐ {isAr ? 'حالة خاصة (إعفاء)' : 'Exempted'}
+                                    </span>
+                                  ) : remainingUSD === 0 ? (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-block">
+                                      ✓ {isAr ? 'مسدد بالكامل' : 'Paid in Full'}
+                                    </span>
+                                  ) : (
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-red-600 font-black font-mono text-xs">
+                                        ${remainingUSD} {isAr ? 'متبقي' : 'due'}
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono">
+                                        {isAr ? 'المدفوع:' : 'Paid:'} ${stuPaid} / ${stuTuition}
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* العائلة / الإخوة */}
+                                <td className="py-3.5 px-3.5 text-center">
+                                  {hasSiblings ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveTab('families');
+                                        setSearchTerm(stu.parentPhone || stu.name);
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 cursor-pointer transition-colors"
+                                      title={isAr ? 'عرض كرت العائلة الموحد' : 'View Unified Family Card'}
+                                    >
+                                      <span>👨‍👩‍👧‍👦</span>
+                                      <span>{siblings.length + 1} {isAr ? 'إخوة' : 'Siblings'}</span>
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 font-bold">
+                                      👤 {isAr ? 'طالب منفرد' : 'Single'}
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* إجراءات سريعة */}
+                                <td className="py-3.5 px-3.5 text-center" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowStudentDetailModal(stu)}
+                                      className="p-1.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] rounded-xl cursor-pointer transition-colors border border-sky-200/50"
+                                      title={isAr ? 'معاينة كافة تفاصيل التلميذ وولي الأمر' : 'View Student & Parent Details'}
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handlePrintClearance(stu)}
+                                      className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl cursor-pointer transition-colors border border-slate-200"
+                                      title={isAr ? 'طباعة إفادة الطالب' : 'Print Clearance'}
+                                    >
+                                      <Printer className="w-3.5 h-3.5" />
+                                    </button>
+                                    {currentRole === 'admin' && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => updateStudent(stu.id, { frozen: !stu.frozen })}
+                                          className={`p-1.5 rounded-xl cursor-pointer transition-all ${
+                                            stu.frozen 
+                                              ? 'bg-red-600 text-white animate-pulse' 
+                                              : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200'
+                                          }`}
+                                          title={stu.frozen ? 'الحساب مجمد (اضغط لإلغاء التجميد)' : 'تجميد حساب الطالب'}
+                                        >
+                                          <span className="text-xs">❄️</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenEditStudentModal(stu)}
+                                          className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl cursor-pointer transition-colors border border-amber-200"
+                                          title="تعديل الحساب"
+                                        >
+                                          <Edit3 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => deleteStudent(stu.id)}
+                                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl cursor-pointer transition-colors border border-red-200"
+                                          title="حذف الحساب"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    /* Student Cards Grid: Parent prominent at the top + card clickable to view details */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+                      {gradeStudents.map((stu) => {
+                        const famKey = getStudentFamilyKey(stu);
+                        const siblings = safeStudents.filter(s => s.id !== stu.id && getStudentFamilyKey(s) === famKey);
+                        const hasSiblings = siblings.length > 0;
+                        const stuTuition = stu.isSpecialCase ? 0 : (stu.tuitionTotal ?? 700);
+                        const stuPaid = Number(stu.tuitionPaid) || 0;
+                        const stuDiscount = Number(stu.tuitionDiscount) || 0;
+                        const remainingUSD = Math.max(0, Number(stuTuition) - stuDiscount - stuPaid);
+                        const phoneClean = (stu.parentPhone || stu.phone || '').replace(/[^0-9]/g, '');
+
+                        return (
+                          <div
+                            key={stu.id}
+                            onClick={() => setShowStudentDetailModal(stu)}
+                            className={`bg-white border-2 p-4.5 rounded-3xl shadow-xs transition-all relative flex flex-col justify-between hover:shadow-lg hover:border-[#0284C7] cursor-pointer group ${
+                              hasSiblings 
+                                ? 'border-sky-300/80 bg-gradient-to-b from-sky-50/15 via-white to-white ring-1 ring-sky-300/20' 
+                                : 'border-[#E2E8F0]'
+                            }`}
+                            title={isAr ? 'اضغط لعرض كافة بيانات وتفاصيل التلميذ وولي الأمر' : 'Click to view student & parent full details'}
+                          >
+                            <div className="space-y-3 shrink-0">
+                              {/* 👨‍💼 PROMINENT PARENT HEADER BANNER */}
+                              <div className="bg-sky-50/80 border border-sky-200/80 p-2.5 rounded-2xl flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-9 h-9 rounded-xl bg-[#0284C7] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                                    👨‍💼
+                                  </div>
+                                  <div className="truncate">
+                                    <span className="text-[10px] text-[#0284C7] font-black block">
+                                      {isAr ? 'ولي الأمر (المسؤول):' : 'Guardian:'}
+                                    </span>
+                                    <h4 className="text-xs font-black text-[#0F172A] truncate">
+                                      {stu.parentName || (isAr ? 'غير مسجل' : 'Not Registered')}
+                                    </h4>
+                                  </div>
+                                </div>
+                                <div className="text-left shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  <span className="text-[10px] font-mono font-black text-[#0284C7] dir-ltr block">
+                                    {stu.parentPhone || stu.phone || '—'}
+                                  </span>
+                                  {phoneClean && (
+                                    <a
+                                      href={`https://wa.me/${phoneClean}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-[9px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-lg mt-0.5 hover:bg-emerald-200 transition-colors"
+                                      title={isAr ? 'مراسلة ولي الأمر عبر واتساب' : 'Chat via WhatsApp'}
+                                    >
+                                      <span>واتساب</span>
+                                      <span>💬</span>
+                                    </a>
+                                  )}
                                 </div>
                               </div>
 
-                              <div className="flex flex-col items-end gap-1 shrink-0">
-                                <span className="text-[9px] px-2 py-0.5 rounded-full font-black bg-sky-50 text-[#0284C7] border border-sky-200">
-                                  {stu.grade}
-                                </span>
-                                {stu.isSpecialCase && (
-                                  <span className="text-[9px] px-2 py-0.5 rounded-full font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-                                    ⭐ {isAr ? 'حالة خاصة' : 'Special Case'}
+                              {/* Student Header */}
+                              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <img
+                                    src={stu.avatar || defaultAvatars[0]}
+                                    alt={stu.name}
+                                    className="w-10 h-10 rounded-2xl object-cover border-2 border-[#0284C7] shrink-0 shadow-xs"
+                                  />
+                                  <div className="truncate">
+                                    <h4 className="text-xs font-black text-[#0F172A] truncate flex items-center gap-1.5">
+                                      <span>{isAr ? stu.name : stu.nameEn}</span>
+                                    </h4>
+                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                                      <span>ID: {stu.id}</span>
+                                      <span>•</span>
+                                      <span className="font-bold text-[#0284C7]">{stu.classRoom ? `الشعبة (${stu.classRoom})` : 'الشعبة (أ)'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                  <span className="text-[9px] px-2 py-0.5 rounded-full font-black bg-sky-50 text-[#0284C7] border border-sky-200">
+                                    {stu.grade}
                                   </span>
+                                  {stu.isSpecialCase && (
+                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                                      ⭐ {isAr ? 'حالة خاصة' : 'Special Case'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Family Link Pill (if student has siblings) */}
+                              {hasSiblings ? (
+                                <div className="bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl flex items-center justify-between text-[10px]">
+                                  <span className="font-bold text-amber-900 flex items-center gap-1 truncate">
+                                    <span>👨‍👩‍👧‍👦</span>
+                                    <span>{isAr ? `عائلة موحدة (${siblings.length + 1} إخوة)` : `Family (${siblings.length + 1} siblings)`}</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveTab('families');
+                                      setSearchTerm(stu.parentPhone || stu.name);
+                                    }}
+                                    className="text-[#0284C7] font-black hover:underline shrink-0 text-[10px] cursor-pointer"
+                                  >
+                                    {isAr ? 'عرض كرت العائلة ←' : 'View Family Card →'}
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-xl text-[10px] text-slate-500 flex items-center justify-between">
+                                  <span>👤 {isAr ? 'طالب منفرد' : 'Single Student'}</span>
+                                  <span className="text-slate-400 font-mono text-[9px]">{stu.parentPhone ? `📞 ${stu.parentPhone}` : 'بدون رقم'}</span>
+                                </div>
+                              )}
+
+                              {/* Credentials */}
+                              <div className="grid grid-cols-2 gap-1.5 text-[9px] font-mono bg-slate-50 p-2 rounded-xl border border-slate-200/70">
+                                <div className="truncate">
+                                  <span className="text-slate-400 font-sans block text-[8px]">اسم المستخدم:</span>
+                                  <span className="font-black text-[#0284C7] truncate block">{stu.username}</span>
+                                </div>
+                                <div className="truncate text-left ltr:text-right">
+                                  <span className="text-slate-400 font-sans block text-[8px]">كلمة المرور:</span>
+                                  <span className="font-black text-red-600 block">{stu.password}</span>
+                                </div>
+                              </div>
+
+                              {/* Financial Summary */}
+                              <div className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-center space-y-1.5">
+                                {stu.isSpecialCase && (
+                                  <div className="text-[10px] font-black bg-amber-100 text-amber-900 py-0.5 px-2 rounded-lg border border-amber-300">
+                                    ⭐ {isAr ? 'إعفاء كامل من القسط (حالة خاصة)' : 'Full Tuition Exemption (Special Case)'}
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-4 gap-1 text-[9px] font-mono">
+                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
+                                    <span className="text-slate-400 block text-[8px]">القسط:</span>
+                                    <span className="font-extrabold text-[#0F172A]">${stuTuition}</span>
+                                  </div>
+                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
+                                    <span className="text-slate-400 block text-[8px]">المدفوع:</span>
+                                    <span className="font-extrabold text-blue-600">${stuPaid}</span>
+                                  </div>
+                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
+                                    <span className="text-slate-400 block text-[8px]">الخصم:</span>
+                                    <span className="font-extrabold text-emerald-600">-${stuDiscount}</span>
+                                  </div>
+                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
+                                    <span className="text-red-500 block text-[8px] font-bold">المتبقي:</span>
+                                    <span className="font-black text-red-600">${remainingUSD}</span>
+                                  </div>
+                                </div>
+
+                                {/* Quick Edit Paid Button */}
+                                {currentRole === 'admin' && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setQuickEditPaidStudent(stu);
+                                      setQuickPaidAmount((stu.tuitionPaid || 0).toString());
+                                    }}
+                                    className="w-full py-1 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors border border-blue-200"
+                                  >
+                                    <span>💳</span>
+                                    <span>{isAr ? 'تعديل القسط المدفوع' : 'Edit Paid Tuition'}</span>
+                                  </button>
                                 )}
                               </div>
                             </div>
 
-                            {/* Family Link Pill (if student has siblings) */}
-                            {hasSiblings ? (
-                              <div className="bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl flex items-center justify-between text-[10px]">
-                                <span className="font-bold text-amber-900 flex items-center gap-1 truncate">
-                                  <span>👨‍👩‍👧‍👦</span>
-                                  <span>{isAr ? `عائلة موحدة (${siblings.length + 1} إخوة)` : `Family (${siblings.length + 1} siblings)`}</span>
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveTab('families');
-                                    setSearchTerm(stu.parentPhone || stu.name);
-                                  }}
-                                  className="text-[#0284C7] font-black hover:underline shrink-0 text-[10px] cursor-pointer"
-                                >
-                                  {isAr ? 'عرض كرت العائلة ←' : 'View Family Card →'}
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-xl text-[10px] text-slate-500 flex items-center justify-between">
-                                <span>👤 {isAr ? 'طالب منفرد' : 'Single Student'}</span>
-                                <span className="text-slate-400 font-mono text-[9px]">{stu.parentPhone ? `📞 ${stu.parentPhone}` : 'بدون رقم'}</span>
-                              </div>
-                            )}
-
-                            {/* Parent Info */}
-                            <div className="bg-[#F8FAFC] p-2 rounded-xl border border-slate-100 text-[10px] space-y-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-slate-500">{isAr ? 'ولي الأمر:' : 'Parent:'}</span>
-                                <span className="font-bold text-[#0F172A]">{stu.parentName || 'غير مسجل'}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-slate-500">{isAr ? 'هاتف التواصل:' : 'Phone:'}</span>
-                                <span className="font-mono text-[#0284C7] font-bold">{stu.parentPhone || stu.phone || 'غير مسجل'}</span>
-                              </div>
-                              {stu.ministryClearance && (
-                                <div className="flex items-center justify-between border-t border-slate-200/60 pt-1">
-                                  <span className="text-amber-700 font-bold">{isAr ? 'الإفادة الوزارية:' : 'Clearance No:'}</span>
-                                  <span className="font-mono font-black text-amber-900">{stu.ministryClearance}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Credentials */}
-                            <div className="grid grid-cols-2 gap-1.5 text-[9px] font-mono bg-slate-50 p-2 rounded-xl border border-slate-200/70">
-                              <div className="truncate">
-                                <span className="text-slate-400 font-sans block text-[8px]">اسم المستخدم:</span>
-                                <span className="font-black text-[#0284C7] truncate block">{stu.username}</span>
-                              </div>
-                              <div className="truncate text-left ltr:text-right">
-                                <span className="text-slate-400 font-sans block text-[8px]">كلمة المرور:</span>
-                                <span className="font-black text-red-600 block">{stu.password}</span>
-                              </div>
-                            </div>
-
-                            {/* Financial Summary */}
-                            <div className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-center space-y-1.5">
-                              {stu.isSpecialCase && (
-                                <div className="text-[10px] font-black bg-amber-100 text-amber-900 py-0.5 px-2 rounded-lg border border-amber-300">
-                                  ⭐ {isAr ? 'إعفاء كامل من القسط (حالة خاصة)' : 'Full Tuition Exemption (Special Case)'}
-                                </div>
-                              )}
-                              <div className="grid grid-cols-4 gap-1 text-[9px] font-mono">
-                                <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                  <span className="text-slate-400 block text-[8px]">القسط:</span>
-                                  <span className="font-extrabold text-[#0F172A]">${stuTuition}</span>
-                                </div>
-                                <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                  <span className="text-slate-400 block text-[8px]">المدفوع:</span>
-                                  <span className="font-extrabold text-blue-600">${stuPaid}</span>
-                                </div>
-                                <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                  <span className="text-slate-400 block text-[8px]">الخصم:</span>
-                                  <span className="font-extrabold text-emerald-600">-${stuDiscount}</span>
-                                </div>
-                                <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                  <span className="text-red-500 block text-[8px] font-bold">المتبقي:</span>
-                                  <span className="font-black text-red-600">${remainingUSD}</span>
-                                </div>
-                              </div>
-
-                              {/* Quick Edit Paid Button */}
-                              {currentRole === 'admin' && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setQuickEditPaidStudent(stu);
-                                    setQuickPaidAmount((stu.tuitionPaid || 0).toString());
-                                  }}
-                                  className="w-full py-1 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors border border-blue-200"
-                                >
-                                  <span>💳</span>
-                                  <span>{isAr ? 'تعديل القسط المدفوع' : 'Edit Paid Tuition'}</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Action Buttons Footer */}
-                          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-1.5">
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => setShowStudentDetailModal(stu)}
-                                className="p-1.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] rounded-xl cursor-pointer transition-colors"
-                                title="معاينة بيانات الحساب"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handlePrintClearance(stu)}
-                                className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl cursor-pointer transition-colors"
-                                title="طباعة إفادة الطالب"
-                              >
-                                <Printer className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            {currentRole === 'admin' && (
+                            {/* Action Buttons Footer */}
+                            <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center gap-1">
                                 <button
-                                  onClick={() => updateStudent(stu.id, { frozen: !stu.frozen })}
-                                  className={`p-1.5 rounded-xl cursor-pointer transition-all ${
-                                    stu.frozen 
-                                      ? 'bg-red-600 text-white animate-pulse' 
-                                      : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200'
-                                  }`}
-                                  title={stu.frozen ? 'الحساب مجمد (اضغط لإلغاء التجميد)' : 'تجميد حساب الطالب'}
+                                  onClick={() => setShowStudentDetailModal(stu)}
+                                  className="p-1.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] rounded-xl cursor-pointer transition-colors"
+                                  title="معاينة بيانات الحساب والتفاصيل"
                                 >
-                                  <span className="text-xs">❄️</span>
+                                  <Eye className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={() => handleOpenEditStudentModal(stu)}
-                                  className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl cursor-pointer transition-colors"
-                                  title="تعديل الحساب"
+                                  onClick={() => handlePrintClearance(stu)}
+                                  className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl cursor-pointer transition-colors"
+                                  title="طباعة إفادة الطالب"
                                 >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => deleteStudent(stu.id)}
-                                  className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl cursor-pointer transition-colors"
-                                  title="حذف الحساب"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Printer className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                            )}
+
+                              {currentRole === 'admin' && (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => updateStudent(stu.id, { frozen: !stu.frozen })}
+                                    className={`p-1.5 rounded-xl cursor-pointer transition-all ${
+                                      stu.frozen 
+                                        ? 'bg-red-600 text-white animate-pulse' 
+                                        : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200'
+                                    }`}
+                                    title={stu.frozen ? 'الحساب مجمد (اضغط لإلغاء التجميد)' : 'تجميد حساب الطالب'}
+                                  >
+                                    <span className="text-xs">❄️</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenEditStudentModal(stu)}
+                                    className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl cursor-pointer transition-colors"
+                                    title="تعديل الحساب"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteStudent(stu.id)}
+                                    className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl cursor-pointer transition-colors"
+                                    title="حذف الحساب"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
