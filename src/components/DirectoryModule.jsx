@@ -1135,13 +1135,17 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
               {filteredFamilies.map((family) => {
                 const isMultiSibling = family.members.length > 1;
+                // If ANY sibling in the family is marked as a special case -> entire family is special case!
+                const isFamilySpecialCase = family.members.some(s => s.isSpecialCase);
 
                 // Combined financial totals for the family
-                const combinedTotalUSD = family.members.reduce((sum, s) => {
-                  const trans = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
-                  const tTotal = s.isSpecialCase ? 0 : (s.tuitionTotal ?? 700);
-                  return sum + Number(tTotal) + trans;
-                }, 0);
+                const combinedTotalUSD = isFamilySpecialCase
+                  ? 0
+                  : family.members.reduce((sum, s) => {
+                      const trans = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
+                      const tTotal = s.isSpecialCase ? 0 : (s.tuitionTotal ?? 700);
+                      return sum + Number(tTotal) + trans;
+                    }, 0);
                 const combinedDiscountUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionDiscount) || 0), 0);
                 const combinedPaidUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionPaid) || 0), 0);
                 const combinedRemUSD = Math.max(0, combinedTotalUSD - combinedDiscountUSD - combinedPaidUSD);
@@ -1304,8 +1308,8 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                             {/* Member Financial Row & Quick Edit Paid Button */}
                             <div className="flex items-center justify-between text-[10px] bg-white p-1.5 rounded-lg border border-slate-100 font-mono">
                               <span className="text-slate-500">
-                                {member.isSpecialCase ? (
-                                  <span className="text-amber-700 font-bold font-sans">⭐ حالة خاصة</span>
+                                {(member.isSpecialCase || isFamilySpecialCase) ? (
+                                  <span className="text-amber-700 font-bold font-sans bg-amber-50 px-2 py-0.5 rounded border border-amber-200">⭐ حالة خاصة ($0)</span>
                                 ) : (
                                   <>قسط: <b className="text-slate-700">${member.tuitionTotal ?? 700}</b></>
                                 )}
