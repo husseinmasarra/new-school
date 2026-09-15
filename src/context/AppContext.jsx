@@ -310,6 +310,26 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const batchUpdateAttendanceRecords = (records) => {
+    if (!Array.isArray(records) || records.length === 0) return;
+    setAttendance((prev) => {
+      const newMap = new Map();
+      records.forEach((r, idx) => {
+        const dateStr = r.date || new Date().toISOString().split('T')[0];
+        const key = `${r.studentId}_${dateStr}`;
+        newMap.set(key, {
+          id: r.id || `ATT-${Date.now()}-${idx}`,
+          date: dateStr,
+          ...r
+        });
+      });
+      const filtered = prev.filter(a => !newMap.has(`${a.studentId}_${a.date}`));
+      const updated = [...newMap.values(), ...filtered];
+      dbSaveCollection('school_attendance', updated);
+      return updated;
+    });
+  };
+
   // ─── Behavioral Notes Records ──────────────────────────────────────────────
   const [behaviorRecords, setBehaviorRecords] = useState(() => dbLoadCollection('school_behavior', initialBehaviorRecords));
 
@@ -1908,6 +1928,7 @@ export const AppProvider = ({ children }) => {
     toggleThemeMode,
     attendance,
     addAttendanceRecord,
+    batchUpdateAttendanceRecords,
     deleteAttendanceRecord,
     behaviorRecords,
     addBehaviorRecord,
