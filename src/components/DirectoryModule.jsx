@@ -39,7 +39,8 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
     addTeacher, 
     deleteTeacher, 
     subjects = [],
-    addAgendaItem 
+    addAgendaItem,
+    verifyAdminPassword 
   } = useApp();
 
   const isAr = lang === 'ar';
@@ -90,6 +91,8 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
   const [editStuIsSpecialCase, setEditStuIsSpecialCase] = useState(false);
   const [quickEditPaidStudent, setQuickEditPaidStudent] = useState(null);
   const [quickPaidAmount, setQuickPaidAmount] = useState('');
+  const [quickEditAdminPass, setQuickEditAdminPass] = useState('');
+  const [quickEditAdminError, setQuickEditAdminError] = useState('');
 
   // Auto-fill handlers for student name, parent name, and username
   const handleFirstNameChange = (val) => {
@@ -2910,10 +2913,46 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
               );
             })()}
 
+            {/* Security Check: If current user is not admin, require admin password */}
+            {currentRole !== 'admin' && (
+              <div className="bg-red-50 dark:bg-red-950/40 border-2 border-red-300 dark:border-red-800 p-3 rounded-2xl space-y-2">
+                <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                  <span className="text-xs font-black">
+                    🔒 تعديل الحسابات مسموح حصراً للمدير العام
+                  </span>
+                </div>
+                <p className="text-[10px] text-red-600 dark:text-red-300 font-semibold">
+                  أنت مسجل بحساب غير حساب المدير. يرجى إدخال كلمة سر المدير العام لتأكيد التعديل:
+                </p>
+                <div className="space-y-1">
+                  <input
+                    type="password"
+                    required
+                    value={quickEditAdminPass}
+                    onChange={(e) => {
+                      setQuickEditAdminPass(e.target.value);
+                      setQuickEditAdminError('');
+                    }}
+                    placeholder="كلمة سر المدير العام..."
+                    className="w-full bg-white dark:bg-slate-900 border border-red-300 dark:border-red-800 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-red-500"
+                  />
+                  {quickEditAdminError && (
+                    <span className="text-[10px] text-red-700 dark:text-red-400 font-bold block">
+                      ⚠️ {quickEditAdminError}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
-                onClick={() => setQuickEditPaidStudent(null)}
+                onClick={() => {
+                  setQuickEditPaidStudent(null);
+                  setQuickEditAdminPass('');
+                  setQuickEditAdminError('');
+                }}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl cursor-pointer transition-colors"
               >
                 {t('cancel')}
@@ -2921,9 +2960,17 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
               <button
                 type="button"
                 onClick={() => {
+                  if (currentRole !== 'admin') {
+                    if (!verifyAdminPassword || !verifyAdminPassword(quickEditAdminPass)) {
+                      setQuickEditAdminError(isAr ? 'كلمة سر المدير غير صحيحة! التعديل محمي.' : 'Incorrect admin password!');
+                      return;
+                    }
+                  }
                   const val = Math.max(0, Number(quickPaidAmount) || 0);
                   updateStudent(quickEditPaidStudent.id, { tuitionPaid: val });
                   setQuickEditPaidStudent(null);
+                  setQuickEditAdminPass('');
+                  setQuickEditAdminError('');
                   setSuccessMsg(isAr ? `تم تحديث القسط المدفوع للطالب «${quickEditPaidStudent.name}» إلى $${val} بنجاح!` : 'Tuition paid updated successfully!');
                   setTimeout(() => setSuccessMsg(''), 4000);
                 }}

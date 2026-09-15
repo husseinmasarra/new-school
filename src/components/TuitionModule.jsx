@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const TuitionModule = () => {
-  const { lang, t, currentRole, students = [], payTuition, updateStudent, selectedStudentId, addMessage, siteSettings } = useApp();
+  const { lang, t, currentRole, students = [], payTuition, updateStudent, selectedStudentId, addMessage, siteSettings, verifyAdminPassword } = useApp();
 
   const isAr = lang === 'ar';
   const safeStudents = students || [];
@@ -44,6 +44,8 @@ export const TuitionModule = () => {
   const [editPaidAmount, setEditPaidAmount] = useState('');
   const [editPaidReason, setEditPaidReason] = useState('تصحيح خطأ في تسجيل الدفعة');
   const [editSuccessMsg, setEditSuccessMsg] = useState('');
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminPasswordError, setAdminPasswordError] = useState('');
 
   const [showReceiptModal, setShowReceiptModal] = useState(null);
   const [successToast, setSuccessToast] = useState(false);
@@ -153,6 +155,15 @@ export const TuitionModule = () => {
   const handleEditPaymentSubmit = (e) => {
     e.preventDefault();
     if (!selectedStudentForEditPayment) return;
+
+    // Security Check: If current user is not logged in as admin, require Admin Password!
+    if (currentRole !== 'admin') {
+      if (!verifyAdminPassword || !verifyAdminPassword(adminPasswordInput)) {
+        setAdminPasswordError(isAr ? 'عذراً! كلمة سر المدير غير صحيحة. تعديل الحسابات حصراً للمدير العام.' : 'Incorrect Admin Password. Account modification is strictly reserved for the Administrator.');
+        return;
+      }
+    }
+    setAdminPasswordError('');
 
     const newAmount = Math.max(0, Number(editPaidAmount) || 0);
     const stuId = selectedStudentForEditPayment.id;
@@ -816,6 +827,39 @@ export const TuitionModule = () => {
                 className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 font-semibold"
               />
             </div>
+
+            {/* Security Check: If current user is not admin, require admin password */}
+            {currentRole !== 'admin' && (
+              <div className="bg-red-50 border-2 border-red-300 p-3.5 rounded-2xl space-y-2 animate-shake">
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-black">
+                    🔒 تعديل الحسابات حصراً للمدير العام
+                  </span>
+                </div>
+                <p className="text-[10px] text-red-600 font-semibold">
+                  أنت مسجل حالياً بحساب غير حساب المدير العام. للمتابعة وتعديل هذا الحساب، يرجى إدخال كلمة سر المدير العام:
+                </p>
+                <div className="space-y-1">
+                  <input
+                    type="password"
+                    required
+                    value={adminPasswordInput}
+                    onChange={(e) => {
+                      setAdminPasswordInput(e.target.value);
+                      setAdminPasswordError('');
+                    }}
+                    placeholder="أدخل كلمة سر المدير العام..."
+                    className="w-full bg-white border border-red-300 text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-red-500"
+                  />
+                  {adminPasswordError && (
+                    <span className="text-[10px] text-red-700 font-bold block">
+                      ⚠️ {adminPasswordError}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Footer Buttons */}
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">

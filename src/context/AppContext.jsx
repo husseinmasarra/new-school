@@ -1669,7 +1669,28 @@ export const AppProvider = ({ children }) => {
     return true;
   };
 
+  /**
+   * Security Verification: Check if entered password matches the Administrator's password.
+   * Used when a non-admin user attempts any financial modification or action.
+   */
+  const verifyAdminPassword = (inputPassword) => {
+    if (!inputPassword) return false;
+    const cleanPass = String(inputPassword).trim();
+    // 1. Check master hardcoded admin fallback
+    if (cleanPass === '123123123') return true;
+
+    // 2. Check active admin account in system users
+    const adminUser = (systemUsers || []).find(u => u.role === 'admin' && u.password);
+    if (adminUser && String(adminUser.password).trim() === cleanPass) return true;
+
+    // 3. Current user is admin and password matches
+    if (currentUser?.role === 'admin' && String(currentUser.password).trim() === cleanPass) return true;
+
+    return false;
+  };
+
   const value = {
+    verifyAdminPassword,
     lang,
     dir,
     t,
