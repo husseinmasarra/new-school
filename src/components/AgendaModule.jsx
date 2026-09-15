@@ -125,7 +125,24 @@ export const activityBank = {
 };
 
 export const AgendaModule = () => {
-  const { lang, t, currentRole, currentUser, agenda = [], addAgendaItem, updateAgendaItem, deleteAgendaItem, students = [], teachers = [], grades = [], submittedTasks = {}, addHomeworkSubmission, gradeHomeworkSubmission } = useApp();
+  const { 
+    lang, 
+    t, 
+    currentRole, 
+    currentUser, 
+    agenda = [], 
+    addAgendaItem, 
+    updateAgendaItem, 
+    deleteAgendaItem, 
+    students = [], 
+    teachers = [], 
+    grades = [], 
+    submittedTasks = {}, 
+    addHomeworkSubmission, 
+    gradeHomeworkSubmission,
+    selectedStudentId,
+    setSelectedStudentId
+  } = useApp();
 
   const isAr = lang === 'ar';
   const safeStudents = students || [];
@@ -143,23 +160,29 @@ export const AgendaModule = () => {
     .replace(/[\(\)\-\_\s]/g, '');
 
   const isGradeMatch = (g1, g2) => {
-    if (!g1 || !g2) return true;
+    if (!g1 || !g2) return false;
     const n1 = normStr(g1);
     const n2 = normStr(g2);
-    return !n1 || !n2 || n1.includes(n2) || n2.includes(n1);
-  };
-
-  const isSecMatch = (s1, s2) => {
-    if (!s1 || !s2) return true;
-    const n1 = normStr(s1);
-    const n2 = normStr(s2);
-    return !n1 || !n2 || n1.includes(n2) || n2.includes(n1);
+    return n1 === n2 || (Boolean(n1) && Boolean(n2) && (n1.includes(n2) || n2.includes(n1)));
   };
 
   const getSectionLetter = (str) => {
     if (!str) return '';
-    const m = str.match(/[\(\s\-\_]([أبجدA-Z])[\)\s\-\_]?$/) || str.match(/([أبجدA-Z])/g);
-    return m ? m[m.length - 1] : '';
+    const clean = String(str).replace(/[أإآ]/g, 'ا');
+    const m = clean.match(/[\(\s\-\_]([ابجدA-Z])[\)\s\-\_]?$/) || clean.match(/([ابجدA-Z])/g);
+    const res = m ? m[m.length - 1] : '';
+    if (res === 'ا') return 'أ';
+    return res;
+  };
+
+  const isSecMatch = (s1, s2) => {
+    if (!s1 || !s2) return false;
+    const l1 = getSectionLetter(s1);
+    const l2 = getSectionLetter(s2);
+    if (l1 && l2) return l1 === l2;
+    const n1 = normStr(s1);
+    const n2 = normStr(s2);
+    return n1 === n2 || (Boolean(n1) && Boolean(n2) && (n1.includes(n2) || n2.includes(n1)));
   };
 
   // Find active teacher record and assigned classrooms
@@ -168,39 +191,56 @@ export const AgendaModule = () => {
     ? (currentUser?.assignedClassrooms || currentUser?.assignedClasses || activeTeacher?.assignedClassrooms || [])
     : [];
 
+  // Active student resolution
+  const activeStudent = safeStudents.find(s => 
+    s.id === selectedStudentId || 
+    s.id === currentUser?.id || 
+    s.id === currentUser?.studentId || 
+    s.name === currentUser?.name || 
+    s.username === currentUser?.username
+  ) || (currentRole === 'student' ? currentUser : null) || safeStudents[0];
+
   // Filter available grades for the current role
   const availableGradesForRole = safeGrades.filter((g) => {
     if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
     return teacherAssignedList.some((assignedStr) => isGradeMatch(g.name, assignedStr));
   });
 
-  const currentStudent = safeStudents.find(s => s.id === currentUser?.id || s.name === currentUser?.name) || safeStudents[0];
+  const allSections = ['أ', 'ب', 'ج', 'د'];
+  const getSectionsForGrade = (targetGradeName) => {
+    return allSections.filter((secLetter) => {
+      if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
+      return teacherAssignedList.some((assignedStr) => {
+        const gradeOk = isGradeMatch(targetGradeName, assignedStr);
+        const secLetterAssigned = getSectionLetter(assignedStr);
+        return gradeOk && (!secLetterAssigned || secLetterAssigned === secLetter);
+      });
+    });
+  };
 
   const [selectedGrade, setSelectedGrade] = useState(() => {
+    if (currentRole === 'student' || currentRole === 'parent') {
+      return activeStudent?.grade || safeGrades[0]?.name || 'الصف الأول الابتدائي';
+    }
     if (currentRole === 'teacher' && availableGradesForRole.length > 0) return availableGradesForRole[0].name;
-    return currentStudent?.grade || safeGrades[0]?.name || 'الصف الأول الابتدائي';
+    return safeGrades[0]?.name || 'الصف الأول الابتدائي';
   });
 
-  // Filter available sections for the current role and selectedGrade
-  const allSections = ['أ', 'ب', 'ج', 'د'];
-  const availableSectionsForRole = allSections.filter((secLetter) => {
-    if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
-    return teacherAssignedList.some((assignedStr) => {
-      const gradeOk = isGradeMatch(selectedGrade, assignedStr);
-      const secLetterAssigned = getSectionLetter(assignedStr);
-      return gradeOk && (!secLetterAssigned || secLetterAssigned === secLetter);
-    });
-  });
+  const availableSectionsForRole = getSectionsForGrade(selectedGrade);
 
   const [selectedClass, setSelectedClass] = useState(() => {
+    if (currentRole === 'student' || currentRole === 'parent') {
+      return getSectionLetter(activeStudent?.classRoom || activeStudent?.classroom) || 'أ';
+    }
     if (currentRole === 'teacher' && availableSectionsForRole.length > 0) return availableSectionsForRole[0];
-    return currentStudent?.classRoom || currentStudent?.classroom || 'أ';
+    return 'أ';
   });
 
   useEffect(() => {
-    if (currentStudent && (currentRole === 'student' || currentRole === 'parent')) {
-      if (currentStudent.grade) setSelectedGrade(currentStudent.grade);
-      if (currentStudent.classRoom || currentStudent.classroom) setSelectedClass(currentStudent.classRoom || currentStudent.classroom);
+    if (currentRole === 'student' || currentRole === 'parent') {
+      if (activeStudent?.grade) setSelectedGrade(activeStudent.grade);
+      const studentSec = getSectionLetter(activeStudent?.classRoom || activeStudent?.classroom) || 'أ';
+      setSelectedClass(studentSec);
     } else if (currentRole === 'teacher' && teacherAssignedList.length > 0) {
       if (availableGradesForRole.length > 0 && !availableGradesForRole.some(g => isGradeMatch(g.name, selectedGrade))) {
         setSelectedGrade(availableGradesForRole[0].name);
@@ -209,7 +249,7 @@ export const AgendaModule = () => {
         setSelectedClass(availableSectionsForRole[0]);
       }
     }
-  }, [currentStudent, currentRole, teacherAssignedList, selectedGrade, selectedClass]);
+  }, [activeStudent, currentRole, teacherAssignedList, selectedGrade, selectedClass]);
 
   // Selected Calendar Date state (default to today)
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -219,6 +259,8 @@ export const AgendaModule = () => {
 
   // Edit Lesson Modal State
   const [showEditModal, setShowEditModal] = useState(null);
+  const [editGrade, setEditGrade] = useState('');
+  const [editClass, setEditClass] = useState('أ');
   const [editSubject, setEditSubject] = useState('الرياضيات');
   const [editTitle, setEditTitle] = useState('');
   const [editHomework, setEditHomework] = useState('');
@@ -228,6 +270,8 @@ export const AgendaModule = () => {
 
   const handleEditClick = (item) => {
     setShowEditModal(item);
+    setEditGrade(item.grade || selectedGrade);
+    setEditClass(getSectionLetter(item.classRoom || item.section) || 'أ');
     setEditSubject(item.subject || 'الرياضيات');
     setEditTitle(item.title || '');
     setEditHomework(item.homework || '');
@@ -240,7 +284,12 @@ export const AgendaModule = () => {
     e.preventDefault();
     if (!showEditModal || !editTitle) return;
 
+    const cleanSec = getSectionLetter(editClass) || editClass || 'أ';
+
     updateAgendaItem(showEditModal.id, {
+      grade: editGrade || selectedGrade,
+      classRoom: cleanSec,
+      section: cleanSec,
       subject: editSubject,
       title: editTitle,
       titleEn: editTitle,
@@ -252,7 +301,7 @@ export const AgendaModule = () => {
     });
 
     setShowEditModal(null);
-    setToastMessage('✅ تم تحديث وحفظ بيانات الدرس والنشاط بنجاح!');
+    setToastMessage(isAr ? '✅ تم تحديث وتثبيت بيانات الدرس والنشاط بنجاح!' : 'Agenda item updated successfully!');
     setTimeout(() => setToastMessage(''), 3000);
   };
 
@@ -388,9 +437,11 @@ export const AgendaModule = () => {
   };
 
   // ── Smart Full Week Schedule Batch Generator ──────────────────────
+  // ── Smart Full Week Schedule Batch Generator ──────────────────────
   const handleBatchGenerateWeek = () => {
     const subjectsList = Object.keys(activityBank);
     let addedCount = 0;
+    const cleanSec = getSectionLetter(selectedClass) || selectedClass || 'أ';
 
     subjectsList.forEach((subName) => {
       const bank = activityBank[subName];
@@ -399,7 +450,8 @@ export const AgendaModule = () => {
       addAgendaItem({
         date: selectedDate,
         grade: selectedGrade,
-        classRoom: selectedClass,
+        classRoom: cleanSec,
+        section: cleanSec,
         subject: subName,
         title: hw.title,
         titleEn: hw.title,
@@ -415,7 +467,8 @@ export const AgendaModule = () => {
         addAgendaItem({
           date: selectedDate,
           grade: selectedGrade,
-          classRoom: selectedClass,
+          classRoom: cleanSec,
+          section: cleanSec,
           subject: subName,
           title: comp.title,
           titleEn: comp.title,
@@ -431,7 +484,7 @@ export const AgendaModule = () => {
       addedCount++;
     });
 
-    setToastMessage(`⚡ تم توليد ورصد ${addedCount} أنشطة وامتحانات ومسابقات جديدة بنجاح!`);
+    setToastMessage(isAr ? `⚡ تم توليد ورصد ${addedCount} أنشطة لـ (${selectedGrade} - الشعبة ${cleanSec}) بنجاح!` : `Generated ${addedCount} activities for ${selectedGrade} Section ${cleanSec}!`);
     setTimeout(() => setToastMessage(''), 4000);
   };
 
@@ -439,10 +492,14 @@ export const AgendaModule = () => {
     e.preventDefault();
     if (!title) return;
 
+    const targetGradeVal = modalGrade || selectedGrade;
+    const targetSecVal = getSectionLetter(modalClass || selectedClass) || modalClass || selectedClass || 'أ';
+
     addAgendaItem({
       date: selectedDate,
-      grade: modalGrade || selectedGrade,
-      classRoom: modalClass || selectedClass,
+      grade: targetGradeVal,
+      classRoom: targetSecVal,
+      section: targetSecVal,
       subject,
       title,
       titleEn: titleEn || title,
@@ -461,8 +518,8 @@ export const AgendaModule = () => {
     setExamDuration('');
     setTotalScore('');
     setShowAddModal(false);
-    setToastMessage('✅ تم إضافة ونشر الدرس والنشاط للطلاب بنجاح!');
-    setTimeout(() => setToastMessage(''), 3000);
+    setToastMessage(isAr ? `✅ تم إرسال ونشر الدرس حصراً لـ (${targetGradeVal} - الشعبة ${targetSecVal}) بنجاح!` : 'Lesson published for target grade & section!');
+    setTimeout(() => setToastMessage(''), 3500);
   };
 
   const handleSaveAttendance = () => {
@@ -472,7 +529,7 @@ export const AgendaModule = () => {
 
   const filteredAgenda = safeAgenda.filter((item) => {
     const matchesGrade = isGradeMatch(item.grade, selectedGrade);
-    const matchesClass = isSecMatch(item.classRoom, selectedClass);
+    const matchesClass = isSecMatch(item.classRoom || item.section, selectedClass);
     const matchesDate  = !filterByDate || !item.date || item.date === selectedDate;
     const matchesSubject = subjectFilter === 'all' || item.subject === subjectFilter;
     const matchesType = typeFilter === 'all' 
@@ -497,43 +554,87 @@ export const AgendaModule = () => {
             <h2 className="text-xl font-bold text-[#0284C7]">{t('agendaTitle')} والأجندة اليومية التفاعلية</h2>
             <p className="text-xs text-slate-500 mt-1">
               {isAr 
-                ? "إرسال ونشر الدروس والواجبات اليومية من المعلمين والإدارة مع أرشيف كامل للمراجعة بحسب التاريخ."
-                : "Daily interactive agenda & lesson publishing with date-based historical archive review."}
+                ? "إرسال ونشر الدروس والواجبات اليومية من المعلمين والإدارة مع تحديد الصف والشعبة بدقة لاختلاف الدروس."
+                : "Daily interactive agenda & lesson publishing targeted strictly by grade & section."}
             </p>
           </div>
         </div>
 
         {/* Grade/Class Selectors & Add Button */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Grade Selector */}
-          <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-xl">
-            <span className="text-xs text-slate-500 font-medium">{t('grade')}:</span>
-            <select
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              className="bg-transparent text-xs font-bold text-[#0F172A] focus:outline-none cursor-pointer"
-            >
-              {availableGradesForRole.map((g) => (
-                <option key={g.id} value={g.name}>{isAr ? g.name : g.nameEn}</option>
-              ))}
-            </select>
-          </div>
+          {currentRole === 'student' ? (
+            <div className="flex items-center gap-2 bg-sky-50 border border-sky-200 px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#0284C7]">
+              <BookOpen className="w-4 h-4 text-[#0284C7]" />
+              <span>{selectedGrade} - الشعبة ({getSectionLetter(selectedClass) || 'أ'})</span>
+            </div>
+          ) : currentRole === 'parent' ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              {safeStudents.length > 1 && (
+                <div className="flex items-center gap-2 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl">
+                  <span className="text-xs font-bold text-slate-700">{isAr ? 'التلميذ:' : 'Student:'}</span>
+                  <select
+                    value={activeStudent?.id}
+                    onChange={(e) => {
+                      if (setSelectedStudentId) setSelectedStudentId(e.target.value);
+                      const stu = safeStudents.find(s => s.id === e.target.value);
+                      if (stu) {
+                        if (stu.grade) setSelectedGrade(stu.grade);
+                        setSelectedClass(getSectionLetter(stu.classRoom || stu.classroom) || 'أ');
+                      }
+                    }}
+                    className="bg-white border border-sky-300 text-sky-900 rounded-lg px-2 py-0.5 text-xs font-bold cursor-pointer outline-none"
+                  >
+                    {safeStudents.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.grade} - {s.classRoom || 'أ'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-bold text-[#0284C7]">
+                <span>{selectedGrade} - الشعبة ({getSectionLetter(selectedClass) || 'أ'})</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Grade Selector */}
+              <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-xl">
+                <span className="text-xs text-slate-500 font-medium">{t('grade')}:</span>
+                <select
+                  value={selectedGrade}
+                  onChange={(e) => {
+                    setSelectedGrade(e.target.value);
+                    const nextSecs = getSectionsForGrade(e.target.value);
+                    if (nextSecs.length > 0 && !nextSecs.includes(selectedClass)) {
+                      setSelectedClass(nextSecs[0]);
+                    }
+                  }}
+                  className="bg-transparent text-xs font-bold text-[#0F172A] focus:outline-none cursor-pointer"
+                >
+                  {availableGradesForRole.map((g) => (
+                    <option key={g.id} value={g.name}>{isAr ? g.name : g.nameEn}</option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Section Selector */}
-          <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-xl">
-            <span className="text-xs text-slate-500 font-medium">{isAr ? 'الشعبة:' : 'Section:'}</span>
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="bg-transparent text-xs font-bold text-[#0F172A] focus:outline-none cursor-pointer"
-            >
-              {availableSectionsForRole.map((secLetter) => (
-                <option key={secLetter} value={secLetter}>{isAr ? `الشعبة (${secLetter})` : `Section ${secLetter}`}</option>
-              ))}
-            </select>
-          </div>
+              {/* Section Selector */}
+              <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-xl">
+                <span className="text-xs text-slate-500 font-medium">{isAr ? 'الشعبة:' : 'Section:'}</span>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-[#0F172A] focus:outline-none cursor-pointer"
+                >
+                  {availableSectionsForRole.map((secLetter) => (
+                    <option key={secLetter} value={secLetter}>{isAr ? `الشعبة (${secLetter})` : `Section ${secLetter}`}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-          {(currentRole === 'admin' || currentRole === 'teacher') && (
+          {(currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'vice_principal') && (
             <button
               onClick={() => {
                 setModalGrade(selectedGrade);
@@ -737,9 +838,12 @@ export const AgendaModule = () => {
               return (
                 <div key={item.id} className={`interactive-card border p-5 rounded-2xl space-y-3 shadow-sm transition-all hover:shadow-md ${cfg.color}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${cfg.badgeClass}`}>{cfg.badge}</span>
                       <SubjectBadge subjectName={item.subject} />
+                      <span className="bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800">
+                        {item.grade || selectedGrade} - الشعبة ({getSectionLetter(item.classRoom || item.section) || 'أ'})
+                      </span>
                     </div>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1">
                       <Clock className="w-3 h-3 text-[#0284C7] dark:text-sky-400" /> {item.dueDate || item.date}
@@ -946,6 +1050,12 @@ export const AgendaModule = () => {
               </button>
             </div>
 
+            {/* Strict Grade and Section note */}
+            <div className="bg-amber-50 border border-amber-300 p-2.5 rounded-2xl flex items-center gap-2 text-xs text-amber-900 font-bold">
+              <span className="text-base">📌</span>
+              <span>تحديد الصف والشعبة إلزامي: نظراً لاختلاف المناهج والدروس بين الشُعب، يتم إرسال هذا الدرس حصراً لطلاب الشعبة والصف المحددين.</span>
+            </div>
+
             {/* Target Grade & Section Selector */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-2xl">
               <div className="space-y-1">
@@ -968,7 +1078,7 @@ export const AgendaModule = () => {
                   onChange={(e) => setModalClass(e.target.value)}
                   className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] cursor-pointer"
                 >
-                  {availableSectionsForRole.map((secLetter) => (
+                  {getSectionsForGrade(modalGrade || selectedGrade).map((secLetter) => (
                     <option key={secLetter} value={secLetter}>{isAr ? `الشعبة (${secLetter})` : `Section ${secLetter}`}</option>
                   ))}
                 </select>
@@ -1343,6 +1453,35 @@ export const AgendaModule = () => {
               >
                 ✕
               </button>
+            </div>
+
+            {/* Target Grade & Section in Edit Modal */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 p-3 rounded-2xl">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200">{isAr ? 'الصف المستهدف' : 'Target Grade'} <span className="text-red-500">*</span></label>
+                <select
+                  value={editGrade}
+                  onChange={(e) => setEditGrade(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-800 border border-[#E2E8F0] dark:border-zinc-700 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] cursor-pointer"
+                >
+                  {availableGradesForRole.map((g) => (
+                    <option key={g.id} value={g.name}>{isAr ? g.name : g.nameEn}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200">{isAr ? 'الشعبة المستهدفة' : 'Target Section'} <span className="text-red-500">*</span></label>
+                <select
+                  value={editClass}
+                  onChange={(e) => setEditClass(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-800 border border-[#E2E8F0] dark:border-zinc-700 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] cursor-pointer"
+                >
+                  {allSections.map((secLetter) => (
+                    <option key={secLetter} value={secLetter}>{isAr ? `الشعبة (${secLetter})` : `Section ${secLetter}`}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Select Type */}

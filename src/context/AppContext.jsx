@@ -1232,10 +1232,13 @@ export const AppProvider = ({ children }) => {
   };
 
   const addAgendaItem = (item) => {
+    const targetSec = item.classRoom || item.section || 'أ';
     const newItem = {
       id: `AGN-${Math.floor(100 + Math.random() * 900)}`,
       date: new Date().toISOString().split('T')[0],
-      ...item
+      ...item,
+      classRoom: targetSec,
+      section: targetSec
     };
     setAgenda((prev) => {
       const updated = [newItem, ...prev];
@@ -1246,14 +1249,14 @@ export const AppProvider = ({ children }) => {
     setNotifications((prev) => {
       const newNotif = {
         id: `NOT-${Date.now().toString().slice(-4)}`,
-        title: `📚 درس/واجب جديد من المعلم: ${item.subject || 'مادة دراسية'}`,
-        message: `${item.title || ''} - (${item.grade || ''} - الشعبة ${item.classRoom || 'أ'})`,
+        title: `📚 درس/واجب جديد: ${item.subject || 'مادة دراسية'}`,
+        message: `${item.title || ''} - (${item.grade || ''} - الشعبة ${targetSec})`,
         type: 'agenda',
         time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
         date: new Date().toISOString().split('T')[0],
         read: false,
         targetGrade: item.grade,
-        targetSection: item.classRoom,
+        targetSection: targetSec,
         targetRole: 'student'
       };
       const updatedNotifs = [newNotif, ...prev];
@@ -1264,8 +1267,14 @@ export const AppProvider = ({ children }) => {
 
   const updateAgendaItem = (itemId, updatedFields) => {
     setAgenda((prev) => {
-      const updated = prev.map((a) => (a.id === itemId ? { ...a, ...updatedFields } : a));
-      localStorage.setItem('school_agenda', JSON.stringify(updated));
+      const updated = prev.map((a) => {
+        if (a.id === itemId) {
+          const targetSec = updatedFields.classRoom || updatedFields.section || a.classRoom || a.section || 'أ';
+          return { ...a, ...updatedFields, classRoom: targetSec, section: targetSec };
+        }
+        return a;
+      });
+      dbSaveCollection('school_agenda', updated);
       return updated;
     });
   };

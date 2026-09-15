@@ -178,7 +178,14 @@ export const Header = ({ activeTab, setActiveTab, setIsSidebarOpen }) => {
     if (currentRole === 'admin') return true;
     if (n.targetStudentId && (n.targetStudentId === currentUser?.id || n.targetStudentId === activeStudent?.id)) return true;
     if (n.targetUser && (n.targetUser === currentUser?.username || n.targetUser === currentUser?.name || n.targetUser === activeStudent?.name)) return true;
-    if (n.targetGrade && activeStudent?.grade && normStr(n.targetGrade).includes(normStr(activeStudent.grade))) {
+    if (n.targetGrade && activeStudent?.grade && (normStr(n.targetGrade).includes(normStr(activeStudent.grade)) || normStr(activeStudent.grade).includes(normStr(n.targetGrade)))) {
+      if (n.targetSection && (activeStudent?.classRoom || activeStudent?.classroom)) {
+        const nSec = normStr(n.targetSection);
+        const sSec = normStr(activeStudent.classRoom || activeStudent.classroom);
+        if (nSec && sSec && !nSec.includes(sSec) && !sSec.includes(nSec)) {
+          return false;
+        }
+      }
       return true;
     }
     if (n.targetRole && (n.targetRole === currentRole || n.targetRole === 'all')) return true;

@@ -85,10 +85,7 @@ export const SubjectsModule = () => {
   };
 
   const isSecMatch = (lessonSec, studentSec) => {
-    if (!lessonSec || lessonSec === 'جميع الشُعب' || lessonSec === 'الكل' || lessonSec === 'all' || lessonSec === 'عام') {
-      return true;
-    }
-    if (!studentSec) return true;
+    if (!lessonSec || !studentSec) return false;
     const lLetter = getSectionLetter(lessonSec);
     const sLetter = getSectionLetter(studentSec);
     if (lLetter && sLetter) {
@@ -96,7 +93,7 @@ export const SubjectsModule = () => {
     }
     const n1 = normGradeStr(lessonSec);
     const n2 = normGradeStr(studentSec);
-    return !n1 || !n2 || n1 === n2 || n1.includes(n2) || n2.includes(n1);
+    return n1 === n2 || (Boolean(n1) && Boolean(n2) && (n1.includes(n2) || n2.includes(n1)));
   };
 
   const normSubject = (str) => (str || '')
@@ -139,7 +136,7 @@ export const SubjectsModule = () => {
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonContent, setNewLessonContent] = useState('');
   const [newLessonGrade, setNewLessonGrade] = useState(allGradeNames[0] || 'الصف الأول');
-  const [newLessonSection, setNewLessonSection] = useState('جميع الشُعب');
+  const [newLessonSection, setNewLessonSection] = useState('أ');
   const [newLessonType, setNewLessonType] = useState('lesson');
   const [newLessonDate, setNewLessonDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newLessonTeacher, setNewLessonTeacher] = useState(currentUser?.name || 'أ. معلم المادة');
@@ -191,13 +188,14 @@ export const SubjectsModule = () => {
     e.preventDefault();
     if (!newLessonTitle || !selectedSubjectForLessons) return;
 
-    const sectionVal = newLessonSection === 'جميع الشُعب' ? 'جميع الشُعب' : (getSectionLetter(newLessonSection) || newLessonSection);
+    const sectionVal = getSectionLetter(newLessonSection) || newLessonSection || 'أ';
 
     addAgendaItem({
       title: newLessonTitle,
       subject: selectedSubjectForLessons.name,
       grade: newLessonGrade,
       classRoom: sectionVal,
+      section: sectionVal,
       date: newLessonDate || new Date().toISOString().split('T')[0],
       homework: newLessonContent || 'شرح المادة ومتابعة التمارين.',
       activityType: newLessonType || 'lesson',
@@ -207,7 +205,7 @@ export const SubjectsModule = () => {
     setNewLessonTitle('');
     setNewLessonContent('');
     alert(isAr 
-      ? `تم بنجاح نشر الدرس لـ (${newLessonGrade} - ${newLessonSection})! 🟢` 
+      ? `تم بنجاح نشر الدرس لـ (${newLessonGrade} - الشعبة ${sectionVal})! 🟢` 
       : 'Lesson published successfully for target grade and section!');
   };
 
@@ -527,20 +525,24 @@ export const SubjectsModule = () => {
 
                     <div>
                       <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        {isAr ? 'الشعبة' : 'Section'}
+                        {isAr ? 'الشعبة المستهدفة' : 'Section'} <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={newLessonSection}
                         onChange={(e) => setNewLessonSection(e.target.value)}
-                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold"
+                        className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold cursor-pointer"
                       >
-                        <option value="جميع الشُعب">جميع الشُعب (عام)</option>
                         <option value="أ">الشعبة (أ)</option>
                         <option value="ب">الشعبة (ب)</option>
                         <option value="ج">الشعبة (ج)</option>
                         <option value="د">الشعبة (د)</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-2 font-bold flex items-center gap-2">
+                    <span>📌</span>
+                    <span>تحديد الصف والشعبة إلزامي: نظراً لاختلاف الدروس بين الشُعب، يتم توجيه ونشر هذا الدرس حصراً للشعبة والصف المحددين.</span>
                   </div>
                 </div>
 

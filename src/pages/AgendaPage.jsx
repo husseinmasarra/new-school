@@ -6,6 +6,7 @@ export const AgendaPage = () => {
   const { agenda, addAgendaItem, deleteAgendaItem, classes, subjects } = useSchool();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState('ALL');
+  const [selectedSection, setSelectedSection] = useState('ALL');
 
   const [newItem, setNewItem] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -18,13 +19,18 @@ export const AgendaPage = () => {
     teacher: 'كادر المعلمين'
   });
 
-  const filteredAgenda = agenda.filter(a => selectedGrade === 'ALL' || a.grade === selectedGrade);
+  const filteredAgenda = agenda.filter(a => {
+    const matchGrade = selectedGrade === 'ALL' || a.grade === selectedGrade;
+    const itemSec = a.section || a.classRoom || 'أ';
+    const matchSec = selectedSection === 'ALL' || itemSec === selectedSection;
+    return matchGrade && matchSec;
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newItem.lessonTitle.trim()) return;
 
-    addAgendaItem(newItem);
+    addAgendaItem({ ...newItem, classRoom: newItem.section });
     setShowAddModal(false);
     setNewItem({
       date: new Date().toISOString().split('T')[0],
@@ -47,11 +53,11 @@ export const AgendaPage = () => {
             الأجندة والدروس والواجبات اليومية
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            متابعة الدروس المعطاة، الواجبات المدرسية ومواعيد التسليم لجميع المراحل
+            متابعة الدروس المعطاة، الواجبات المدرسية ومواعيد التسليم لجميع المراحل والشُعب
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <select
             value={selectedGrade}
             onChange={(e) => setSelectedGrade(e.target.value)}
@@ -61,6 +67,18 @@ export const AgendaPage = () => {
             {classes.map(c => (
               <option key={c.id} value={c.name}>{c.name}</option>
             ))}
+          </select>
+
+          <select
+            value={selectedSection}
+            onChange={(e) => setSelectedSection(e.target.value)}
+            className="text-xs p-2.5 rounded-xl border border-slate-200 font-bold text-slate-800"
+          >
+            <option value="ALL">جميع الشُعب</option>
+            <option value="أ">الشعبة (أ)</option>
+            <option value="ب">الشعبة (ب)</option>
+            <option value="ج">الشعبة (ج)</option>
+            <option value="د">الشعبة (د)</option>
           </select>
 
           <button
