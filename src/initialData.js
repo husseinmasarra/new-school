@@ -202,7 +202,79 @@ export const initialDailyMarks = [
   { id: "DM-604", studentId: "STU-588", subjectId: "SUB-06", subjectName: "التربية الوطنية والدراسات", date: "2026-07-22", type: "النهائي", score: 36, maxScore: 40, notes: "الامتحان النهائي" }
 ];
 
-export const initialTutoringCourses = [];
+export const initialTutoringCourses = [
+  {
+    id: "TUT-01",
+    title: "دورة تقوية الرياضيات المتقدمة",
+    titleEn: "Advanced Mathematics Tutoring",
+    subject: "الرياضيات",
+    fee: 50,
+    description: "جلسات تدريبية مكثفة لتقوية المهارات الرياضية وحل المسائل الهندسية والجبرية المتقدمة للشهادات والامتحانات.",
+    days: "الإثنين والأربعاء (04:00 - 05:30 مساءً)",
+    instructor: "أ. طارق خوري",
+    maxSeats: 15,
+    enrolledStudentIds: ["STU-588", "STU-102"],
+    studentFeesMap: { "STU-588": 45, "STU-102": 50 }
+  },
+  {
+    id: "TUT-02",
+    title: "معهد تقوية اللغة الإنجليزية والمحادثة",
+    titleEn: "English Language & Conversation Clinic",
+    subject: "اللغة الإنجليزية",
+    fee: 40,
+    description: "تطوير مهارات القواعد والمحادثة وتراكيب الجمل لطلاب المرحلتين المتوسطة والابتدائية بأحدث الأساليب التفاعلية.",
+    days: "الثلاثاء والخميس (03:30 - 05:00 مساءً)",
+    instructor: "أ. منى الزهراني",
+    maxSeats: 12,
+    enrolledStudentIds: ["STU-588"],
+    studentFeesMap: { "STU-588": 40 }
+  },
+  {
+    id: "TUT-03",
+    title: "تقوية مهارات البرمجة والذكاء الاصطناعي",
+    titleEn: "Coding & AI Basics Workshop",
+    subject: "البرمجة والابتكار الرقمي",
+    fee: 60,
+    description: "ورشة عمل عملية مكثفة لتعلم أسس البرمجة وتطوير التفكير المنطقي وبناء المشاريع الرقمية.",
+    days: "السبت (10:00 صباحاً - 01:00 ظهراً)",
+    instructor: "أ. سامر العلي",
+    maxSeats: 10,
+    enrolledStudentIds: ["STU-103"],
+    studentFeesMap: { "STU-103": 60 }
+  }
+];
+
+export const initialTutoringPayments = [
+  {
+    id: "TPAY-101",
+    receiptNo: "REC-TUT-001",
+    date: "2026-07-20",
+    studentId: "STU-588",
+    studentName: "محمد خالد مسرة",
+    courseId: "TUT-01",
+    courseTitle: "دورة تقوية الرياضيات المتقدمة",
+    amount: 45,
+    currency: "USD",
+    method: "نقدي (Cash)",
+    notes: "تسديد القسط كاملاً عن شهر تموز لمعهد التقوية",
+    recordedBy: "المدير العام"
+  },
+  {
+    id: "TPAY-102",
+    receiptNo: "REC-TUT-002",
+    date: "2026-07-21",
+    studentId: "STU-102",
+    studentName: "سارة أحمد النجار",
+    courseId: "TUT-01",
+    courseTitle: "دورة تقوية الرياضيات المتقدمة",
+    amount: 25,
+    currency: "USD",
+    method: "نقدي (Cash)",
+    notes: "الدفعة الأولى من قسط دورة التقوية",
+    recordedBy: "المدير العام"
+  }
+];
+
 export const initialExpenses = [];
 export const initialPushNotifications = [];
 export const initialTuitionPayments = [];

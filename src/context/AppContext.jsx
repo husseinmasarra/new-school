@@ -13,6 +13,7 @@ import {
   initialMessages, 
   initialAgenda, 
   initialTutoringCourses,
+  initialTutoringPayments,
   initialExams,
   initialExpenses,
   initialPushNotifications,
@@ -40,6 +41,7 @@ dbInitOnce({
   school_messages:      initialMessages,
   school_agenda:        initialAgenda,
   school_tutoring:      initialTutoringCourses,
+  school_tutoring_payments: initialTutoringPayments,
   school_push_notifs:   initialPushNotifications,
   school_daily_marks:   initialDailyMarks,
   school_attendance:    initialAttendanceRecords,
@@ -189,6 +191,7 @@ export const AppProvider = ({ children }) => {
   const [messages,       setMessages]       = useState(() => dbLoadCollection('school_messages',     initialMessages));
   const [agenda, setAgenda] = useState(() => dbLoadCollection('school_agenda', initialAgenda));
   const [tutoringCourses, setTutoringCourses] = useState(() => dbLoadCollection('school_tutoring',  initialTutoringCourses));
+  const [tutoringPayments, setTutoringPayments] = useState(() => dbLoadCollection('school_tutoring_payments', initialTutoringPayments));
 
   // Master Timetable for all teachers and class schedule
   const [masterTimetable, setMasterTimetable] = useState(() => dbLoadCollection('school_timetable', initialMasterTimetable));
@@ -645,6 +648,7 @@ export const AppProvider = ({ children }) => {
           if (cloudData.school_messages) setMessages(cloudData.school_messages);
           if (cloudData.school_agenda) setAgenda(cloudData.school_agenda);
           if (cloudData.school_tutoring) setTutoringCourses(cloudData.school_tutoring);
+          if (cloudData.school_tutoring_payments) setTutoringPayments(cloudData.school_tutoring_payments);
           if (cloudData.school_push_notifs) setPushNotifs(cloudData.school_push_notifs);
           if (cloudData.school_system_users) setSystemUsers(cloudData.school_system_users);
           if (cloudData.school_settings) setSiteSettings(cloudData.school_settings);
@@ -666,6 +670,7 @@ export const AppProvider = ({ children }) => {
             school_messages: messages,
             school_agenda: agenda,
             school_tutoring: tutoringCourses,
+            school_tutoring_payments: tutoringPayments,
             school_push_notifs: pushNotifs,
             school_system_users: systemUsers,
             school_settings: siteSettings,
@@ -706,6 +711,7 @@ export const AppProvider = ({ children }) => {
             else if (k === 'school_messages') setMessages(v);
             else if (k === 'school_agenda') setAgenda(v);
             else if (k === 'school_tutoring') setTutoringCourses(v);
+            else if (k === 'school_tutoring_payments') setTutoringPayments(v);
             else if (k === 'school_push_notifs') setPushNotifs(v);
             else if (k === 'school_system_users') setSystemUsers(v);
             else if (k === 'school_settings') setSiteSettings(v);
@@ -743,6 +749,7 @@ export const AppProvider = ({ children }) => {
       school_messages: messages,
       school_agenda: agenda,
       school_tutoring: tutoringCourses,
+      school_tutoring_payments: tutoringPayments,
       school_push_notifs: pushNotifs,
       school_system_users: systemUsers,
       school_settings: siteSettings,
@@ -768,6 +775,7 @@ export const AppProvider = ({ children }) => {
     messages,
     agenda,
     tutoringCourses,
+    tutoringPayments,
     pushNotifs,
     systemUsers,
     siteSettings,
@@ -1325,6 +1333,86 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const updateStudentTutoringFee = (courseId, studentId, customFee) => {
+    setTutoringCourses((prev) => {
+      const updated = prev.map((c) => {
+        if (c.id === courseId) {
+          const feesMap = { ...(c.studentFeesMap || {}) };
+          if (customFee !== null && customFee !== undefined && customFee !== '') {
+            feesMap[studentId] = Number(customFee);
+          } else {
+            delete feesMap[studentId];
+          }
+          return { ...c, studentFeesMap: feesMap };
+        }
+        return c;
+      });
+      dbSaveCollection('school_tutoring', updated);
+      return updated;
+    });
+  };
+
+  const addTutoringCourse = (courseData) => {
+    const newCourse = {
+      id: `TUT-${Date.now().toString().slice(-4)}`,
+      title: courseData.title || 'دورة تقوية جديدة',
+      titleEn: courseData.titleEn || 'New Tutoring Course',
+      subject: courseData.subject || 'عام',
+      fee: Number(courseData.fee) || 0,
+      description: courseData.description || '',
+      days: courseData.days || 'يحدد لاحقاً',
+      instructor: courseData.instructor || 'أ. مدرس الدورة',
+      maxSeats: Number(courseData.maxSeats) || 20,
+      enrolledStudentIds: [],
+      studentFeesMap: {}
+    };
+    setTutoringCourses((prev) => {
+      const updated = [newCourse, ...prev];
+      dbSaveCollection('school_tutoring', updated);
+      return updated;
+    });
+    return newCourse;
+  };
+
+  const deleteTutoringCourse = (courseId) => {
+    setTutoringCourses((prev) => {
+      const updated = prev.filter((c) => c.id !== courseId);
+      dbSaveCollection('school_tutoring', updated);
+      return updated;
+    });
+  };
+
+  const addTutoringPayment = (paymentData) => {
+    const newPayment = {
+      id: `TPAY-${Date.now()}`,
+      receiptNo: paymentData.receiptNo || `REC-TUT-${Date.now().toString().slice(-4)}`,
+      date: paymentData.date || new Date().toISOString().split('T')[0],
+      studentId: paymentData.studentId,
+      studentName: paymentData.studentName,
+      courseId: paymentData.courseId,
+      courseTitle: paymentData.courseTitle,
+      amount: Number(paymentData.amount) || 0,
+      currency: paymentData.currency || 'USD',
+      method: paymentData.method || 'نقدي (Cash)',
+      notes: paymentData.notes || '',
+      recordedBy: paymentData.recordedBy || 'المسؤول المالي لمعهد التقوية'
+    };
+    setTutoringPayments((prev) => {
+      const updated = [newPayment, ...prev];
+      dbSaveCollection('school_tutoring_payments', updated);
+      return updated;
+    });
+    return newPayment;
+  };
+
+  const deleteTutoringPayment = (paymentId) => {
+    setTutoringPayments((prev) => {
+      const updated = prev.filter((p) => p.id !== paymentId);
+      dbSaveCollection('school_tutoring_payments', updated);
+      return updated;
+    });
+  };
+
   const updateBusStatus = (studentId, newStatus) => {
     setStudents((prev) =>
       prev.map((s) => (s.id === studentId ? { ...s, busStatus: newStatus } : s))
@@ -1642,6 +1730,9 @@ export const AppProvider = ({ children }) => {
       return resetCourses;
     });
 
+    setTutoringPayments([]);
+    dbSaveCollection('school_tutoring_payments', []);
+
     addNotification({
       title: 'تم تفريغ البيانات التجريبية 🧹',
       message: 'تم تنظيف المنظومة وتفريغ كافة البيانات التجريبية بنجاح.',
@@ -1769,6 +1860,12 @@ export const AppProvider = ({ children }) => {
     addHomeworkSubmission,
     gradeHomeworkSubmission,
     tutoringCourses,
+    tutoringPayments,
+    addTutoringCourse,
+    deleteTutoringCourse,
+    updateStudentTutoringFee,
+    addTutoringPayment,
+    deleteTutoringPayment,
     addMessage,
     deleteMessage,
     addAgendaItem,
