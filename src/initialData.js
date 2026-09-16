@@ -92,36 +92,26 @@ export const initialGrades = [
 ];
 
 export const initialClassrooms = [
-  {
-    id: "CLS-01",
-    gradeId: "GRD-01",
-    gradeName: "الصف الخامس الابتدائي",
-    sectionName: "الشعبة (أ)",
-    sectionNameEn: "Section A",
-    capacity: 30,
-    supervisor: "أ. طارق خوري",
-    roomNumber: "101"
-  },
-  {
-    id: "CLS-02",
-    gradeId: "GRD-01",
-    gradeName: "الصف الخامس الابتدائي",
-    sectionName: "الشعبة (ب)",
-    sectionNameEn: "Section B",
-    capacity: 28,
-    supervisor: "أ. مريم صالح",
-    roomNumber: "102"
-  },
-  {
-    id: "CLS-03",
-    gradeId: "GRD-02",
-    gradeName: "الصف السادس الابتدائي",
-    sectionName: "الشعبة (أ)",
-    sectionNameEn: "Section A",
-    capacity: 32,
-    supervisor: "أ. سامر العلي",
-    roomNumber: "201"
-  }
+  // الصف الخامس الابتدائي (GRD-01)
+  { id: "CLS-01-A", gradeId: "GRD-01", gradeName: "الصف الخامس الابتدائي", sectionName: "الشعبة (أ)", sectionNameEn: "Section A", capacity: 30, supervisor: "أ. طارق خوري", roomNumber: "101" },
+  { id: "CLS-01-B", gradeId: "GRD-01", gradeName: "الصف الخامس الابتدائي", sectionName: "الشعبة (ب)", sectionNameEn: "Section B", capacity: 30, supervisor: "أ. مريم صالح", roomNumber: "102" },
+  { id: "CLS-01-C", gradeId: "GRD-01", gradeName: "الصف الخامس الابتدائي", sectionName: "الشعبة (ج)", sectionNameEn: "Section C", capacity: 30, supervisor: "أ. سامر العلي", roomNumber: "103" },
+  { id: "CLS-01-D", gradeId: "GRD-01", gradeName: "الصف الخامس الابتدائي", sectionName: "الشعبة (د)", sectionNameEn: "Section D", capacity: 30, supervisor: "إشراف القسم", roomNumber: "104" },
+  { id: "CLS-01-E", gradeId: "GRD-01", gradeName: "الصف الخامس الابتدائي", sectionName: "الشعبة (هـ)", sectionNameEn: "Section E", capacity: 30, supervisor: "إشراف القسم", roomNumber: "105" },
+
+  // الصف السادس الابتدائي (GRD-02)
+  { id: "CLS-02-A", gradeId: "GRD-02", gradeName: "الصف السادس الابتدائي", sectionName: "الشعبة (أ)", sectionNameEn: "Section A", capacity: 30, supervisor: "أ. سامر العلي", roomNumber: "201" },
+  { id: "CLS-02-B", gradeId: "GRD-02", gradeName: "الصف السادس الابتدائي", sectionName: "الشعبة (ب)", sectionNameEn: "Section B", capacity: 30, supervisor: "أ. طارق خوري", roomNumber: "202" },
+  { id: "CLS-02-C", gradeId: "GRD-02", gradeName: "الصف السادس الابتدائي", sectionName: "الشعبة (ج)", sectionNameEn: "Section C", capacity: 30, supervisor: "أ. مريم صالح", roomNumber: "203" },
+  { id: "CLS-02-D", gradeId: "GRD-02", gradeName: "الصف السادس الابتدائي", sectionName: "الشعبة (د)", sectionNameEn: "Section D", capacity: 30, supervisor: "إشراف القسم", roomNumber: "204" },
+  { id: "CLS-02-E", gradeId: "GRD-02", gradeName: "الصف السادس الابتدائي", sectionName: "الشعبة (هـ)", sectionNameEn: "Section E", capacity: 30, supervisor: "إشراف القسم", roomNumber: "205" },
+
+  // الصف السابع المتوسط (GRD-03)
+  { id: "CLS-03-A", gradeId: "GRD-03", gradeName: "الصف السابع المتوسط", sectionName: "الشعبة (أ)", sectionNameEn: "Section A", capacity: 30, supervisor: "أ. مريم صالح", roomNumber: "301" },
+  { id: "CLS-03-B", gradeId: "GRD-03", gradeName: "الصف السابع المتوسط", sectionName: "الشعبة (ب)", sectionNameEn: "Section B", capacity: 30, supervisor: "أ. سامر العلي", roomNumber: "302" },
+  { id: "CLS-03-C", gradeId: "GRD-03", gradeName: "الصف السابع المتوسط", sectionName: "الشعبة (ج)", sectionNameEn: "Section C", capacity: 30, supervisor: "أ. طارق خوري", roomNumber: "303" },
+  { id: "CLS-03-D", gradeId: "GRD-03", gradeName: "الصف السابع المتوسط", sectionName: "الشعبة (د)", sectionNameEn: "Section D", capacity: 30, supervisor: "إشراف القسم", roomNumber: "304" },
+  { id: "CLS-03-E", gradeId: "GRD-03", gradeName: "الصف السابع المتوسط", sectionName: "الشعبة (هـ)", sectionNameEn: "Section E", capacity: 30, supervisor: "إشراف القسم", roomNumber: "305" },
 ];
 
 export const initialExams = [

@@ -655,6 +655,75 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('school_pillar', activePillar);
   }, [activePillar]);
 
+  // Ensure every grade has non-duplicate standard sections: أ, ب, ج, د, هـ
+  useEffect(() => {
+    if (!grades || grades.length === 0) return;
+
+    const standardSections = [
+      { letter: 'أ', ar: 'الشعبة (أ)', en: 'Section A', suffix: '1' },
+      { letter: 'ب', ar: 'الشعبة (ب)', en: 'Section B', suffix: '2' },
+      { letter: 'ج', ar: 'الشعبة (ج)', en: 'Section C', suffix: '3' },
+      { letter: 'د', ar: 'الشعبة (د)', en: 'Section D', suffix: '4' },
+      { letter: 'هـ', ar: 'الشعبة (هـ)', en: 'Section E', suffix: '5' }
+    ];
+
+    const normSec = (s) => (s || '')
+      .replace(/الشعبة|\(|\)|[\s\-_]/g, '')
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/[هة]/g, 'ه')
+      .trim();
+
+    setClassrooms((prev) => {
+      const existing = Array.isArray(prev) ? [...prev] : [];
+      let hasChanges = false;
+
+      // 1. Deduplicate by grade & normalized section letter
+      const seen = new Set();
+      const deduped = [];
+
+      existing.forEach((cls) => {
+        const gKey = cls.gradeId || cls.gradeName;
+        const sKey = normSec(cls.sectionName);
+        const comboKey = `${gKey}_${sKey}`;
+        if (!seen.has(comboKey)) {
+          seen.add(comboKey);
+          deduped.push(cls);
+        } else {
+          hasChanges = true;
+        }
+      });
+
+      // 2. Ensure all 5 sections exist for each grade
+      grades.forEach((grd, gIdx) => {
+        standardSections.forEach((sec, sIdx) => {
+          const comboKey = `${grd.id || grd.name}_${normSec(sec.letter)}`;
+          if (!seen.has(comboKey)) {
+            hasChanges = true;
+            seen.add(comboKey);
+            const numG = grd.id ? grd.id.replace(/[^0-9]/g, '') || (gIdx + 1) : (gIdx + 1);
+            deduped.push({
+              id: `CLS-${numG}-${sec.suffix}`,
+              gradeId: grd.id,
+              gradeName: grd.name,
+              sectionName: sec.ar,
+              sectionNameEn: sec.en,
+              capacity: 30,
+              supervisor: sIdx === 0 ? 'أ. طارق خوري' : (sIdx === 1 ? 'أ. مريم صالح' : (sIdx === 2 ? 'أ. سامر العلي' : 'إشراف القسم')),
+              roomNumber: `${numG}0${sec.suffix}`
+            });
+          }
+        });
+      });
+
+      if (hasChanges) {
+        localStorage.setItem('school_classrooms', JSON.stringify(deduped));
+        dbSaveCollection('school_classrooms', deduped);
+        return deduped;
+      }
+      return prev;
+    });
+  }, [grades]);
+
   useEffect(() => {
     // Ensure at least one admin user exists (non-destructive)
     const adminUser = (systemUsers || []).find(u => u.role === 'admin');
@@ -1049,15 +1118,35 @@ export const AppProvider = ({ children }) => {
   };
 
   const addClassroom = (classObj) => {
-    const newClass = {
-      id: `CLS-${Math.floor(10 + Math.random() * 90)}`,
-      ...classObj
-    };
+    const normSec = (s) => (s || '')
+      .replace(/الشعبة|\(|\)|[\s\-_]/g, '')
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/[هة]/g, 'ه')
+      .trim();
+
+    let added = false;
     setClassrooms((prev) => {
+      const gKey = classObj.gradeId || classObj.gradeName;
+      const sKey = normSec(classObj.sectionName);
+      const isDuplicate = prev.some(
+        (c) => (c.gradeId === classObj.gradeId || c.gradeName === classObj.gradeName) &&
+               normSec(c.sectionName) === sKey
+      );
+      if (isDuplicate) {
+        return prev;
+      }
+
+      added = true;
+      const newClass = {
+        id: `CLS-${Date.now()}-${Math.floor(10 + Math.random() * 90)}`,
+        ...classObj
+      };
       const updated = [...prev, newClass];
       localStorage.setItem('school_classrooms', JSON.stringify(updated));
+      dbSaveCollection('school_classrooms', updated);
       return updated;
     });
+    return added;
   };
 
   const deleteClassroom = (id) => {

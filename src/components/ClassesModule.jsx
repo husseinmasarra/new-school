@@ -290,18 +290,40 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
 
   const handleAddClassroomSubmit = (e) => {
     e.preventDefault();
-    if (!sectionName) return;
+    if (!sectionName.trim()) return;
+
+    const normSec = (s) => (s || '')
+      .replace(/الشعبة|\(|\)|[\s\-_]/g, '')
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/[هة]/g, 'ه')
+      .trim();
 
     const parentGrade = safeGrades.find((g) => g.id === selectedGradeId);
+    const targetGradeId = selectedGradeId;
+    const targetGradeName = parentGrade ? parentGrade.name : '';
+
+    // Check for duplicates in the target grade
+    const isDuplicate = safeClassrooms.some(
+      (c) => (c.gradeId === targetGradeId || c.gradeName === targetGradeName) &&
+             normSec(c.sectionName) === normSec(sectionName)
+    );
+
+    if (isDuplicate) {
+      alert(isAr 
+        ? `⚠️ الشعبة "${sectionName}" مسجلة بالفعل في ${parentGrade?.name || 'هذا الصف'}! لا يمكن تكرار نفس الشعبة في نفس الصف الدراسي.` 
+        : `⚠️ Section "${sectionName}" is already registered in this grade! Duplicate sections are not allowed.`
+      );
+      return;
+    }
 
     addClassroom({
       gradeId: selectedGradeId,
       gradeName: parentGrade ? parentGrade.name : 'الصف الدراسي',
-      sectionName: sectionName,
-      sectionNameEn: sectionNameEn || sectionName,
-      capacity: Number(capacity),
-      supervisor: supervisor,
-      roomNumber: roomNumber
+      sectionName: sectionName.trim(),
+      sectionNameEn: sectionNameEn.trim() || sectionName.trim(),
+      capacity: Number(capacity) || 30,
+      supervisor: supervisor || 'إشراف القسم',
+      roomNumber: roomNumber || '101'
     });
 
     setSectionName('الشعبة (أ)');
@@ -1184,15 +1206,45 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">{isAr ? 'اسم الشعبة' : 'Section Name'}</label>
-                <input type="text" required value={sectionName} onChange={(e) => setSectionName(e.target.value)} placeholder="الشعبة (أ)..." className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">{isAr ? 'اسم الشعبة' : 'Section Name'} <span className="text-red-500">*</span></label>
+              
+              {/* Quick Select Buttons for Standard Sections أ, ب, ج, د, هـ */}
+              <div className="flex flex-wrap gap-1.5 pb-1">
+                {['الشعبة (أ)', 'الشعبة (ب)', 'الشعبة (ج)', 'الشعبة (د)', 'الشعبة (هـ)'].map((opt) => {
+                  const normSec = (s) => (s || '').replace(/الشعبة|\(|\)|[\s\-_]/g, '').replace(/[أإآ]/g, 'ا').replace(/[هة]/g, 'ه').trim();
+                  const parentGrade = safeGrades.find((g) => g.id === selectedGradeId);
+                  const isAlreadyAdded = safeClassrooms.some(
+                    (c) => (c.gradeId === selectedGradeId || c.gradeName === parentGrade?.name) && normSec(c.sectionName) === normSec(opt)
+                  );
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setSectionName(opt)}
+                      disabled={isAlreadyAdded}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        sectionName === opt
+                          ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-sm'
+                          : isAlreadyAdded
+                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed line-through'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-[#0284C7]'
+                      }`}
+                      title={isAlreadyAdded ? (isAr ? 'هذه الشعبة مضافة مسبقاً لهذا الصف' : 'Already added') : ''}
+                    >
+                      {opt} {isAlreadyAdded ? '✓' : ''}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">{isAr ? 'رقم القاعة' : 'Room Number'}</label>
-                <input type="text" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="101" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input type="text" required value={sectionName} onChange={(e) => setSectionName(e.target.value)} placeholder="الشعبة (أ)..." className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7]" />
+                </div>
+                <div>
+                  <input type="text" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="رقم القاعة (مثلاً: 101)" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none" />
+                </div>
               </div>
             </div>
 
@@ -1296,6 +1348,7 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                   <option value="ب" className="bg-white text-slate-900 font-bold py-1">الشعبة (ب)</option>
                   <option value="ج" className="bg-white text-slate-900 font-bold py-1">الشعبة (ج)</option>
                   <option value="د" className="bg-white text-slate-900 font-bold py-1">الشعبة (د)</option>
+                  <option value="هـ" className="bg-white text-slate-900 font-bold py-1">الشعبة (هـ)</option>
                 </select>
               </div>
             </div>
@@ -1443,6 +1496,7 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                   <option value="ب">الشعبة (ب)</option>
                   <option value="ج">الشعبة (ج)</option>
                   <option value="د">الشعبة (د)</option>
+                  <option value="هـ">الشعبة (هـ)</option>
                 </select>
               </div>
             </div>
