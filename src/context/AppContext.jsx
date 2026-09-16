@@ -971,6 +971,16 @@ export const AppProvider = ({ children }) => {
     setSubjects((prev) => {
       const updated = [...prev, created];
       localStorage.setItem('school_subjects', JSON.stringify(updated));
+      dbSaveCollection('school_subjects', updated);
+      return updated;
+    });
+  };
+
+  const updateSubject = (id, updatedFields) => {
+    setSubjects((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, ...updatedFields } : s));
+      localStorage.setItem('school_subjects', JSON.stringify(updated));
+      dbSaveCollection('school_subjects', updated);
       return updated;
     });
   };
@@ -979,6 +989,7 @@ export const AppProvider = ({ children }) => {
     setSubjects((prev) => {
       const updated = prev.filter((s) => s.id !== id);
       localStorage.setItem('school_subjects', JSON.stringify(updated));
+      dbSaveCollection('school_subjects', updated);
       return updated;
     });
   };
@@ -1855,6 +1866,7 @@ export const AppProvider = ({ children }) => {
     setSelectedStudentId,
     subjects,
     addSubject,
+    updateSubject,
     deleteSubject,
     grades,
     addGrade,

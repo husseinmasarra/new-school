@@ -31,6 +31,7 @@ export const SubjectsModule = () => {
     currentUser,
     subjects = [], 
     addSubject, 
+    updateSubject,
     deleteSubject,
     agenda = [],
     addAgendaItem,
@@ -185,12 +186,81 @@ export const SubjectsModule = () => {
     ? (getSectionsForGrade(defaultInitialGrade)[0] || 'أ')
     : 'أ';
 
+  // Curated Educational Color Palettes
+  const PRESET_SUBJECT_COLORS = [
+    { name: 'قرمزي ملكي', hex: '#E11D48', label: 'لغة عربية' },
+    { name: 'أزرق محيطي', hex: '#0284C7', label: 'رياضيات وحساب' },
+    { name: 'أخضر زمردي', hex: '#059669', label: 'علوم وبيئة' },
+    { name: 'بنفسجي ملكي', hex: '#7C3AED', label: 'لغة إنجليزية' },
+    { name: 'ذهبي كهرماني', hex: '#D97706', label: 'تربية إسلامية وقرآن' },
+    { name: 'برتقالي ناري', hex: '#EA580C', label: 'اجتماعيات وتاريخ' },
+    { name: 'تركواز بحري', hex: '#0891B2', label: 'تكنولوجيا وحاسوب' },
+    { name: 'وردي أنيق', hex: '#DB2777', label: 'فنون وموسيقى' },
+    { name: 'أخضر عشبي', hex: '#16A34A', label: 'تربية رياضية' },
+    { name: 'نيلي دافئ', hex: '#4F46E5', label: 'ثقافة عامة' },
+    { name: 'فحمي عصري', hex: '#334155', label: 'أنشطة ومشاريع' }
+  ];
+
+  const PRESET_ICONS = ['📖', '📐', '🧪', '🇬🇧', '🕌', '💻', '🎨', '⚽', '🏛️', '📚', '⭐', '🔬', '🌍', '📝', '🧠'];
+
+  const hexToRgba = (hex, alpha = 0.15) => {
+    if (!hex || typeof hex !== 'string') return `rgba(2, 132, 199, ${alpha})`;
+    const cleanHex = hex.replace('#', '');
+    const r = parseInt(cleanHex.slice(0, 2), 16) || 2;
+    const g = parseInt(cleanHex.slice(2, 4), 16) || 132;
+    const b = parseInt(cleanHex.slice(4, 6), 16) || 199;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [icon, setIcon] = useState('📚');
   const [color, setColor] = useState('#0284C7');
   const [subjectImage, setSubjectImage] = useState('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&auto=format&fit=crop&q=80');
+
+  // Edit Subject Color & Appearance Modal State
+  const [editingSubject, setEditingSubject] = useState(null);
+  const [editColor, setEditColor] = useState('#0284C7');
+  const [editIcon, setEditIcon] = useState('📚');
+  const [editName, setEditName] = useState('');
+  const [editNameEn, setEditNameEn] = useState('');
+  const [editImage, setEditImage] = useState('');
+
+  const openEditSubjectModal = (sub) => {
+    setEditingSubject(sub);
+    setEditColor(sub.color || '#0284C7');
+    setEditIcon(sub.icon || '📚');
+    setEditName(sub.name || '');
+    setEditNameEn(sub.nameEn || '');
+    setEditImage(sub.image || '');
+  };
+
+  const handleEditSubjectImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setEditImage(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveEditSubject = (e) => {
+    e.preventDefault();
+    if (!editingSubject || !editName) return;
+
+    updateSubject(editingSubject.id, {
+      name: editName,
+      nameEn: editNameEn || editName,
+      color: editColor,
+      bgColor: hexToRgba(editColor, 0.15),
+      borderColor: hexToRgba(editColor, 0.4),
+      icon: editIcon,
+      image: editImage
+    });
+
+    setEditingSubject(null);
+  };
 
   // Modal State for Interactive Subject Lessons
   const [selectedSubjectForLessons, setSelectedSubjectForLessons] = useState(null);
@@ -222,14 +292,6 @@ export const SubjectsModule = () => {
   const handleAddSubmit = (e) => {
     e.preventDefault();
     if (!name) return;
-
-    const hexToRgba = (hex, alpha) => {
-      const cleanHex = hex.replace('#', '');
-      const r = parseInt(cleanHex.slice(0, 2), 16) || 2;
-      const g = parseInt(cleanHex.slice(2, 4), 16) || 132;
-      const b = parseInt(cleanHex.slice(4, 6), 16) || 199;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
 
     addSubject({
       name,
@@ -469,10 +531,10 @@ export const SubjectsModule = () => {
             <div
               key={sub.id}
               onClick={() => openSubjectModal(sub)}
-              className="interactive-card rounded-3xl p-6 shadow-xl relative overflow-hidden text-white transition-all transform hover:scale-[1.02] flex flex-col justify-between min-h-[190px] cursor-pointer group"
+              className="interactive-card rounded-3xl p-6 shadow-xl relative overflow-hidden text-white transition-all transform hover:scale-[1.02] flex flex-col justify-between min-h-[200px] cursor-pointer group border border-white/20"
               style={{
                 backgroundColor: cardBg,
-                backgroundImage: `linear-gradient(135deg, ${cardBg} 0%, rgba(0, 0, 0, 0.4) 100%)`
+                backgroundImage: `linear-gradient(135deg, ${cardBg} 0%, rgba(15, 23, 42, 0.72) 100%)`
               }}
             >
               {/* Header with Photo Image & Title */}
@@ -498,7 +560,19 @@ export const SubjectsModule = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  {/* Edit Subject Color & Details Button */}
+                  {(currentRole === 'admin' || currentRole === 'vice_principal') && (
+                    <button
+                      type="button"
+                      onClick={() => openEditSubjectModal(sub)}
+                      className="p-2 bg-white/20 hover:bg-white text-white hover:text-slate-900 rounded-xl backdrop-blur-md transition-all cursor-pointer border border-white/25 shadow-xs"
+                      title={isAr ? 'تعديل لون ومظهر المادة 🎨' : 'Edit Subject Color & Appearance'}
+                    >
+                      <Palette className="w-4 h-4" />
+                    </button>
+                  )}
+
                   {currentRole === 'teacher' && (
                     <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black shadow-sm flex items-center gap-1 ${
                       isTeacherAssignedToSubject(sub.name) 
@@ -513,11 +587,9 @@ export const SubjectsModule = () => {
 
                   {currentRole === 'admin' && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteSubject(sub.id);
-                      }}
-                      className="p-2 bg-white/20 hover:bg-red-600 text-white rounded-xl backdrop-blur-md transition-all cursor-pointer border border-white/20"
+                      type="button"
+                      onClick={() => deleteSubject(sub.id)}
+                      className="p-2 bg-white/20 hover:bg-red-600 text-white rounded-xl backdrop-blur-md transition-all cursor-pointer border border-white/20 shadow-xs"
                       title={t('delete')}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -533,9 +605,24 @@ export const SubjectsModule = () => {
                   <span>{isAr ? 'اضغط لاستعراض الدروس 📖' : 'Click to view lessons'}</span>
                 </span>
 
-                <span className="text-[10px] text-white/90 font-bold bg-black/30 px-2.5 py-1 rounded-lg">
-                  {cardBg}
-                </span>
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  {(currentRole === 'admin' || currentRole === 'vice_principal') ? (
+                    <button
+                      type="button"
+                      onClick={() => openEditSubjectModal(sub)}
+                      className="px-2.5 py-1 rounded-xl bg-black/40 hover:bg-black/60 text-white text-[11px] font-mono font-bold border border-white/25 flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
+                      title={isAr ? 'انقر لتعديل لون ومظهر المادة 🎨' : 'Click to edit subject color'}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full inline-block border border-white" style={{ backgroundColor: cardBg }} />
+                      <span>{cardBg}</span>
+                      <span className="text-xs">🎨</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-white/90 font-bold bg-black/30 px-2.5 py-1 rounded-lg">
+                      {cardBg}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
@@ -996,6 +1083,60 @@ export const SubjectsModule = () => {
               </div>
             </div>
 
+            {/* Color Palette Selector for Add */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span>{isAr ? 'لون بطاقة المادة:' : 'Subject Card Color:'}</span>
+                <span className="text-[11px] font-mono text-[#0284C7] font-bold">{color}</span>
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                {PRESET_SUBJECT_COLORS.slice(0, 8).map((preset) => {
+                  const isSel = (color || '').toLowerCase() === preset.hex.toLowerCase();
+                  return (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      onClick={() => setColor(preset.hex)}
+                      className={`p-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer text-right ${
+                        isSel ? 'border-[#0284C7] bg-sky-50 ring-1 ring-[#0284C7]' : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-lg shrink-0" style={{ backgroundColor: preset.hex }} />
+                      <span className="text-[10px] font-bold text-slate-700 truncate">{preset.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
+                />
+                <span className="text-[11px] text-slate-500">{isAr ? 'أو اختر أي لون مخصص' : 'Or choose custom'}</span>
+              </div>
+            </div>
+
+            {/* Icon Picker for Add */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700 block">{isAr ? 'أيقونة المادة:' : 'Subject Icon:'}</label>
+              <div className="flex items-center gap-1 flex-wrap">
+                {PRESET_ICONS.slice(0, 10).map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setIcon(emoji)}
+                    className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition-all cursor-pointer ${
+                      icon === emoji ? 'bg-[#0284C7] text-white shadow-xs scale-110' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 type="button"
@@ -1009,6 +1150,228 @@ export const SubjectsModule = () => {
                 className="btn-mustard px-5 py-2 rounded-xl text-xs font-bold shadow cursor-pointer transition-all"
               >
                 {t('save')}
+              </button>
+            </div>
+          </form>
+        </div>,
+        document.body
+      )}
+
+      {/* Edit Subject Color & Appearance Modal */}
+      {editingSubject && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <form
+            onSubmit={handleSaveEditSubject}
+            className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-xl w-full space-y-5 shadow-2xl animate-scale-up text-[#0F172A] relative max-h-[92vh] overflow-y-auto"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-2xl text-white shadow-sm" style={{ backgroundColor: editColor }}>
+                  <Palette className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#0F172A]">
+                    {isAr ? `تعديل لون ومظهر مادة: ${editingSubject.name}` : `Edit Subject Color: ${editingSubject.nameEn || editingSubject.name}`}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {isAr ? 'اختر لوناً متناسقاً من الباليت الجاهزة أو حدد لوناً مخصصاً بالكامل' : 'Pick a color from curated palettes or customize via hex picker'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSubject(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Live Preview Card */}
+            <div className="space-y-1.5">
+              <span className="text-xs font-black text-slate-700 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>{isAr ? 'معاينة حية لشكل الكرت باللون المختار:' : 'Live Card Preview:'}</span>
+              </span>
+              <div
+                className="rounded-2xl p-4 text-white shadow-lg relative overflow-hidden transition-all duration-300 flex items-center justify-between border border-white/20"
+                style={{
+                  backgroundColor: editColor,
+                  backgroundImage: `linear-gradient(135deg, ${editColor} 0%, rgba(15, 23, 42, 0.75) 100%)`
+                }}
+              >
+                <div className="flex items-center gap-3 z-10 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-white/50 bg-white/10 flex items-center justify-center text-2xl shadow-md shrink-0">
+                    {editImage ? (
+                      <img src={editImage} alt="preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{editIcon || '📚'}</span>
+                    )}
+                  </div>
+                  <div className="truncate">
+                    <h4 className="text-base font-black text-white truncate drop-shadow-xs">
+                      {editName || editingSubject.name}
+                    </h4>
+                    <span className="text-xs text-white/85 font-medium block">
+                      {editNameEn || editingSubject.nameEn || 'Subject Name'}
+                    </span>
+                  </div>
+                </div>
+                <div className="z-10 bg-black/35 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/20 text-xs font-mono font-bold">
+                  {editColor}
+                </div>
+              </div>
+            </div>
+
+            {/* Preset Curated Color Palette */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-700 flex items-center justify-between">
+                <span>{isAr ? '🎨 باقة ألوان متناسقة ومعتمدة للمواد الدراسية:' : 'Recommended Subject Palettes:'}</span>
+                <span className="text-[11px] font-mono text-[#0284C7] font-bold">{editColor}</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {PRESET_SUBJECT_COLORS.map((preset) => {
+                  const isSelected = (editColor || '').toLowerCase() === preset.hex.toLowerCase();
+                  return (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      onClick={() => setEditColor(preset.hex)}
+                      className={`p-2 rounded-2xl border-2 flex items-center gap-2.5 transition-all cursor-pointer text-right ${
+                        isSelected 
+                          ? 'border-[#0284C7] bg-sky-50 shadow-sm ring-2 ring-[#0284C7]/30' 
+                          : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <span
+                        className="w-6 h-6 rounded-xl shrink-0 border border-white/80 shadow-xs flex items-center justify-center text-white text-[11px] font-black"
+                        style={{ backgroundColor: preset.hex }}
+                      >
+                        {isSelected && '✓'}
+                      </span>
+                      <div className="min-w-0">
+                        <span className="text-xs font-black text-slate-800 block truncate leading-tight">
+                          {isAr ? preset.name : preset.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block truncate">
+                          {preset.label}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Color Input */}
+            <div className="bg-[#F8FAFC] border border-slate-200 p-3.5 rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="color"
+                  value={editColor}
+                  onChange={(e) => setEditColor(e.target.value)}
+                  className="w-10 h-10 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white"
+                  title={isAr ? 'انقر لاختيار لون مخصص دقيق' : 'Choose custom color'}
+                />
+                <div>
+                  <span className="text-xs font-black text-slate-800 block">{isAr ? 'أو حدد لوناً مخصصاً بالكامل:' : 'Custom Hex Color:'}</span>
+                  <span className="text-[10px] text-slate-500">{isAr ? 'انقر على المربع لاختيار أي درجة لون ترغب بها' : 'Click the square to choose any color'}</span>
+                </div>
+              </div>
+              <input
+                type="text"
+                value={editColor}
+                onChange={(e) => setEditColor(e.target.value)}
+                placeholder="#0284C7"
+                className="w-28 text-center font-mono font-black text-xs uppercase px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-[#0284C7]"
+              />
+            </div>
+
+            {/* Icon Emojis Picker */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-700 block">
+                {isAr ? 'الأيقونة والرمز التعبيري للمادة:' : 'Subject Icon:'}
+              </label>
+              <div className="flex items-center gap-1.5 flex-wrap bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+                {PRESET_ICONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setEditIcon(emoji)}
+                    className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all cursor-pointer ${
+                      editIcon === emoji
+                        ? 'bg-[#0284C7] text-white shadow-sm scale-110'
+                        : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Name and Image inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">{isAr ? 'اسم المادة (عربي):' : 'Subject Name (AR):'}</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">{isAr ? 'اسم المادة (إنجليزي):' : 'Subject Name (EN):'}</label>
+                <input
+                  type="text"
+                  value={editNameEn}
+                  onChange={(e) => setEditNameEn(e.target.value)}
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7]"
+                />
+              </div>
+            </div>
+
+            {/* Image upload */}
+            <div className="space-y-2 bg-[#F8FAFC] p-3.5 rounded-2xl border border-slate-200">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-[#0284C7]" />
+                <span>{isAr ? 'تغيير صورة المادة (اختياري):' : 'Subject Image (Optional):'}</span>
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-300 bg-slate-200 shrink-0">
+                  {editImage ? (
+                    <img src={editImage} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">لا صورة</div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditSubjectImageUpload}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#0284C7] file:text-white hover:file:bg-[#0369A1] cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditingSubject(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="submit"
+                className="btn-mustard px-5 py-2 rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <span>💾</span>
+                <span>{isAr ? 'حفظ اللون والمظهر' : 'Save Changes'}</span>
               </button>
             </div>
           </form>

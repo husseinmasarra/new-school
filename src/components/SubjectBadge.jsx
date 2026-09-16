@@ -18,20 +18,29 @@ const getSubjectColorTheme = (name = '') => {
   if (n.includes('عرب') || n.includes('لغوي')) {
     return { color: '#E11D48', bgColor: '#FFE4E6', borderColor: '#FDA4AF', icon: '📖' };
   }
-  if (n.includes('رياضيات') || n.includes('حساب') || n.includes('جبر')) {
+  if (n.includes('رياضيات') || n.includes('حساب') || n.includes('جبر') || n.includes('math')) {
     return { color: '#0284C7', bgColor: '#E0F2FE', borderColor: '#7DD3FC', icon: '📐' };
   }
-  if (n.includes('علوم') || n.includes('فيزياء') || n.includes('كيمياء')) {
-    return { color: '#047857', bgColor: '#D1FAE5', borderColor: '#6EE7B7', icon: '🧪' };
+  if (n.includes('علوم') || n.includes('فيزياء') || n.includes('كيمياء') || n.includes('أحياء') || n.includes('science')) {
+    return { color: '#059669', bgColor: '#D1FAE5', borderColor: '#6EE7B7', icon: '🧪' };
   }
   if (n.includes('انكليز') || n.includes('إنجليز') || n.includes('english')) {
-    return { color: '#6D28D9', bgColor: '#EDE9FE', borderColor: '#C4B5FD', icon: '🇬🇧' };
+    return { color: '#7C3AED', bgColor: '#EDE9FE', borderColor: '#C4B5FD', icon: '🇬🇧' };
   }
-  if (n.includes('قرآن') || n.includes('إسلام') || n.includes('دين')) {
-    return { color: '#B45309', bgColor: '#FEF3C7', borderColor: '#FCD34D', icon: '🕌' };
+  if (n.includes('قرآن') || n.includes('إسلام') || n.includes('دين') || n.includes('islamic')) {
+    return { color: '#D97706', bgColor: '#FEF3C7', borderColor: '#FCD34D', icon: '🕌' };
   }
-  if (n.includes('مدنية') || n.includes('اجتماع')) {
-    return { color: '#DB2777', bgColor: '#FCE7F3', borderColor: '#F472B6', icon: '🏛️' };
+  if (n.includes('مدنية') || n.includes('اجتماع') || n.includes('تاريخ') || n.includes('جغراف')) {
+    return { color: '#EA580C', bgColor: '#FFEDD5', borderColor: '#FDBA74', icon: '🏛️' };
+  }
+  if (n.includes('برمج') || n.includes('حاسوب') || n.includes('تكنولوجي') || n.includes('coding')) {
+    return { color: '#0891B2', bgColor: '#CFFAFE', borderColor: '#67E8F9', icon: '💻' };
+  }
+  if (n.includes('فنون') || n.includes('رسم') || n.includes('موسيق') || n.includes('art')) {
+    return { color: '#DB2777', bgColor: '#FCE7F3', borderColor: '#F472B6', icon: '🎨' };
+  }
+  if (n.includes('رياضة') || n.includes('بدني') || n.includes('sport')) {
+    return { color: '#16A34A', bgColor: '#DCFCE7', borderColor: '#86EFAC', icon: '⚽' };
   }
   if (n.includes('تفاعل') || n.includes('مشاركة')) {
     return { color: '#EA580C', bgColor: '#FFEDD5', borderColor: '#FDBA74', icon: '🌟' };
