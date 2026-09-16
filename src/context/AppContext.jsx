@@ -1496,16 +1496,29 @@ export const AppProvider = ({ children }) => {
   // Helper to check if two student records belong to the same family (siblings)
   const isSibling = (a, b) => {
     if (!a || !b || a.id === b.id) return false;
+    // 1. If explicit familyId exists on both
+    if (a.familyId && b.familyId) {
+      return a.familyId === b.familyId;
+    }
+    // If one has familyId and the other does not (or has different familyId), never siblings
+    if ((a.familyId && !b.familyId) || (!a.familyId && b.familyId)) {
+      return false;
+    }
+
+    // 2. Fallback only if both lack familyId and share legitimate custom non-generic phone and parent
     const phoneA = (a.parentPhone || a.phone || '').replace(/[^0-9]/g, '');
     const phoneB = (b.parentPhone || b.phone || '').replace(/[^0-9]/g, '');
-    if (phoneA && phoneB && phoneA.length >= 6 && phoneA === phoneB) return true;
-    const mPhoneA = (a.motherPhone || '').replace(/[^0-9]/g, '');
-    const mPhoneB = (b.motherPhone || '').replace(/[^0-9]/g, '');
-    if (mPhoneA && mPhoneB && mPhoneA.length >= 6 && mPhoneA === mPhoneB) return true;
+    const isGenericPhoneA = !phoneA || phoneA === '96103123456' || phoneA === '123456' || phoneA.length < 8;
+    const isGenericPhoneB = !phoneB || phoneB === '96103123456' || phoneB === '123456' || phoneB.length < 8;
+    if (isGenericPhoneA || isGenericPhoneB) return false;
+
     const parentA = (a.parentName || '').trim().toLowerCase();
     const parentB = (b.parentName || '').trim().toLowerCase();
-    if (parentA && parentB && parentA === parentB) return true;
-    if (a.familyName && b.familyName && a.familyName.trim() === b.familyName.trim()) return true;
+    const isGenericParentA = !parentA || parentA.startsWith('والد الطالب') || parentA.startsWith('parent of');
+    const isGenericParentB = !parentB || parentB.startsWith('والد الطالب') || parentB.startsWith('parent of');
+    if (isGenericParentA || isGenericParentB) return false;
+
+    if (phoneA === phoneB && parentA === parentB) return true;
     return false;
   };
 

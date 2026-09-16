@@ -393,6 +393,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
 
     // 4. Save primary student
     const isFamilySpecialCase = stuIsSpecialCase || siblingsList.some(s => s.isSpecialCase);
+    const newFamilyId = `FAM-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
 
     addStudent({
       name: finalStuName,
@@ -409,13 +410,14 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
       adminFees: Number(stuAdminFees || 0),
       hasTransport: stuHasTransport,
       transportFee: Number(stuTransportFee || 0),
-      phone: stuParentPhone || '+961 03 123 456',
-      parentPhone: stuParentPhone || '+961 03 123 456',
-      motherPhone: stuMotherPhone,
+      phone: (stuParentPhone || '').trim(),
+      parentPhone: (stuParentPhone || '').trim(),
+      motherPhone: (stuMotherPhone || '').trim(),
       parentName: stuParentName || `والد الطالب ${finalStuName}`,
       parentNameEn: stuParentName || `Parent of ${stuNameEn || finalStuName}`,
       ministryClearance: stuMinistryClearance.trim(),
       isSpecialCase: isFamilySpecialCase,
+      familyId: newFamilyId,
       frozen: false
     });
 
@@ -436,13 +438,14 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
         adminFees: Number(sib.adminFees || 0),
         hasTransport: !!sib.hasTransport,
         transportFee: Number(sib.transportFee || 0),
-        phone: stuParentPhone || '+961 03 123 456',
-        parentPhone: stuParentPhone || '+961 03 123 456',
-        motherPhone: stuMotherPhone,
+        phone: (stuParentPhone || '').trim(),
+        parentPhone: (stuParentPhone || '').trim(),
+        motherPhone: (stuMotherPhone || '').trim(),
         parentName: stuParentName || `والد الطالب ${finalStuName}`,
         parentNameEn: stuParentName || `Parent of ${stuNameEn || finalStuName}`,
         ministryClearance: sib.ministryClearance.trim(),
         isSpecialCase: isFamilySpecialCase,
+        familyId: newFamilyId,
         frozen: false
       });
     });
@@ -616,12 +619,24 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
 
   // Helper to extract a normalized family key (linking siblings under one family)
   const getStudentFamilyKey = (student) => {
+    // 1. If student has explicit familyId, group strictly by that familyId
+    if (student.familyId && String(student.familyId).trim()) {
+      return `fam_${String(student.familyId).trim()}`;
+    }
+
+    // 2. Never merge students into old cards by generic/dummy phone or generic parent name!
     const rawPhone = (student.parentPhone || student.phone || '').replace(/[^0-9]/g, '');
-    if (rawPhone && rawPhone.length >= 6) return `phone_${rawPhone}`;
+    const isGenericPhone = !rawPhone || rawPhone === '96103123456' || rawPhone === '123456' || rawPhone.length < 8;
+    
     const pName = (student.parentName || '').trim().toLowerCase();
-    if (pName) return `parent_${pName}`;
-    const fName = (student.familyName || '').trim().toLowerCase();
-    if (fName) return `family_${fName}`;
+    const isGenericParent = !pName || pName.startsWith('والد الطالب') || pName.startsWith('parent of');
+
+    // Only group if BOTH a specific custom phone AND an identical parent name exist AND familyName matches
+    if (!isGenericPhone && !isGenericParent && student.familyName) {
+      return `family_${student.familyName.trim().toLowerCase()}_${rawPhone}`;
+    }
+
+    // 3. Otherwise, each student has their own distinct separate card!
     return `stu_${student.id}`;
   };
 
