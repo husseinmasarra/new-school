@@ -289,7 +289,30 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
 
   const handleEditStudentSubmit = (e) => {
     e.preventDefault();
-    if (!editStuName || !editStuUsername) return;
+    // Verify Parent Phone Number uniqueness on edit (excluding current student and siblings in same family)
+    if (editStuParentPhone && editStuParentPhone.trim()) {
+      const normPhone = (ph) => (ph || '').replace(/[^0-9]/g, '');
+      const cleanEditPhone = normPhone(editStuParentPhone);
+      if (cleanEditPhone.length >= 6) {
+        const duplicatePhone = (students || []).find((s) => {
+          if (s.id === showEditStudentModal.id) return false;
+          if (showEditStudentModal.familyId && s.familyId === showEditStudentModal.familyId) return false;
+          const sPhone = normPhone(s.parentPhone || s.phone);
+          if (!sPhone || sPhone.length < 6) return false;
+          return sPhone === cleanEditPhone ||
+            (sPhone.length >= 7 && cleanEditPhone.length >= 7 &&
+             (sPhone.endsWith(cleanEditPhone.slice(-7)) || cleanEditPhone.endsWith(sPhone.slice(-7))));
+        });
+
+        if (duplicatePhone) {
+          alert(isAr 
+            ? `⚠️ هذا الحساب موجود بالفعل!\n\nرقم هاتف ولي الأمر (${editStuParentPhone}) مسجل مسبقاً لطالب آخر: "${duplicatePhone.name}". لا يمكن استخدام نفس الهاتف.`
+            : `⚠️ This account already exists!\n\nThis parent phone is already registered to student: "${duplicatePhone.name}".`
+          );
+          return;
+        }
+      }
+    }
 
     // Verify Ministry Clearance uniqueness (excluding current student)
     if (editStuMinistryClearance.trim()) {
@@ -335,6 +358,35 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
     const finalStuName = stuName.trim() || [stuFirstName.trim(), stuFatherName.trim(), stuLastName.trim()].filter(Boolean).join(' ');
     if (!finalStuName || !stuUsername.trim()) {
       alert(isAr ? '❌ يرجى ملء اسم التلميذ واسم المستخدم!' : 'Please enter student name and username!');
+      return;
+    }
+
+    // 0. Primary Check: Parent Phone Number uniqueness (المفتاح المعتمد لمنع التكرار)
+    const normPhone = (ph) => (ph || '').replace(/[^0-9]/g, '');
+    const cleanNewPhone = normPhone(stuParentPhone);
+
+    if (!cleanNewPhone || cleanNewPhone.length < 6) {
+      alert(isAr 
+        ? '❌ يرجى إدخال رقم هاتف ولي الأمر بشكل صحيح! (هو المفتاح المعتمد لمنع تكرار الحسابات).' 
+        : '❌ Please enter a valid parent phone number! (It is the required key to prevent duplicate accounts).'
+      );
+      return;
+    }
+
+    // Verify if this parent phone is already registered for any student
+    const existingStudentWithPhone = (students || []).find((s) => {
+      const sPhone = normPhone(s.parentPhone || s.phone);
+      if (!sPhone || sPhone.length < 6) return false;
+      return sPhone === cleanNewPhone ||
+        (sPhone.length >= 7 && cleanNewPhone.length >= 7 &&
+         (sPhone.endsWith(cleanNewPhone.slice(-7)) || cleanNewPhone.endsWith(sPhone.slice(-7))));
+    });
+
+    if (existingStudentWithPhone) {
+      alert(isAr 
+        ? `⚠️ هذا الحساب موجود بالفعل!\n\nرقم هاتف ولي الأمر (${stuParentPhone}) مسجل مسبقاً في النظام للطالب: "${existingStudentWithPhone.name}" (${existingStudentWithPhone.grade || ''}). لا يمكن تسجيل تلميذ مكرر بنفس رقم الهاتف.` 
+        : `⚠️ This account already exists!\n\nThis parent phone (${stuParentPhone}) is already registered for student: "${existingStudentWithPhone.name}". Duplicate accounts are not allowed.`
+      );
       return;
     }
 
@@ -1720,8 +1772,11 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">{isAr ? 'هاتف الأب / ولي الأمر' : 'Father Phone'}</label>
-                <input type="text" value={stuParentPhone} onChange={(e) => setStuParentPhone(e.target.value)} placeholder="+961 70 123 456..." className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#0284C7]" />
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700">{isAr ? 'هاتف ولي الأمر' : 'Parent Phone'} <span className="text-red-500">*</span></label>
+                  <span className="text-[10px] text-[#0284C7] font-bold">🔑 {isAr ? 'المفتاح المعتمد' : 'Primary Key'}</span>
+                </div>
+                <input type="text" required value={stuParentPhone} onChange={(e) => setStuParentPhone(e.target.value)} placeholder="+961 70 123 456..." className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#0284C7]" />
               </div>
 
               <div className="space-y-1">
