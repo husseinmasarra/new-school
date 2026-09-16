@@ -821,15 +821,15 @@ export const TuitionModule = () => {
           )}
 
           {/* Unified Family Cards Roster Section */}
-          <div className="bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-slate-800 p-6 rounded-3xl space-y-4 shadow-sm text-[#0F172A] dark:text-slate-100">
+          <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl space-y-4 shadow-sm text-[#0F172A]">
             {/* Header & Live Search Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-[#0284C7] dark:text-sky-400 flex items-center gap-2">
+                <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
                   <CreditCard className="w-5 h-5 text-[#0284C7]" />
                   <span>{isAr ? 'كشف كافة أقساط الطلاب والدفعات المباشرة (كروت العائلة الموحدة)' : 'Family Tuition Roster & Direct Payments'}</span>
                 </h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                <p className="text-[11px] text-slate-500 font-medium">
                   {isAr 
                     ? 'يتم تجميع الإخوة معاً في كرت عائلة موحد، وعند إدخال أي دفعة يتم خصمها من كافة الإخوة مباشرة' 
                     : 'Siblings are unified in family cards with direct multi-student payment deduction'}
@@ -844,13 +844,13 @@ export const TuitionModule = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={isAr ? 'بحث باسم التلميذ، ولي الأمر، الهاتف...' : 'Search student, parent, phone...'}
-                  className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 rounded-xl pr-9 pl-8 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] text-right"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pr-9 pl-8 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] focus:bg-white text-right"
                 />
                 {searchTerm && (
                   <button
                     type="button"
                     onClick={() => setSearchTerm('')}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold cursor-pointer"
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                   >
                     ✕
                   </button>
@@ -859,7 +859,7 @@ export const TuitionModule = () => {
             </div>
 
             {/* Quick stats counter */}
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold px-1">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-bold px-1">
               <span>{isAr ? `إجمالي العائلات: ${filteredFamilies.length}` : `Families: ${filteredFamilies.length}`}</span>
               <span>{isAr ? `إجمالي الطلاب: ${filteredFamilies.reduce((sum, f) => sum + f.members.length, 0)} طالب` : `Total students: ${filteredFamilies.reduce((sum, f) => sum + f.members.length, 0)}`}</span>
             </div>
@@ -892,27 +892,27 @@ export const TuitionModule = () => {
                 return (
                   <div 
                     key={fam.key} 
-                    className="bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 p-4 rounded-2xl space-y-3.5 shadow-xs hover:border-[#0284C7]/60 transition-all flex flex-col justify-between"
+                    className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-2xl space-y-3.5 shadow-xs hover:border-[#0284C7]/60 transition-all flex flex-col justify-between"
                   >
                     <div className="space-y-3">
                       {/* Family Header */}
-                      <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                      <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-10 h-10 rounded-2xl bg-[#0284C7]/10 dark:bg-sky-950/50 text-[#0284C7] dark:text-sky-400 font-black text-sm flex items-center justify-center shrink-0 border border-[#0284C7]/30">
+                          <div className="w-10 h-10 rounded-2xl bg-[#0284C7]/10 text-[#0284C7] font-black text-sm flex items-center justify-center shrink-0 border border-[#0284C7]/30">
                             {hasMultipleSiblings ? '👨‍👩‍👧‍👦' : '🎓'}
                           </div>
                           <div className="truncate">
                             <div className="flex items-center gap-1.5">
-                              <h4 className="text-xs font-black text-[#0F172A] dark:text-white truncate">
+                              <h4 className="text-xs font-black text-[#0F172A] truncate">
                                 {fam.familyName}
                               </h4>
                               {hasMultipleSiblings && (
-                                <span className="bg-sky-100 dark:bg-sky-950 text-[#0284C7] dark:text-sky-400 text-[10px] font-black px-1.5 py-0.2 rounded-md border border-sky-300 dark:border-sky-800 shrink-0">
+                                <span className="bg-sky-100 text-[#0284C7] text-[10px] font-black px-1.5 py-0.2 rounded-md border border-sky-300 shrink-0">
                                   {fam.members.length} {isAr ? 'إخوة' : 'siblings'}
                                 </span>
                               )}
                             </div>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                            <span className="text-[10px] text-slate-500 block truncate">
                               {fam.parentName} {fam.parentPhone ? `• ${fam.parentPhone}` : ''}
                             </span>
                           </div>
@@ -920,14 +920,14 @@ export const TuitionModule = () => {
 
                         <div>
                           {isSpecial ? (
-                            <span className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 inline-flex items-center gap-1 shadow-2xs">
+                            <span className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1 shadow-2xs">
                               ⭐ {isAr ? 'معفى (حالة خاصة)' : 'Special Case (Exempt)'}
                             </span>
                           ) : (
                             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 block text-center ${
                               famRemainingUSD === 0 
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800' 
-                                : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 font-mono font-bold'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' 
+                                : 'bg-red-50 text-red-700 border border-red-300 font-mono font-bold'
                             }`}>
                               {famRemainingUSD === 0 ? (isAr ? '✅ مسدد بالكامل' : '✅ Paid') : `$${famRemainingUSD} USD`}
                             </span>
@@ -936,7 +936,7 @@ export const TuitionModule = () => {
                       </div>
 
                       {/* SIBLINGS BREAKDOWN INSIDE THE FAMILY CARD */}
-                      <div className="space-y-1.5 bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
+                      <div className="space-y-1.5 bg-white p-2.5 rounded-xl border border-slate-100 text-xs">
                         <span className="text-[10px] font-bold text-slate-400 block mb-1">
                           {isAr ? 'الأبناء المسجلون في هذه العائلة:' : 'Students in family:'}
                         </span>
@@ -945,13 +945,13 @@ export const TuitionModule = () => {
                             const mRem = getStudentRemaining(m);
                             const mPaid = getStudentPaid(m);
                             return (
-                              <div key={m.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-850">
+                              <div key={m.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 border border-slate-100">
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="w-5 h-5 rounded-full bg-sky-100 dark:bg-sky-900 text-[#0284C7] dark:text-sky-300 flex items-center justify-center font-bold text-[10px] shrink-0">
+                                  <span className="w-5 h-5 rounded-full bg-sky-100 text-[#0284C7] flex items-center justify-center font-bold text-[10px] shrink-0">
                                     {(m.name || 'ط')[0]}
                                   </span>
                                   <div className="truncate">
-                                    <span className="font-bold text-[#0F172A] dark:text-slate-100 block text-[11px] truncate">{m.name}</span>
+                                    <span className="font-bold text-[#0F172A] block text-[11px] truncate">{m.name}</span>
                                     <span className="text-[9px] text-slate-400 block">{m.grade} ({m.classRoom || 'أ'})</span>
                                   </div>
                                 </div>
@@ -976,10 +976,10 @@ export const TuitionModule = () => {
                       </div>
 
                       {/* Financial Figures Box for Family */}
-                      <div className="text-xs space-y-1 bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 font-mono text-right">
+                      <div className="text-xs space-y-1 bg-white p-3 rounded-xl border border-slate-100 font-mono text-right">
                         <div className="flex justify-between">
                           <span className="text-slate-500 font-sans">{isAr ? 'إجمالي الأقساط:' : 'Total Tuition:'}</span>
-                          <span className="font-bold text-[#0F172A] dark:text-slate-200">${famTotalUSD} USD</span>
+                          <span className="font-bold text-[#0F172A]">${famTotalUSD} USD</span>
                         </div>
                         {famAdminUSD > 0 && (
                           <div className="flex justify-between">
@@ -1003,9 +1003,9 @@ export const TuitionModule = () => {
                           <span className="text-slate-500 font-sans">{isAr ? 'المبلغ المقبوض:' : 'Total Paid:'}</span>
                           <span className="font-extrabold text-[#0284C7]">${famPaidUSD} USD</span>
                         </div>
-                        <div className="flex justify-between border-t border-slate-100 dark:border-slate-800 pt-1.5">
+                        <div className="flex justify-between border-t border-slate-100 pt-1.5">
                           <span className="text-red-500 font-sans font-bold">{isAr ? 'صافي المتبقي على العائلة:' : 'Total Remaining:'}</span>
-                          <span className={`font-black text-sm ${isSpecial ? 'text-amber-700 dark:text-amber-400' : 'text-red-600'}`}>
+                          <span className={`font-black text-sm ${isSpecial ? 'text-amber-700' : 'text-red-600'}`}>
                             {isSpecial ? (isAr ? '⭐ معفى ($0)' : '⭐ Exempt ($0)') : `$${famRemainingUSD} USD`}
                           </span>
                         </div>
@@ -1013,15 +1013,15 @@ export const TuitionModule = () => {
 
                       {/* Payment History Log for the family */}
                       {famHistory.length > 0 && (
-                        <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-2.5 space-y-1.5 max-h-32 overflow-y-auto">
+                        <div className="bg-white border border-slate-100 rounded-xl p-2.5 space-y-1.5 max-h-32 overflow-y-auto">
                           <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" /> {isAr ? `سجل دفعات العائلة (${famHistory.length})` : `Payment History (${famHistory.length})`}
                           </p>
                           {famHistory.map((entry) => (
-                            <div key={entry.id} className="flex items-center justify-between text-[10px] px-2 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30">
+                            <div key={entry.id} className="flex items-center justify-between text-[10px] px-2 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100">
                               <div>
                                 <span className="font-bold block">{entry.studentName ? `[${entry.studentName}]: ` : ''}{entry.desc} — ${entry.amount}$ USD</span>
-                                <span className="text-[9px] text-emerald-600 dark:text-emerald-400">{entry.date} • {entry.method === 'fresh_cash' ? 'نقداً' : 'تحويل'}</span>
+                                <span className="text-[9px] text-emerald-600">{entry.date} • {entry.method === 'fresh_cash' ? 'نقداً' : 'تحويل'}</span>
                               </div>
                               {currentRole === 'admin' && (
                                 <button onClick={() => handleDeleteHistoryEntry(entry.studentId, entry.id, entry.amount)}
@@ -1037,10 +1037,10 @@ export const TuitionModule = () => {
                     </div>
 
                     {/* Action Buttons for Family Card */}
-                    <div className="flex items-center justify-between pt-2 gap-1.5 flex-wrap border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between pt-2 gap-1.5 flex-wrap border-t border-slate-100">
                       <button 
                         onClick={() => handleSendFamilyWhatsAppReceipt(fam)}
-                        className="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                        className="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
                         title="إرسال إشعار استلام مالي رسمي للعائلة بالواتساب"
                       >
                         <span>واتساب إيصال 📲</span>
@@ -1048,7 +1048,7 @@ export const TuitionModule = () => {
 
                       <button 
                         onClick={() => handleSendFamilyWhatsAppReminder(fam)}
-                        className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                        className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
                         title="إرسال رسالة تذكير بالأقساط للعائلة بالواتساب"
                       >
                         <span>واتساب تذكير 📲</span>
@@ -1056,7 +1056,7 @@ export const TuitionModule = () => {
 
                       <button 
                         onClick={() => handleOpenFamilyReceiptView(fam)}
-                        className="py-1.5 px-2.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 text-[#0284C7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer shadow-xs"
+                        className="py-1.5 px-2.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] border border-sky-200 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer shadow-xs"
                       >
                         <Printer className="w-3.5 h-3.5 text-[#0284C7]" />
                         <span>الإيصال 🖨️</span>
