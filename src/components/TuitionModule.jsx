@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { exportToExcelCSV, openWhatsAppMessage } from '../utils/exportUtils';
@@ -56,6 +56,28 @@ export const TuitionModule = () => {
 
   const [showReceiptModal, setShowReceiptModal] = useState(null);
   const [successToast, setSuccessToast] = useState(false);
+
+  // ESC Key listener to exit open modals / sub-pages in TuitionModule
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (showReceiptModal) {
+          setShowReceiptModal(null);
+          return;
+        }
+        if (selectedFamilyForPay) {
+          setSelectedFamilyForPay(null);
+          return;
+        }
+        if (selectedStudentForEditPayment) {
+          setSelectedStudentForEditPayment(null);
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showReceiptModal, selectedFamilyForPay, selectedStudentForEditPayment]);
 
   // Active student for Parent / Student View
   const currentStudent = safeStudents.find((s) => s.id === selectedStudentId) || safeStudents[0];
@@ -1454,7 +1476,7 @@ export const TuitionModule = () => {
         document.body
       )}
 
-      {/* ── Receipt Modal (Guaranteed 2 Copies on 1 A4 Page Print) ─────────────────────────── */}
+      {/* ── Receipt Modal (Single Receipt Sized at Exactly Half A4 Sheet) ─────────────────────────── */}
       {showReceiptModal && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto receipt-print-backdrop">
           <div className="max-w-2xl w-full my-auto space-y-3">
@@ -1463,7 +1485,7 @@ export const TuitionModule = () => {
             <div className="no-print bg-white border border-[#E2E8F0] p-3 rounded-2xl flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-700">
-                  📄 {isAr ? 'معاينة إيصال الاستلام المالي (نسختان على ورقة A4 واحدة):' : 'Payment Receipt Preview (2 copies per A4 sheet):'}
+                  📄 {isAr ? 'معاينة إيصال الاستلام المالي (نصف صفحة A4):' : 'Payment Receipt Preview (Half A4 Sheet):'}
                 </span>
                 <span className="text-[10px] font-mono bg-sky-50 text-[#0284C7] font-bold px-2 py-0.5 rounded-md border border-sky-200">
                   {showReceiptModal.receiptNo}
@@ -1476,11 +1498,12 @@ export const TuitionModule = () => {
                   className="px-4 py-2 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>{isAr ? 'طباعة الإيصالين 🖨️' : 'Print Receipts'}</span>
+                  <span>{isAr ? 'طباعة الإيصال 🖨️' : 'Print Receipt'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowReceiptModal(null)}
+                  title={isAr ? 'إغلاق (Esc)' : 'Close (Esc)'}
                   className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors"
                 >
                   ✕
@@ -1488,8 +1511,8 @@ export const TuitionModule = () => {
               </div>
             </div>
 
-            {/* Printable Container holding Two Identical Receipts for 1 Page Print */}
-            <div className="receipt-print-wrapper space-y-3">
+            {/* Printable Container holding ONE Single Receipt Sized to Half of A4 */}
+            <div className="receipt-print-wrapper">
               <style>{`
                 /* Screen Mode Styles */
                 @media screen {
@@ -1498,7 +1521,7 @@ export const TuitionModule = () => {
                     color: #0f172a;
                     border: 2px solid #0284C7;
                     border-radius: 1.25rem;
-                    padding: 1rem 1.25rem;
+                    padding: 1.25rem 1.5rem;
                     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
                   }
                   .receipt-details-box {
@@ -1507,11 +1530,11 @@ export const TuitionModule = () => {
                   }
                 }
 
-                /* Print Mode Styles: Forces top-start, compact < half-page per receipt */
+                /* Print Mode Styles: Exactly 1 single receipt taking the top half of A4 */
                 @media print {
                   @page {
                     size: A4 portrait;
-                    margin: 5mm 8mm;
+                    margin: 6mm 10mm;
                   }
 
                   html, html.dark, body, html.dark body, 
@@ -1557,17 +1580,23 @@ export const TuitionModule = () => {
                   }
 
                   .receipt-printable-card, html.dark .receipt-printable-card {
-                    border: 1px solid #000000 !important;
+                    border: 1.5px solid #000000 !important;
                     box-shadow: none !important;
-                    margin: 0 auto 4px auto !important;
-                    padding: 8px 12px !important;
+                    margin: 0 auto !important;
+                    padding: 10px 14px !important;
                     background: #ffffff !important;
                     background-color: #ffffff !important;
                     color: #000000 !important;
                     width: 100% !important;
                     max-width: 100% !important;
+                    /* Half A4 height is ~138mm - 142mm */
+                    min-height: 132mm !important;
+                    max-height: 142mm !important;
                     border-radius: 0px !important;
                     box-sizing: border-box !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: space-between !important;
                     page-break-inside: avoid !important;
                   }
 
@@ -1575,7 +1604,7 @@ export const TuitionModule = () => {
                     background: transparent !important;
                     background-color: transparent !important;
                     border: 1px solid #cbd5e1 !important;
-                    padding: 4px 8px !important;
+                    padding: 6px 10px !important;
                   }
 
                   .receipt-printable-card div,
@@ -1605,137 +1634,127 @@ export const TuitionModule = () => {
                 }
               `}</style>
 
-              {/* Render Helper for Single Receipt Item (Used for Both Top & Bottom Copies) */}
-              {[
-                { copyKey: 'parent', labelAr: 'نسخة ولي الأمر (الأصلية)', labelEn: "Parent's Original Copy" },
-                { copyKey: 'school', labelAr: 'نسخة الإدارة والمحاسبة', labelEn: 'School Archive Copy' }
-              ].map(({ copyKey, labelAr, labelEn }, copyIndex) => (
-                <React.Fragment key={copyKey}>
-                  {copyIndex === 1 && (
-                    <div className="flex items-center justify-center my-1 text-slate-400 text-[10px] font-mono select-none">
-                      <span className="w-full border-b-2 border-dashed border-slate-300 text-center flex items-center justify-center gap-2 py-0.5">
-                        ✂️ {isAr ? 'خط القص ──────── قسيمة مكررة (إيصالين على ورقة A4 واحدة) ──────── خط القص' : 'Cut Line ──── Duplicate Receipt (Two on One Page) ──── Cut Line'} ✂️
-                      </span>
+              {/* Single Receipt Card (Half A4 Sheet) */}
+              <div className="receipt-printable-card relative text-right text-[#0F172A] space-y-2.5">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b-2 border-slate-200 pb-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-white p-0.5 flex items-center justify-center border border-[#0284C7] shadow-xs overflow-hidden shrink-0">
+                      <img src="/emblem.png" alt="Logo" className="w-full h-full object-cover rounded-lg" />
                     </div>
-                  )}
-
-                  <div className="receipt-printable-card relative text-right text-[#0F172A]">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-white p-0.5 flex items-center justify-center border border-[#0284C7] shadow-xs overflow-hidden shrink-0">
-                          <img src="/emblem.png" alt="Logo" className="w-full h-full object-cover rounded-md" />
-                        </div>
-                        <div>
-                          <h3 className="text-xs font-black text-[#0284C7] leading-tight">
-                            {isAr ? (siteSettings?.schoolName || 'مدرسة الدعم التعليمي') : (siteSettings?.schoolNameEn || 'Educational Support School')}
-                          </h3>
-                          <span className="text-[9px] text-slate-500 font-bold block">
-                            إيصال استلام مالي رسمي • Official Payment Receipt
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-left">
-                        <span className="inline-block px-2 py-0.5 rounded-md text-[9px] font-black border border-[#0284C7] bg-sky-50 text-[#0284C7]">
-                          {isAr ? labelAr : labelEn}
-                        </span>
-                        <div className="text-[9px] text-slate-400 font-mono mt-0.5">
-                          {showReceiptModal.receiptNo}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Metadata summary bar */}
-                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px] font-mono mb-2">
-                      <div>
-                        <span className="text-slate-400 text-[9px] block">{isAr ? 'تاريخ الاستلام:' : 'Date:'}</span>
-                        <span className="font-bold text-slate-800">{showReceiptModal.date}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 text-[9px] block">{isAr ? 'عائلة / ولي الأمر:' : 'Family / Guardian:'}</span>
-                        <span className="font-bold text-slate-800 truncate block">
-                          {showReceiptModal.familyName || showReceiptModal.parentName || showReceiptModal.studentName}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 text-[9px] block">{isAr ? 'طريقة الدفع:' : 'Method:'}</span>
-                        <span className="font-bold text-slate-800">
-                          {showReceiptModal.method === 'fresh_cash' ? 'Fresh Cash USD (نقداً)' : 'OMT / Whish (تحويل)'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Siblings Table or Single Student Breakdown */}
-                    {showReceiptModal.isFamilyReceipt ? (
-                      <div className="border border-slate-200 rounded-xl overflow-hidden mb-2">
-                        <table className="w-full text-center border-collapse text-[10px]">
-                          <thead>
-                            <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold">
-                              <th className="py-1 px-2 text-right">{isAr ? 'اسم التلميذ' : 'Student'}</th>
-                              <th className="py-1 px-1.5">{isAr ? 'الصف / الشعبة' : 'Grade'}</th>
-                              <th className="py-1 px-1.5">{isAr ? 'الدفعة المخصومة' : 'Deducted'}</th>
-                              <th className="py-1 px-1.5">{isAr ? 'المتبقي عليه' : 'Remaining'}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 font-mono">
-                            {(showReceiptModal.membersList || []).map((m, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50/50">
-                                <td className="py-1 px-2 text-right font-bold text-slate-800 font-sans">{m.name}</td>
-                                <td className="py-1 px-1.5 text-slate-500 text-[9px]">{m.grade} ({m.classRoom || 'أ'})</td>
-                                <td className="py-1 px-1.5 font-black text-emerald-600">${m.allocated}</td>
-                                <td className="py-1 px-1.5 font-bold text-red-600">${m.remaining}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs mb-2">
-                        <div>
-                          <span className="text-[10px] text-slate-400 block">{isAr ? 'اسم الطالب:' : 'Student:'}</span>
-                          <span className="font-bold text-slate-800">{showReceiptModal.studentName}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 block">{isAr ? 'الصف:' : 'Grade:'}</span>
-                          <span className="font-bold text-slate-600">{showReceiptModal.grade}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Financial Totals Row */}
-                    <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-2">
-                      <div className="bg-emerald-50 border border-emerald-200 p-1.5 rounded-xl flex items-center justify-between">
-                        <span className="text-emerald-800 font-bold text-[10px]">
-                          {isAr ? (showReceiptModal.isFamilyReceipt ? 'إجمالي المدفوع للعائلة:' : 'المبلغ المدفوع بالدولار:') : 'Total Paid:'}
-                        </span>
-                        <span className="font-black text-emerald-600 text-sm">
-                          ${showReceiptModal.amountUSD} USD
-                        </span>
-                      </div>
-                      <div className="bg-red-50 border border-red-200 p-1.5 rounded-xl flex items-center justify-between">
-                        <span className="text-red-800 font-bold text-[10px]">
-                          {isAr ? (showReceiptModal.isFamilyReceipt ? 'صافي المتبقي على العائلة:' : 'القسط المتبقي:') : 'Total Remaining:'}
-                        </span>
-                        <span className="font-black text-red-600 text-sm">
-                          ${showReceiptModal.remainingUSD} USD
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Signature & Stamp Row */}
-                    <div className="flex justify-between items-end pt-1 border-t border-slate-200 text-[10px] text-slate-500">
-                      <div>
-                        <span className="font-bold">{isAr ? 'توقيع المحاسب / الإدارة:' : 'Accountant Signature:'}</span>
-                        <div className="h-5 border-b border-slate-300 w-28 mt-0.5" />
-                      </div>
-                      <span className="px-2.5 py-0.5 rounded-full receipt-stamp-badge font-black text-[9px] border border-[#0284C7]/20 text-[#0284C7]">
-                        {isAr ? 'ختم المدرسة الرسمي 💮' : 'Official School Stamp'}
+                    <div>
+                      <h3 className="text-sm font-black text-[#0284C7] leading-tight">
+                        {isAr ? (siteSettings?.schoolName || 'مدرسة الدعم التعليمي') : (siteSettings?.schoolNameEn || 'Educational Support School')}
+                      </h3>
+                      <span className="text-[10px] text-slate-500 font-bold block">
+                        إيصال استلام مالي رسمي • Official Payment Receipt
                       </span>
                     </div>
                   </div>
-                </React.Fragment>
-              ))}
+
+                  <div className="text-left">
+                    <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-black border border-[#0284C7] bg-sky-50 text-[#0284C7]">
+                      {isAr ? 'إيصال سداد رسمي 🧾' : 'Official Receipt'}
+                    </span>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5 font-bold">
+                      {showReceiptModal.receiptNo}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metadata summary bar */}
+                <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs font-mono">
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-sans">{isAr ? 'تاريخ الاستلام:' : 'Date:'}</span>
+                    <span className="font-bold text-slate-800">{showReceiptModal.date}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-sans">{isAr ? 'عائلة / ولي الأمر:' : 'Family / Guardian:'}</span>
+                    <span className="font-bold text-slate-800 truncate block">
+                      {showReceiptModal.familyName || showReceiptModal.parentName || showReceiptModal.studentName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-sans">{isAr ? 'طريقة الدفع:' : 'Method:'}</span>
+                    <span className="font-bold text-slate-800">
+                      {showReceiptModal.method === 'fresh_cash' ? 'Fresh Cash USD (نقداً)' : 'OMT / Whish (تحويل)'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Sibling Table or Single Student Breakdown */}
+                {showReceiptModal.isFamilyReceipt ? (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-center border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-[11px]">
+                          <th className="py-1.5 px-3 text-right">{isAr ? 'اسم التلميذ' : 'Student'}</th>
+                          <th className="py-1.5 px-2">{isAr ? 'الصف / الشعبة' : 'Grade'}</th>
+                          <th className="py-1.5 px-2">{isAr ? 'الدفعة المخصومة' : 'Deducted'}</th>
+                          <th className="py-1.5 px-2">{isAr ? 'المتبقي عليه' : 'Remaining'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-mono">
+                        {(showReceiptModal.membersList || []).map((m, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="py-1.5 px-3 text-right font-bold text-slate-800 font-sans">{m.name}</td>
+                            <td className="py-1.5 px-2 text-slate-500 text-[10px]">{m.grade} ({m.classRoom || 'أ'})</td>
+                            <td className="py-1.5 px-2 font-black text-emerald-600">${m.allocated}</td>
+                            <td className="py-1.5 px-2 font-bold text-red-600">${m.remaining}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">{isAr ? 'اسم الطالب:' : 'Student:'}</span>
+                      <span className="font-bold text-slate-800 text-sm">{showReceiptModal.studentName}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">{isAr ? 'الصف:' : 'Grade:'}</span>
+                      <span className="font-bold text-slate-700">{showReceiptModal.grade}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Financial Totals Row */}
+                <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                  <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-xl flex items-center justify-between">
+                    <span className="text-emerald-800 font-bold text-[11px] font-sans">
+                      {isAr ? (showReceiptModal.isFamilyReceipt ? 'إجمالي المدفوع للعائلة:' : 'المبلغ المدفوع بالدولار:') : 'Total Paid:'}
+                    </span>
+                    <span className="font-black text-emerald-600 text-base">
+                      ${showReceiptModal.amountUSD} USD
+                    </span>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 p-2 rounded-xl flex items-center justify-between">
+                    <span className="text-red-800 font-bold text-[11px] font-sans">
+                      {isAr ? (showReceiptModal.isFamilyReceipt ? 'صافي المتبقي على العائلة:' : 'القسط المتبقي:') : 'Total Remaining:'}
+                    </span>
+                    <span className="font-black text-red-600 text-base">
+                      ${showReceiptModal.remainingUSD} USD
+                    </span>
+                  </div>
+                </div>
+
+                {/* Signature & Stamp Row */}
+                <div className="flex justify-between items-end pt-2 border-t border-slate-200 text-xs text-slate-500">
+                  <div>
+                    <span className="font-bold text-[11px]">{isAr ? 'توقيع المحاسب / الإدارة:' : 'Accountant Signature:'}</span>
+                    <div className="h-6 border-b border-slate-300 w-32 mt-1" />
+                  </div>
+                  <div className="text-center">
+                    <span className="px-3 py-1 rounded-full receipt-stamp-badge font-black text-[10px] border border-[#0284C7]/20 text-[#0284C7]">
+                      {isAr ? 'ختم المدرسة الرسمي 💮' : 'Official School Stamp'}
+                    </span>
+                    <span className="text-[9px] text-slate-400 block mt-0.5">
+                      {isAr ? 'يعتبر هذا السند إشعاراً رسمياً بالسداد' : 'Official Tuition Payment Receipt'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Screen Close Button Footer */}
@@ -1743,9 +1762,10 @@ export const TuitionModule = () => {
               <button
                 type="button"
                 onClick={() => setShowReceiptModal(null)}
-                className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer"
+                className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer flex items-center gap-1.5"
               >
-                {t('close')}
+                <span>{t('close')}</span>
+                <span className="text-[10px] opacity-70 font-mono">(Esc)</span>
               </button>
             </div>
 

@@ -94,6 +94,47 @@ const MainContent = () => {
     };
   }, []);
 
+  // Global ESC Key Listener: Closes any open modal / sub-page across the entire application
+  useEffect(() => {
+    const handleGlobalEscape = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        // 1. Close mobile sidebar if open
+        setIsSidebarOpen(false);
+
+        // 2. Dispatch custom event for React components
+        window.dispatchEvent(new CustomEvent('app-close-modal'));
+
+        // 3. Find topmost open modal overlay in DOM and trigger its close button
+        const overlays = Array.from(document.querySelectorAll('.fixed.inset-0, [role="dialog"]'));
+        if (overlays.length > 0) {
+          const topOverlay = overlays[overlays.length - 1];
+          const buttons = Array.from(topOverlay.querySelectorAll('button'));
+          
+          // Prioritize direct close '✕' buttons
+          const closeBtn = buttons.find(b => {
+            const txt = (b.textContent || '').trim();
+            const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+            const title = (b.getAttribute('title') || '').toLowerCase();
+            return txt === '✕' || txt === 'X' || txt === 'x' || 
+                   txt.includes('إغلاق') || txt.includes('إلغاء') ||
+                   txt.toLowerCase() === 'close' || txt.toLowerCase() === 'cancel' ||
+                   aria.includes('close') || title.includes('close') ||
+                   b.classList.contains('modal-close-btn');
+          });
+
+          if (closeBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeBtn.click();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalEscape, true);
+    return () => window.removeEventListener('keydown', handleGlobalEscape, true);
+  }, []);
+
   // Auto Reset scroll position to top of page on navigation / activeTab switch
   useEffect(() => {
     window.scrollTo(0, 0);
