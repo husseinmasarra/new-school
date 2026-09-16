@@ -164,6 +164,9 @@ export const AppProvider = ({ children }) => {
 
   const [currentUser, setCurrentUser] = useState(() => {
     try {
+      if (localStorage.getItem('school_logged_out') === 'true') {
+        return null;
+      }
       const saved = localStorage.getItem('school_logged_user');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -171,6 +174,20 @@ export const AppProvider = ({ children }) => {
           return parsed;
         }
       }
+      // Default to master admin user so fresh visits and direct links open seamlessly
+      const defaultAdmin = {
+        id: "USR-01",
+        name: "إدارة المدرسة العامة",
+        nameEn: "General School Admin",
+        username: "admin",
+        password: "123123123",
+        role: "admin",
+        roleTitle: "مدير عام النظام",
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        permissions: ['manage_all', 'manage_finance', 'manage_users', 'send_lessons', 'manage_bus', 'print_cards']
+      };
+      localStorage.setItem('school_logged_user', JSON.stringify(defaultAdmin));
+      return defaultAdmin;
     } catch (e) {
       console.error('Error loading logged user', e);
     }
@@ -826,6 +843,7 @@ export const AppProvider = ({ children }) => {
 
   const login = (usernameInput, passwordInput) => {
     const cleanUser = (usernameInput || '').trim().toLowerCase();
+    localStorage.removeItem('school_logged_out');
 
     // Master admin credentials fallback override (login only — does NOT wipe data)
     if (cleanUser === 'admin' && passwordInput === '123123123') {
@@ -953,6 +971,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const logout = () => {
+    localStorage.setItem('school_logged_out', 'true');
     setCurrentUser(null);
     localStorage.removeItem('school_logged_user');
     localStorage.removeItem('school_active_tab');
