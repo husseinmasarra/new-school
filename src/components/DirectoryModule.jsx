@@ -334,11 +334,11 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
       gradeEn: editStuGradeEn,
       classRoom: editStuClassRoom,
       tuitionTotal: editStuIsSpecialCase ? 0 : Number(editStuTuitionTotal),
-      tuitionPaid: Number(editStuTuitionPaid),
-      tuitionDiscount: Number(editStuTuitionDiscount),
-      adminFees: Number(editStuAdminFees || 0),
-      hasTransport: editStuHasTransport,
-      transportFee: Number(editStuTransportFee || 0),
+      tuitionPaid: editStuIsSpecialCase ? 0 : Number(editStuTuitionPaid),
+      tuitionDiscount: editStuIsSpecialCase ? 0 : Number(editStuTuitionDiscount),
+      adminFees: editStuIsSpecialCase ? 0 : Number(editStuAdminFees || 0),
+      hasTransport: editStuIsSpecialCase ? false : editStuHasTransport,
+      transportFee: editStuIsSpecialCase ? 0 : Number(editStuTransportFee || 0),
       phone: editStuParentPhone,
       parentPhone: editStuParentPhone,
       motherPhone: editStuMotherPhone,
@@ -458,10 +458,10 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
       avatar: stuAvatar,
       tuitionTotal: isFamilySpecialCase ? 0 : Number(stuTuitionTotal),
       tuitionPaid: 0,
-      tuitionDiscount: Number(stuTuitionDiscount),
-      adminFees: Number(stuAdminFees || 0),
-      hasTransport: stuHasTransport,
-      transportFee: Number(stuTransportFee || 0),
+      tuitionDiscount: isFamilySpecialCase ? 0 : Number(stuTuitionDiscount),
+      adminFees: isFamilySpecialCase ? 0 : Number(stuAdminFees || 0),
+      hasTransport: isFamilySpecialCase ? false : stuHasTransport,
+      transportFee: isFamilySpecialCase ? 0 : Number(stuTransportFee || 0),
       phone: (stuParentPhone || '').trim(),
       parentPhone: (stuParentPhone || '').trim(),
       motherPhone: (stuMotherPhone || '').trim(),
@@ -486,10 +486,10 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
         avatar: stuAvatar,
         tuitionTotal: isFamilySpecialCase ? 0 : Number(sib.tuitionTotal),
         tuitionPaid: 0,
-        tuitionDiscount: Number(sib.tuitionDiscount),
-        adminFees: Number(sib.adminFees || 0),
-        hasTransport: !!sib.hasTransport,
-        transportFee: Number(sib.transportFee || 0),
+        tuitionDiscount: isFamilySpecialCase ? 0 : Number(sib.tuitionDiscount),
+        adminFees: isFamilySpecialCase ? 0 : Number(sib.adminFees || 0),
+        hasTransport: isFamilySpecialCase ? false : !!sib.hasTransport,
+        transportFee: isFamilySpecialCase ? 0 : Number(sib.transportFee || 0),
         phone: (stuParentPhone || '').trim(),
         parentPhone: (stuParentPhone || '').trim(),
         motherPhone: (stuMotherPhone || '').trim(),
@@ -744,7 +744,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
   const handleExportStudentsExcel = () => {
     const headers = ['المعرف', 'اسم الطالب', 'Name En', 'الصف', 'الشعبة', 'اسم ولي الأمر', 'هاتف ولي الأمر', 'الحساب المقبوض ($)', 'المتبقي ($)'];
     const rows = (safeStudents || []).map(s => [
-      s.id, s.name, s.nameEn || '', s.grade, s.classRoom || '', s.parentName || '', s.parentPhone || '', s.tuitionPaid || 0, Math.max(0, (s.tuitionTotal || 700) - (s.tuitionPaid || 0))
+      s.id, s.name, s.nameEn || '', s.grade, s.classRoom || '', s.parentName || '', s.parentPhone || '', s.isSpecialCase ? 0 : (s.tuitionPaid || 0), s.isSpecialCase ? 0 : Math.max(0, (s.tuitionTotal ?? 700) - (s.tuitionPaid || 0))
     ]);
     exportToExcelCSV(`kashf-tullab-${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
   };
@@ -2474,33 +2474,51 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
               </div>
 
               {/* Financial breakdown */}
-              <div className="bg-[#F8FAFC] dark:bg-slate-900 p-3 rounded-xl border border-[#E2E8F0] dark:border-slate-800 col-span-2 space-y-1 bg-sky-50/20">
-                <span className="text-[#0284C7] block font-black text-[10px] uppercase tracking-wider">{isAr ? '💸 تفاصيل الرسوم والأقساط السنوية' : 'Tuition & Payment Summary'}</span>
-                <div className="flex justify-between font-mono pt-1">
-                  <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'إجمالي القسط الأساسي:' : 'Total Tuition:'}</span>
-                  <span className="font-extrabold">${showStudentDetailModal.tuitionTotal || 600} USD</span>
-                </div>
-                {showStudentDetailModal.hasTransport && (
-                  <div className="flex justify-between font-mono">
-                    <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'رسوم النقل (الباص):' : 'Bus Transport Fee:'}</span>
-                    <span className="font-extrabold text-sky-600">+${showStudentDetailModal.transportFee || 0} USD</span>
+              {(() => {
+                const isDetailSpecial = Boolean(showStudentDetailModal.isSpecialCase);
+                const detailTotal = isDetailSpecial ? 0 : (showStudentDetailModal.tuitionTotal ?? 600);
+                const detailTransport = isDetailSpecial ? 0 : (showStudentDetailModal.hasTransport ? (showStudentDetailModal.transportFee || 0) : 0);
+                const detailDiscount = isDetailSpecial ? 0 : (showStudentDetailModal.tuitionDiscount || 0);
+                const detailPaid = isDetailSpecial ? 0 : (showStudentDetailModal.tuitionPaid || 0);
+                const detailRemaining = isDetailSpecial ? 0 : Math.max(0, detailTotal + detailTransport - detailDiscount - detailPaid);
+
+                return (
+                  <div className={`p-3 rounded-xl border col-span-2 space-y-1 ${isDetailSpecial ? 'bg-amber-50/60 border-amber-300 dark:border-amber-700/50' : 'bg-[#F8FAFC] dark:bg-slate-900 border-[#E2E8F0] dark:border-slate-800'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#0284C7] block font-black text-[10px] uppercase tracking-wider">{isAr ? '💸 تفاصيل الرسوم والأقساط السنوية' : 'Tuition & Payment Summary'}</span>
+                      {isDetailSpecial && (
+                        <span className="text-[10px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs">
+                          ⭐ {isAr ? 'حالة خاصة (معفى بالكامل - حسابه 0)' : 'Special Case (Exempt - $0)'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-between font-mono pt-1">
+                      <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'إجمالي القسط الأساسي:' : 'Total Tuition:'}</span>
+                      <span className="font-extrabold">${detailTotal} USD</span>
+                    </div>
+                    {showStudentDetailModal.hasTransport && !isDetailSpecial && (
+                      <div className="flex justify-between font-mono">
+                        <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'رسوم النقل (الباص):' : 'Bus Transport Fee:'}</span>
+                        <span className="font-extrabold text-sky-600">+${detailTransport} USD</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-mono">
+                      <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'الخصومات الممنوحة:' : 'Tuition Discount:'}</span>
+                      <span className="font-extrabold text-emerald-600">-${detailDiscount} USD</span>
+                    </div>
+                    <div className="flex justify-between font-mono">
+                      <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'إجمالي المقبوض:' : 'Total Paid:'}</span>
+                      <span className="font-extrabold text-[#0284C7]">${detailPaid} USD</span>
+                    </div>
+                    <div className="flex justify-between font-mono border-t border-slate-200 dark:border-slate-800 pt-1">
+                      <span className="text-red-500 font-sans font-bold">{isAr ? 'المتبقي المستحق:' : 'Remaining Balance:'}</span>
+                      <span className={`font-black text-sm ${isDetailSpecial ? 'text-amber-800 font-black' : 'text-red-600'}`}>
+                        {isDetailSpecial ? (isAr ? '⭐ معفى ($0)' : '⭐ Exempt ($0)') : `$${detailRemaining} USD`}
+                      </span>
+                    </div>
                   </div>
-                )}
-                <div className="flex justify-between font-mono">
-                  <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'الخصومات الممنوحة:' : 'Tuition Discount:'}</span>
-                  <span className="font-extrabold text-emerald-600">-${showStudentDetailModal.tuitionDiscount || 0} USD</span>
-                </div>
-                <div className="flex justify-between font-mono">
-                  <span className="text-slate-500 dark:text-slate-400 font-sans">{isAr ? 'إجمالي المقبوض:' : 'Total Paid:'}</span>
-                  <span className="font-extrabold text-[#0284C7]">${showStudentDetailModal.tuitionPaid || 0} USD</span>
-                </div>
-                <div className="flex justify-between font-mono border-t border-slate-200 dark:border-slate-800 pt-1">
-                  <span className="text-red-500 font-sans font-bold">{isAr ? 'المتبقي المستحق:' : 'Remaining Balance:'}</span>
-                  <span className="font-black text-red-600 text-sm">
-                    ${Math.max(0, (showStudentDetailModal.tuitionTotal || 600) + (showStudentDetailModal.hasTransport ? (showStudentDetailModal.transportFee || 0) : 0) - (showStudentDetailModal.tuitionDiscount || 0) - (showStudentDetailModal.tuitionPaid || 0))} USD
-                  </span>
-                </div>
-              </div>
+                );
+              })()}
               
               {/* Ministry Endorsement Clearance Number Box */}
               <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-xl border border-amber-200 dark:border-amber-800/40 col-span-2 flex items-center justify-between">
@@ -3182,16 +3200,16 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
             </thead>
             <tbody>
               {filteredStudents.map((s) => {
-                const remaining = (s.tuitionTotal || 0) - (s.tuitionPaid || 0);
+                const remaining = s.isSpecialCase ? 0 : Math.max(0, (s.tuitionTotal || 0) - (s.tuitionPaid || 0));
                 return (
                   <tr key={s.id} className="border border-slate-300">
                     <td className="p-2 border border-slate-300 font-mono font-bold">{s.id}</td>
                     <td className="p-2 border border-slate-300 font-extrabold">{s.name}</td>
                     <td className="p-2 border border-slate-300 font-bold">{s.grade} ({s.classRoom || 'أ'})</td>
                     <td className="p-2 border border-slate-300 font-mono">{s.phone || s.parentPhone || 'غير مسجل'}</td>
-                    <td className="p-2 border border-slate-300 font-mono font-bold">${s.tuitionTotal || 0}</td>
-                    <td className="p-2 border border-slate-300 font-mono font-bold text-emerald-700">${s.tuitionPaid || 0}</td>
-                    <td className="p-2 border border-slate-300 font-mono font-bold text-red-600">${remaining}</td>
+                    <td className="p-2 border border-slate-300 font-mono font-bold">{s.isSpecialCase ? '⭐ 0$ (معفى)' : `$${s.tuitionTotal || 0}`}</td>
+                    <td className="p-2 border border-slate-300 font-mono font-bold text-emerald-700">{s.isSpecialCase ? '$0' : `$${s.tuitionPaid || 0}`}</td>
+                    <td className="p-2 border border-slate-300 font-mono font-bold text-red-600">{s.isSpecialCase ? '⭐ 0$ (معفى)' : `$${remaining}`}</td>
                     <td className="p-2 border border-slate-300 font-mono">{s.ministryClearance || 'لا يوجد'}</td>
                   </tr>
                 );

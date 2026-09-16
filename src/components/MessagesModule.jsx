@@ -91,6 +91,7 @@ export const MessagesModule = () => {
   // List of students with unpaid dues for financial reminders
   const unpaidStudentsList = useMemo(() => {
     return safeStudents.filter(s => {
+      if (s?.isSpecialCase) return false;
       const total = Number(s.tuitionTotal || 0) - Number(s.discountAmount || 0);
       const paid = Number(s.tuitionPaid || 0);
       return (total - paid) > 0;

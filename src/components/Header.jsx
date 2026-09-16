@@ -47,10 +47,11 @@ export const Header = ({ activeTab, setActiveTab, setIsSidebarOpen }) => {
   const safeTeachers = teachers || [];
   const safeSubjects = subjects || [];
   const activeStudent = safeStudents.find((s) => s.id === selectedStudentId || s.id === currentUser?.id || s.name === currentUser?.name) || safeStudents[0];
-  const studentTotalUSD = Number(activeStudent?.tuitionTotal || 0) + Number(activeStudent?.adminFees || 0) + (activeStudent?.hasTransport ? (Number(activeStudent?.transportFee) || 0) : 0);
-  const studentDiscountUSD = Number(activeStudent?.tuitionDiscount || activeStudent?.discount || 0);
-  const studentPaidUSD = Number(activeStudent?.tuitionPaid || 0);
-  const studentRemainingUSD = activeStudent ? Math.max(0, studentTotalUSD - studentDiscountUSD - studentPaidUSD) : 0;
+  const isSpecialActiveStu = Boolean(activeStudent?.isSpecialCase);
+  const studentTotalUSD = isSpecialActiveStu ? 0 : (Number(activeStudent?.tuitionTotal || 0) + Number(activeStudent?.adminFees || 0) + (activeStudent?.hasTransport ? (Number(activeStudent?.transportFee) || 0) : 0));
+  const studentDiscountUSD = isSpecialActiveStu ? 0 : Number(activeStudent?.tuitionDiscount || activeStudent?.discount || 0);
+  const studentPaidUSD = isSpecialActiveStu ? 0 : Number(activeStudent?.tuitionPaid || 0);
+  const studentRemainingUSD = isSpecialActiveStu ? 0 : (activeStudent ? Math.max(0, studentTotalUSD - studentDiscountUSD - studentPaidUSD) : 0);
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showNotifsDrawer, setShowNotifsDrawer] = useState(false);

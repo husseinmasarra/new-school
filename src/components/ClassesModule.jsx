@@ -1038,7 +1038,7 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {getModalStudents().map((stu) => {
-                    const remainingUSD = (stu.tuitionTotal || 700) - (stu.tuitionPaid || 0);
+                    const remainingUSD = stu.isSpecialCase ? 0 : Math.max(0, (stu.tuitionTotal ?? 700) - (stu.tuitionPaid || 0));
 
                     return (
                       <div
@@ -1067,15 +1067,21 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                         </div>
 
                         <div className="text-right rtl:text-right ltr:text-left shrink-0">
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-block ${
-                              remainingUSD <= 0
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
-                                : 'bg-red-50 text-red-700 border border-red-300'
-                            }`}
-                          >
-                            {remainingUSD <= 0 ? (isAr ? '✅ مسدد' : 'Paid') : `$${remainingUSD} USD`}
-                          </span>
+                          {stu.isSpecialCase ? (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-block">
+                              ⭐ {isAr ? 'حالة خاصة (معفى)' : 'Special Case'}
+                            </span>
+                          ) : (
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-block ${
+                                remainingUSD <= 0
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                                  : 'bg-red-50 text-red-700 border border-red-300'
+                              }`}
+                            >
+                              {remainingUSD <= 0 ? (isAr ? '✅ مسدد' : 'Paid') : `$${remainingUSD} USD`}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );

@@ -26,14 +26,15 @@ export const StudentCardPage = () => {
     );
   }
 
-  const baseTuition = Number(student?.tuitionTotal || 700);
-  const adminFees = Number(student?.adminFees || 0);
-  const transportFee = student?.hasTransport ? (Number(student?.transportFee) || 0) : 0;
-  const totalTuition = Math.max(0, baseTuition + adminFees + transportFee);
-  const discountTuition = Number(student?.tuitionDiscount || student?.discount || 0);
-  const paidTuition = Number(student?.tuitionPaid || 0);
-  const netTuition = Math.max(0, totalTuition - discountTuition);
-  const remainingTuition = Math.max(0, netTuition - paidTuition);
+  const isSpecial = Boolean(student?.isSpecialCase);
+  const baseTuition = isSpecial ? 0 : Number(student?.tuitionTotal ?? 700);
+  const adminFees = isSpecial ? 0 : Number(student?.adminFees || 0);
+  const transportFee = isSpecial ? 0 : (student?.hasTransport ? (Number(student?.transportFee) || 0) : 0);
+  const totalTuition = isSpecial ? 0 : Math.max(0, baseTuition + adminFees + transportFee);
+  const discountTuition = isSpecial ? 0 : Number(student?.tuitionDiscount || student?.discount || 0);
+  const paidTuition = isSpecial ? 0 : Number(student?.tuitionPaid || 0);
+  const netTuition = isSpecial ? 0 : Math.max(0, totalTuition - discountTuition);
+  const remainingTuition = isSpecial ? 0 : Math.max(0, netTuition - paidTuition);
 
   return (
     <div className="space-y-6 animate-fade-in printable-card-container text-[#0F172A]">
@@ -97,9 +98,13 @@ export const StudentCardPage = () => {
           </h3>
 
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-            remainingTuition === 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-red-50 text-red-800 border border-red-300'
+            isSpecial
+              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+              : remainingTuition === 0
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+              : 'bg-red-50 text-red-800 border border-red-300'
           }`}>
-            {remainingTuition === 0 ? (isAr ? 'مسدد بالكامل 🟢' : 'Fully Paid 🟢') : (isAr ? 'يوجد قسط متبقي ⚠️' : 'Pending Balance ⚠️')}
+            {isSpecial ? (isAr ? '⭐ حالة خاصة (معفى بالكامل - 0$)' : '⭐ Special Case (Exempt - $0)') : remainingTuition === 0 ? (isAr ? 'مسدد بالكامل 🟢' : 'Fully Paid 🟢') : (isAr ? 'يوجد قسط متبقي ⚠️' : 'Pending Balance ⚠️')}
           </span>
         </div>
 

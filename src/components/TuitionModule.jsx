@@ -54,23 +54,32 @@ export const TuitionModule = () => {
   const currentStudent = safeStudents.find((s) => s.id === selectedStudentId) || safeStudents[0];
   const isOverduePeriod = new Date().getDate() > 5;
 
-  // Admin Financial Metrics in USD (Frozen accounts are excluded from active overdue dues)
-  const activeStudents = safeStudents.filter((s) => !s?.frozen);
-  const totalTuitionUSD   = safeStudents.reduce((sum, s) => sum + (Number(s?.tuitionTotal) || 600), 0);
-  const totalAdminFeesUSD = safeStudents.reduce((sum, s) => sum + (Number(s?.adminFees) || 0), 0);
-  const totalTransportFeesUSD = safeStudents.reduce((sum, s) => sum + (s?.hasTransport ? (Number(s?.transportFee) || 0) : 0), 0);
-  const totalDiscountUSD  = safeStudents.reduce((sum, s) => sum + (Number(s?.tuitionDiscount) || 0), 0);
-  const totalPaidUSD      = safeStudents.reduce((sum, s) => sum + (Number(s?.tuitionPaid) || 0), 0);
+  // Helpers to strictly enforce 0 account balance for special cases
+  const getStudentTuitionTotal = (s) => (s?.isSpecialCase ? 0 : (s?.tuitionTotal !== undefined && s?.tuitionTotal !== null && s?.tuitionTotal !== '' ? Number(s.tuitionTotal) : 600));
+  const getStudentAdminFees = (s) => (s?.isSpecialCase ? 0 : Number(s?.adminFees || 0));
+  const getStudentTransportFee = (s) => (s?.isSpecialCase ? 0 : (s?.hasTransport ? Number(s?.transportFee || 0) : 0));
+  const getStudentDiscount = (s) => (s?.isSpecialCase ? 0 : Number(s?.tuitionDiscount || 0));
+  const getStudentPaid = (s) => (s?.isSpecialCase ? 0 : Number(s?.tuitionPaid || 0));
+  const getStudentRemaining = (s) => {
+    if (s?.isSpecialCase) return 0;
+    const tot = getStudentTuitionTotal(s);
+    const adm = getStudentAdminFees(s);
+    const trs = getStudentTransportFee(s);
+    const disc = getStudentDiscount(s);
+    const paid = getStudentPaid(s);
+    return Math.max(0, tot + adm + trs - disc - paid);
+  };
+
+  // Admin Financial Metrics in USD (Frozen accounts and special cases are excluded from active overdue dues)
+  const activeStudents = safeStudents.filter((s) => !s?.frozen && !s?.isSpecialCase);
+  const totalTuitionUSD   = safeStudents.reduce((sum, s) => sum + getStudentTuitionTotal(s), 0);
+  const totalAdminFeesUSD = safeStudents.reduce((sum, s) => sum + getStudentAdminFees(s), 0);
+  const totalTransportFeesUSD = safeStudents.reduce((sum, s) => sum + getStudentTransportFee(s), 0);
+  const totalDiscountUSD  = safeStudents.reduce((sum, s) => sum + getStudentDiscount(s), 0);
+  const totalPaidUSD      = safeStudents.reduce((sum, s) => sum + getStudentPaid(s), 0);
   
   // Total overdue dues only includes active non-frozen students
-  const totalRemainingUSD = activeStudents.reduce((sum, s) => {
-    const tot = Number(s.tuitionTotal) || 600;
-    const adm = Number(s.adminFees) || 0;
-    const trs = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
-    const disc = Number(s.tuitionDiscount) || 0;
-    const paid = Number(s.tuitionPaid) || 0;
-    return sum + Math.max(0, tot + adm + trs - disc - paid);
-  }, 0);
+  const totalRemainingUSD = activeStudents.reduce((sum, s) => sum + getStudentRemaining(s), 0);
 
   const savePaymentHistory = (updated) => {
     setPaymentHistory(updated);
@@ -104,13 +113,13 @@ export const TuitionModule = () => {
     savePaymentHistory(updatedHistory);
 
     // 3. Compute new remaining amount for the receipt
-    const totalTuition = Number(selectedStudentForPay.tuitionTotal) || 600;
-    const adminFees = Number(selectedStudentForPay.adminFees) || 0;
-    const transportFee = selectedStudentForPay.hasTransport ? (Number(selectedStudentForPay.transportFee) || 0) : 0;
-    const discount = Number(selectedStudentForPay.tuitionDiscount) || 0;
-    const oldPaid = Number(selectedStudentForPay.tuitionPaid) || 0;
+    const totalTuition = getStudentTuitionTotal(selectedStudentForPay);
+    const adminFees = getStudentAdminFees(selectedStudentForPay);
+    const transportFee = getStudentTransportFee(selectedStudentForPay);
+    const discount = getStudentDiscount(selectedStudentForPay);
+    const oldPaid = getStudentPaid(selectedStudentForPay);
     const newPaid = oldPaid + amountUSD;
-    const remainingUSD = Math.max(0, totalTuition + adminFees + transportFee - discount - newPaid);
+    const remainingUSD = selectedStudentForPay.isSpecialCase ? 0 : Math.max(0, totalTuition + adminFees + transportFee - discount - newPaid);
 
     // 4. Open official receipt modal
     const receipt = {
@@ -202,12 +211,16 @@ export const TuitionModule = () => {
   };
 
   const handleSendIndividualReminder = (stu) => {
-    const totalUSD = Number(stu.tuitionTotal) || 600;
-    const adminUSD = Number(stu.adminFees) || 0;
-    const transportUSD = stu.hasTransport ? (Number(stu.transportFee) || 0) : 0;
-    const discountUSD = Number(stu.tuitionDiscount) || 0;
-    const paidUSD = Number(stu.tuitionPaid) || 0;
-    const remUSD = Math.max(0, totalUSD + adminUSD + transportUSD - discountUSD - paidUSD);
+    if (stu.isSpecialCase) {
+      alert(isAr ? 'هذا التلميذ من الحالات الخاصة ومعفى من الأقساط بالكامل (حسابه 0)!' : 'This student is a special case and exempt from tuition (balance 0)!');
+      return;
+    }
+    const totalUSD = getStudentTuitionTotal(stu);
+    const adminUSD = getStudentAdminFees(stu);
+    const transportUSD = getStudentTransportFee(stu);
+    const discountUSD = getStudentDiscount(stu);
+    const paidUSD = getStudentPaid(stu);
+    const remUSD = getStudentRemaining(stu);
 
     addMessage({
       title: `تذكير مالي - قسط الطالب ${stu.name} ($ USD)`,
@@ -223,13 +236,12 @@ export const TuitionModule = () => {
   };
 
   const handleSendWhatsAppReminder = (stu) => {
+    if (stu.isSpecialCase) {
+      alert(isAr ? 'هذا التلميذ من الحالات الخاصة ومعفى من الأقساط بالكامل (حسابه 0)!' : 'This student is a special case and exempt from tuition (balance 0)!');
+      return;
+    }
     const parentPhone = stu.parentPhone || stu.phone || '+961 70 000 000';
-    const totalUSD = Number(stu.tuitionTotal || 600);
-    const adminUSD = Number(stu.adminFees || 0);
-    const transportUSD = Number(stu.transportFee || 0);
-    const discountUSD = Number(stu.discountUSD || 0);
-    const paidUSD = Number(stu.tuitionPaid || 0);
-    const remUSD = Math.max(0, totalUSD + adminUSD + transportUSD - discountUSD - paidUSD);
+    const remUSD = getStudentRemaining(stu);
 
     let msg = '';
     if (isAr) {
@@ -260,13 +272,13 @@ export const TuitionModule = () => {
     ];
 
     const dataRows = safeStudents.map(s => {
-      const total = Number(s.tuitionTotal || 600);
-      const adminFees = Number(s.adminFees || 0);
-      const transportFee = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
-      const discount = Number(s.tuitionDiscount || 0);
-      const paid = Number(s.tuitionPaid || 0);
-      const remaining = Math.max(0, total + adminFees + transportFee - discount - paid);
-      const status = remaining === 0 ? 'مسدد بالكامل' : 'يوجد قسط متبقي';
+      const isSpec = Boolean(s.isSpecialCase);
+      const total = getStudentTuitionTotal(s);
+      const adminFees = getStudentAdminFees(s);
+      const discount = getStudentDiscount(s);
+      const paid = getStudentPaid(s);
+      const remaining = getStudentRemaining(s);
+      const status = isSpec ? 'حالة خاصة (معفى - 0$)' : remaining === 0 ? 'مسدد بالكامل' : 'يوجد قسط متبقي';
       return [
         s.id,
         isAr ? s.name : s.nameEn,
@@ -359,16 +371,15 @@ export const TuitionModule = () => {
               {currentRole !== 'student' && (
                 <button
                   onClick={() => {
-                    const transportFee = currentStudent.hasTransport ? (Number(currentStudent.transportFee) || 0) : 0;
                     const receipt = {
                       receiptNo: `REC-LB-${Date.now().toString().slice(-6)}`,
                       date: new Date().toISOString().split('T')[0],
                       studentName: isAr ? currentStudent.name : currentStudent.nameEn,
                       grade: isAr ? currentStudent.grade : currentStudent.gradeEn,
-                      amountUSD: currentStudent.tuitionPaid,
+                      amountUSD: getStudentPaid(currentStudent),
                       amountLBP: 0,
                       method: 'fresh_cash',
-                      remainingUSD: Math.max(0, (currentStudent.tuitionTotal || 600) + (currentStudent.adminFees || 0) + transportFee - (currentStudent.tuitionDiscount || 0) - (currentStudent.tuitionPaid || 0))
+                      remainingUSD: getStudentRemaining(currentStudent)
                     };
                     setShowReceiptModal(receipt);
                   }}
@@ -392,27 +403,31 @@ export const TuitionModule = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-4">
             <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
               <span className="text-xs text-slate-500 block">{t('totalTuition')}</span>
-              <span className="text-xl font-black text-[#0F172A] mt-1 block font-mono">${(currentStudent.tuitionTotal || 600).toLocaleString()} USD</span>
+              <span className="text-xl font-black text-[#0F172A] mt-1 block font-mono">${getStudentTuitionTotal(currentStudent).toLocaleString()} USD</span>
             </div>
             <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
               <span className="text-xs text-slate-500 block">{isAr ? 'رسوم النقل' : 'Bus Fee'}</span>
-              <span className="text-xl font-black text-sky-600 mt-1 block font-mono">${(currentStudent.hasTransport ? (Number(currentStudent.transportFee) || 0) : 0).toLocaleString()} USD</span>
+              <span className="text-xl font-black text-sky-600 mt-1 block font-mono">${getStudentTransportFee(currentStudent).toLocaleString()} USD</span>
             </div>
             <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
               <span className="text-xs text-slate-500 block">{isAr ? 'المصاريف الإدارية' : 'Admin Fees'}</span>
-              <span className="text-xl font-black text-amber-600 mt-1 block font-mono">+${(currentStudent.adminFees || 0).toLocaleString()} USD</span>
+              <span className="text-xl font-black text-amber-600 mt-1 block font-mono">+${getStudentAdminFees(currentStudent).toLocaleString()} USD</span>
             </div>
             <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
               <span className="text-xs text-slate-500 block">{isAr ? 'الخصومات والمنح' : 'Discounts'}</span>
-              <span className="text-xl font-black text-emerald-600 mt-1 block font-mono">-${(currentStudent.tuitionDiscount || 0).toLocaleString()} USD</span>
+              <span className="text-xl font-black text-emerald-600 mt-1 block font-mono">-${getStudentDiscount(currentStudent).toLocaleString()} USD</span>
             </div>
             <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
               <span className="text-xs text-slate-500 block">{t('paidAmount')}</span>
-              <span className="text-xl font-black text-[#0284C7] mt-1 block font-mono">${(currentStudent.tuitionPaid || 0).toLocaleString()} USD</span>
+              <span className="text-xl font-black text-[#0284C7] mt-1 block font-mono">${getStudentPaid(currentStudent).toLocaleString()} USD</span>
             </div>
-            <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-red-300">
-              <span className="text-xs text-red-600 block font-bold">{t('remainingAmount')}</span>
-              <span className="text-xl font-black text-red-600 mt-1 block font-mono">${Math.max(0, (currentStudent.tuitionTotal || 600) + (currentStudent.adminFees || 0) + (currentStudent.hasTransport ? (Number(currentStudent.transportFee) || 0) : 0) - (currentStudent.tuitionDiscount || 0) - (currentStudent.tuitionPaid || 0)).toLocaleString()} USD</span>
+            <div className={`p-4 rounded-2xl border ${currentStudent?.isSpecialCase ? 'bg-amber-50/60 border-amber-300' : 'bg-[#F8FAFC] border-red-300'}`}>
+              <span className={`text-xs block font-bold ${currentStudent?.isSpecialCase ? 'text-amber-800' : 'text-red-600'}`}>
+                {currentStudent?.isSpecialCase ? (isAr ? 'حالة الحساب:' : 'Account Status:') : t('remainingAmount')}
+              </span>
+              <span className={`text-xl font-black mt-1 block font-mono ${currentStudent?.isSpecialCase ? 'text-amber-900 text-sm' : 'text-red-600'}`}>
+                {currentStudent?.isSpecialCase ? (isAr ? '⭐ معفى (حالة خاصة)' : '⭐ Special Case') : `$${getStudentRemaining(currentStudent).toLocaleString()} USD`}
+              </span>
             </div>
           </div>
         </div>
@@ -434,16 +449,10 @@ export const TuitionModule = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {safeStudents.filter(s => {
-                  if (s.frozen) return false; // Frozen accounts are excluded from overdue reminders & dues list
-                  const total = Number(s.tuitionTotal) || 600;
-                  const discount = Number(s.tuitionDiscount) || 0;
-                  const paid = Number(s.tuitionPaid) || 0;
-                  return (total - discount - paid) > 0;
+                  if (s.frozen || s.isSpecialCase) return false; // Frozen accounts and special cases are excluded from overdue reminders & dues list
+                  return getStudentRemaining(s) > 0;
                 }).map(stu => {
-                  const totalUSD = Number(stu.tuitionTotal) || 600;
-                  const discountUSD = Number(stu.tuitionDiscount) || 0;
-                  const paidUSD = Number(stu.tuitionPaid) || 0;
-                  const remUSD = Math.max(0, totalUSD - discountUSD - paidUSD);
+                  const remUSD = getStudentRemaining(stu);
 
                   return (
                     <div key={stu.id} className="bg-white dark:bg-slate-900 border border-red-200 dark:border-red-950/50 p-3 rounded-2xl flex items-center justify-between shadow-xs">
@@ -486,11 +495,11 @@ export const TuitionModule = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {safeStudents.map((stu) => {
-              const totalUSD    = Number(stu.tuitionTotal) || 600;
-              const adminUSD    = Number(stu.adminFees) || 0;
-              const discountUSD = Number(stu.tuitionDiscount) || 0;
-              const paidUSD     = Number(stu.tuitionPaid) || 0;
-              const remUSD      = Math.max(0, totalUSD + adminUSD - discountUSD - paidUSD);
+              const totalUSD    = getStudentTuitionTotal(stu);
+              const adminUSD    = getStudentAdminFees(stu);
+              const discountUSD = getStudentDiscount(stu);
+              const paidUSD     = getStudentPaid(stu);
+              const remUSD      = getStudentRemaining(stu);
               const history     = paymentHistory[stu.id] || [];
 
               return (
@@ -506,15 +515,22 @@ export const TuitionModule = () => {
                         <span className="text-[10px] text-slate-500 block">{isAr ? stu.grade : stu.gradeEn}</span>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${
-                      stu.frozen 
-                        ? 'bg-cyan-50 text-cyan-800 border border-cyan-300 font-black' 
-                        : remUSD === 0 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' 
-                        : 'bg-red-50 text-red-700 border border-red-300'
-                    }`}>
-                      {stu.frozen ? (isAr ? '❄️ حساب مجمد (موقوف عن المتأخرات)' : '❄️ Frozen Account') : remUSD === 0 ? (isAr ? '✅ مسدد' : '✅ Paid') : `$${remUSD} USD`}
-                    </span>
+                    {stu.isSpecialCase ? (
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1 shadow-2xs">
+                        <span>⭐</span>
+                        <span>{isAr ? 'حالة خاصة (معفى)' : 'Special Case (Exempt)'}</span>
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${
+                        stu.frozen 
+                          ? 'bg-cyan-50 text-cyan-800 border border-cyan-300 font-black' 
+                          : remUSD === 0 
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' 
+                          : 'bg-red-50 text-red-700 border border-red-300'
+                      }`}>
+                        {stu.frozen ? (isAr ? '❄️ حساب مجمد (موقوف عن المتأخرات)' : '❄️ Frozen Account') : remUSD === 0 ? (isAr ? '✅ مسدد' : '✅ Paid') : `$${remUSD} USD`}
+                      </span>
+                    )}
                   </div>
 
                   {/* Financial Figures */}
@@ -535,24 +551,28 @@ export const TuitionModule = () => {
                       <span className="text-slate-500">{t('paidAmount')}:</span>
                       <div className="flex items-center gap-1.5">
                         <span className="font-extrabold text-[#0284C7]">${paidUSD} USD</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedStudentForEditPayment(stu);
-                            setEditPaidAmount((stu.tuitionPaid || 0).toString());
-                            setEditPaidReason('تصحيح خطأ في تسجيل الدفعة');
-                          }}
-                          className="text-[10px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md border border-amber-200 cursor-pointer font-bold transition-colors flex items-center gap-0.5"
-                          title="تعديل أو تصحيح الدفعة في حال حدوث خطأ"
-                        >
-                          <Edit3 className="w-2.5 h-2.5" />
-                          <span>تعديل</span>
-                        </button>
+                        {!stu.isSpecialCase && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedStudentForEditPayment(stu);
+                              setEditPaidAmount((stu.tuitionPaid || 0).toString());
+                              setEditPaidReason('تصحيح خطأ في تسجيل الدفعة');
+                            }}
+                            className="text-[10px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md border border-amber-200 cursor-pointer font-bold transition-colors flex items-center gap-0.5"
+                            title="تعديل أو تصحيح الدفعة في حال حدوث خطأ"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" />
+                            <span>تعديل</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="flex justify-between border-t border-slate-100 pt-1.5">
                       <span className="text-red-500 font-sans font-bold">{t('remainingAmount')}:</span>
-                      <span className="font-black text-red-600 text-sm">${remUSD} USD</span>
+                      <span className={`font-black text-sm ${stu.isSpecialCase ? 'text-amber-700' : 'text-red-600'}`}>
+                        {stu.isSpecialCase ? (isAr ? '⭐ معفى ($0)' : '⭐ Exempt ($0)') : `$${remUSD} USD`}
+                      </span>
                     </div>
                   </div>
 
@@ -659,7 +679,7 @@ export const TuitionModule = () => {
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700">المبلغ المدفوع ($ USD) <span className="text-red-500">*</span></label>
               <input type="number" required min="1"
-                max={Math.max(1, (selectedStudentForPay.tuitionTotal || 600) - (selectedStudentForPay.tuitionPaid || 0))}
+                max={selectedStudentForPay.isSpecialCase ? 0 : Math.max(1, getStudentRemaining(selectedStudentForPay))}
                 value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
                 placeholder="مثال: 100 أو 200..."
                 className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#0284C7]" />

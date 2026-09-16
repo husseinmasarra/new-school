@@ -208,10 +208,28 @@ export const AppProvider = ({ children }) => {
   // - If key exists (even as []) → ALWAYS respect stored value. Never override.
   // ──────────────────────────────────────────────────────────────────────────
 
+  const sanitizeSpecialCaseStudent = (s) => {
+    if (s?.isSpecialCase) {
+      return {
+        ...s,
+        tuitionTotal: 0,
+        tuitionPaid: 0,
+        tuitionDiscount: 0,
+        adminFees: 0,
+        transportFee: 0,
+        hasTransport: false
+      };
+    }
+    return s;
+  };
+
   const [subjects,       setSubjects]       = useState(() => dbLoadCollection('school_subjects',    initialSubjects));
   const [grades,         setGrades]         = useState(() => dbLoadCollection('school_grades',       initialGrades));
   const [classrooms,     setClassrooms]     = useState(() => dbLoadCollection('school_classrooms',   initialClassrooms));
-  const [students,       setStudents]       = useState(() => dbLoadCollection('school_students',     initialStudents));
+  const [students,       setStudents]       = useState(() => {
+    const loaded = dbLoadCollection('school_students', initialStudents);
+    return Array.isArray(loaded) ? loaded.map(s => s?.isSpecialCase ? sanitizeSpecialCaseStudent(s) : s) : loaded;
+  });
   const [teachers,       setTeachers]       = useState(() => dbLoadCollection('school_teachers',     initialTeachers));
   const [staffEmployees, setStaffEmployees] = useState(() => dbLoadCollection('school_staff',        initialStaffEmployees));
   const [exams,          setExams]          = useState(() => dbLoadCollection('school_exams',        initialExams));
@@ -222,6 +240,26 @@ export const AppProvider = ({ children }) => {
   const [agenda, setAgenda] = useState(() => dbLoadCollection('school_agenda', initialAgenda));
   const [tutoringCourses, setTutoringCourses] = useState(() => dbLoadCollection('school_tutoring',  initialTutoringCourses));
   const [tutoringPayments, setTutoringPayments] = useState(() => dbLoadCollection('school_tutoring_payments', initialTutoringPayments));
+
+  // Enforce zero balance for all special case students on mount
+  useEffect(() => {
+    setStudents(prev => {
+      let changed = false;
+      const cleaned = (prev || []).map(s => {
+        if (s?.isSpecialCase && (s.tuitionTotal !== 0 || s.tuitionPaid !== 0 || s.tuitionDiscount !== 0 || s.adminFees !== 0 || s.transportFee !== 0)) {
+          changed = true;
+          return sanitizeSpecialCaseStudent(s);
+        }
+        return s;
+      });
+      if (changed) {
+        localStorage.setItem('school_students', JSON.stringify(cleaned));
+        dbSaveCollection('school_students', cleaned);
+        return cleaned;
+      }
+      return prev;
+    });
+  }, []);
 
   // Master Timetable for all teachers and class schedule
   const [masterTimetable, setMasterTimetable] = useState(() => dbLoadCollection('school_timetable', initialMasterTimetable));
@@ -1625,6 +1663,11 @@ export const AppProvider = ({ children }) => {
       if (markSpecialCase) {
         newStu.isSpecialCase = true;
         newStu.tuitionTotal = 0;
+        newStu.tuitionPaid = 0;
+        newStu.tuitionDiscount = 0;
+        newStu.adminFees = 0;
+        newStu.transportFee = 0;
+        newStu.hasTransport = false;
       }
 
       const updated = prev.map(s => {
@@ -1632,7 +1675,12 @@ export const AppProvider = ({ children }) => {
           return {
             ...s,
             isSpecialCase: markSpecialCase ? true : s.isSpecialCase,
-            tuitionTotal: markSpecialCase ? 0 : s.tuitionTotal
+            tuitionTotal: markSpecialCase ? 0 : s.tuitionTotal,
+            tuitionPaid: markSpecialCase ? 0 : s.tuitionPaid,
+            tuitionDiscount: markSpecialCase ? 0 : s.tuitionDiscount,
+            adminFees: markSpecialCase ? 0 : s.adminFees,
+            transportFee: markSpecialCase ? 0 : s.transportFee,
+            hasTransport: markSpecialCase ? false : s.hasTransport
           };
         }
         return s;
@@ -1719,12 +1767,22 @@ export const AppProvider = ({ children }) => {
         // If this student or any sibling in the family gets updated for special case -> sync ALL siblings in the family!
         if (s.id === studentId || isSibling(targetStu, s)) {
           const isTarget = s.id === studentId;
-          return {
+          const merged = {
             ...s,
             ...(isTarget ? updatedFields : {}),
             isSpecialCase: newIsSpecial,
-            tuitionTotal: newIsSpecial ? 0 : (isTarget && updatedFields.tuitionTotal !== undefined ? updatedFields.tuitionTotal : (s.tuitionTotal || 700))
           };
+          if (newIsSpecial) {
+            merged.tuitionTotal = 0;
+            merged.tuitionPaid = 0;
+            merged.tuitionDiscount = 0;
+            merged.adminFees = 0;
+            merged.transportFee = 0;
+            merged.hasTransport = false;
+          } else if (isTarget && updatedFields.tuitionTotal !== undefined) {
+            merged.tuitionTotal = updatedFields.tuitionTotal;
+          }
+          return merged;
         }
         return s;
       });

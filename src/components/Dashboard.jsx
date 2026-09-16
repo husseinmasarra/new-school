@@ -64,24 +64,26 @@ export const Dashboard = ({ setActiveTab }) => {
     parentPhone: "+961 70 000 000"
   };
 
-  const studentTuitionTotal = Number(activeStudent?.tuitionTotal || 700);
-  const studentAdminFees    = Number(activeStudent?.adminFees || 0);
-  const studentTransportFee = activeStudent?.hasTransport ? (Number(activeStudent?.transportFee) || 0) : 0;
-  const studentDiscount     = Number(activeStudent?.tuitionDiscount || activeStudent?.discount || 0);
-  const studentTuitionPaid  = Number(activeStudent?.tuitionPaid || 0);
+  const isSpecialActiveStu = Boolean(activeStudent?.isSpecialCase);
+  const studentTuitionTotal = isSpecialActiveStu ? 0 : Number(activeStudent?.tuitionTotal ?? 700);
+  const studentAdminFees    = isSpecialActiveStu ? 0 : Number(activeStudent?.adminFees || 0);
+  const studentTransportFee = isSpecialActiveStu ? 0 : (activeStudent?.hasTransport ? (Number(activeStudent?.transportFee) || 0) : 0);
+  const studentDiscount     = isSpecialActiveStu ? 0 : Number(activeStudent?.tuitionDiscount || activeStudent?.discount || 0);
+  const studentTuitionPaid  = isSpecialActiveStu ? 0 : Number(activeStudent?.tuitionPaid || 0);
 
-  const studentGrandTotal   = Math.max(0, studentTuitionTotal + studentAdminFees + studentTransportFee);
-  const studentNetTuition   = Math.max(0, studentGrandTotal - studentDiscount);
-  const studentRemainingUSD = Math.max(0, studentNetTuition - studentTuitionPaid);
+  const studentGrandTotal   = isSpecialActiveStu ? 0 : Math.max(0, studentTuitionTotal + studentAdminFees + studentTransportFee);
+  const studentNetTuition   = isSpecialActiveStu ? 0 : Math.max(0, studentGrandTotal - studentDiscount);
+  const studentRemainingUSD = isSpecialActiveStu ? 0 : Math.max(0, studentNetTuition - studentTuitionPaid);
 
   const totalTuitionExpectedUSD = safeStudents.reduce((sum, s) => {
-    const tot = Number(s?.tuitionTotal) || 0;
+    if (s?.isSpecialCase) return sum;
+    const tot = s?.tuitionTotal !== undefined && s?.tuitionTotal !== null && s?.tuitionTotal !== '' ? Number(s.tuitionTotal) : 0;
     const adm = Number(s?.adminFees) || 0;
     const trs = s?.hasTransport ? (Number(s?.transportFee) || 0) : 0;
     const disc = Number(s?.tuitionDiscount || s?.discount) || 0;
     return sum + Math.max(0, tot + adm + trs - disc);
   }, 0);
-  const totalTuitionCollectedUSD = safeStudents.reduce((sum, s) => sum + (Number(s?.tuitionPaid) || 0), 0);
+  const totalTuitionCollectedUSD = safeStudents.reduce((sum, s) => sum + (s?.isSpecialCase ? 0 : (Number(s?.tuitionPaid) || 0)), 0);
   const tuitionRate = totalTuitionExpectedUSD > 0 ? Math.round((totalTuitionCollectedUSD / totalTuitionExpectedUSD) * 100) : 0;
 
   // Active teacher for Teacher Role & Data Isolation

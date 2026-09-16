@@ -630,18 +630,22 @@ export const ReportsModule = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
               <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
                 <span className="text-slate-500 block">{t('totalTuition')}:</span>
-                <span className="text-lg font-bold text-[#0F172A]">${selectedStudent.tuitionTotal || 1200} USD</span>
+                <span className="text-lg font-bold text-[#0F172A]">
+                  ${selectedStudent.isSpecialCase ? 0 : (selectedStudent.tuitionTotal ?? 1200)} USD
+                </span>
               </div>
               <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
                 <span className="text-slate-500 block">{t('paidAmount')}:</span>
-                <span className="text-lg font-bold text-[#0284C7]">${selectedStudent.tuitionPaid || 0} USD</span>
-              </div>
-              <div className={`p-4 rounded-2xl border ${selectedStudent.frozen ? 'bg-cyan-50 border-cyan-300' : 'bg-[#F8FAFC] border-red-300'}`}>
-                <span className={`${selectedStudent.frozen ? 'text-cyan-800 font-black' : 'text-red-600 font-bold'} block`}>
-                  {selectedStudent.frozen ? 'حالة المتأخرات والمطالبة:' : t('remainingAmount') + ':'}
+                <span className="text-lg font-bold text-[#0284C7]">
+                  ${selectedStudent.isSpecialCase ? 0 : (selectedStudent.tuitionPaid || 0)} USD
                 </span>
-                <span className={`text-lg font-bold ${selectedStudent.frozen ? 'text-cyan-900 font-black' : 'text-red-600'}`}>
-                  {selectedStudent.frozen ? '❄️ مجمد (معفى من المتأخرات)' : `$${(selectedStudent.tuitionTotal || 1200) - (selectedStudent.tuitionPaid || 0)} USD`}
+              </div>
+              <div className={`p-4 rounded-2xl border ${selectedStudent.isSpecialCase ? 'bg-amber-50 border-amber-300' : selectedStudent.frozen ? 'bg-cyan-50 border-cyan-300' : 'bg-[#F8FAFC] border-red-300'}`}>
+                <span className={`${selectedStudent.isSpecialCase ? 'text-amber-900 font-black' : selectedStudent.frozen ? 'text-cyan-800 font-black' : 'text-red-600 font-bold'} block`}>
+                  {selectedStudent.isSpecialCase ? 'حالة الحساب المالي:' : selectedStudent.frozen ? 'حالة المتأخرات والمطالبة:' : t('remainingAmount') + ':'}
+                </span>
+                <span className={`text-lg font-bold ${selectedStudent.isSpecialCase ? 'text-amber-950 font-black' : selectedStudent.frozen ? 'text-cyan-900 font-black' : 'text-red-600'}`}>
+                  {selectedStudent.isSpecialCase ? '⭐ معفى (حالة خاصة - $0)' : selectedStudent.frozen ? '❄️ مجمد (معفى من المتأخرات)' : `$${(selectedStudent.tuitionTotal || 1200) - (selectedStudent.tuitionPaid || 0)} USD`}
                 </span>
               </div>
             </div>

@@ -109,8 +109,13 @@ export const FinanceModule = () => {
   const [editPhone, setEditPhone] = useState('');
 
   // Calculations with safe default fallback values
-  const totalRevenue = (students || []).reduce((sum, s) => sum + Number(s?.tuitionPaid || 0), 0);
-  const totalTuitionUSD = (students || []).reduce((sum, s) => sum + Number(s?.tuitionTotal || 700) + (s?.hasTransport ? Number(s?.transportFee || 0) : 0), 0);
+  const totalRevenue = (students || []).reduce((sum, s) => sum + (s?.isSpecialCase ? 0 : Number(s?.tuitionPaid || 0)), 0);
+  const totalTuitionUSD = (students || []).reduce((sum, s) => {
+    if (s?.isSpecialCase) return sum;
+    const t = s?.tuitionTotal !== undefined && s?.tuitionTotal !== null && s?.tuitionTotal !== '' ? Number(s.tuitionTotal) : 700;
+    const trans = s?.hasTransport ? Number(s?.transportFee || 0) : 0;
+    return sum + t + trans;
+  }, 0);
   const totalRemainingUSD = Math.max(0, totalTuitionUSD - totalRevenue);
   
   const totalStaffSalariesPaid = (staffEmployees || []).filter(e => e.salaryPaid).reduce((sum, e) => sum + Number(e.monthlySalary || 0), 0);

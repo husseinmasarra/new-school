@@ -122,10 +122,10 @@ export const SchoolProvider = ({ children }) => {
     const newStudent = {
       ...studentData,
       id: `stu-${Date.now().toString().slice(-4)}`,
-      paidAmount: studentData.paidAmount ? Number(studentData.paidAmount) : 0,
-      tuitionTotal: Number(studentData.tuitionTotal || 700),
-      discountAmount: Number(studentData.discountAmount || 0),
-      remainingAmount: (Number(studentData.tuitionTotal || 700) - Number(studentData.discountAmount || 0)) - Number(studentData.paidAmount || 0),
+      paidAmount: studentData.isSpecialCase ? 0 : (studentData.paidAmount ? Number(studentData.paidAmount) : 0),
+      tuitionTotal: studentData.isSpecialCase ? 0 : Number(studentData.tuitionTotal ?? 700),
+      discountAmount: studentData.isSpecialCase ? 0 : Number(studentData.discountAmount || 0),
+      remainingAmount: studentData.isSpecialCase ? 0 : ((Number(studentData.tuitionTotal ?? 700) - Number(studentData.discountAmount || 0)) - Number(studentData.paidAmount || 0)),
       registrationDate: new Date().toISOString().split('T')[0],
       status: "نشط"
     };
@@ -172,9 +172,9 @@ export const SchoolProvider = ({ children }) => {
     // Update student's paid and remaining balance
     setStudents(prev => prev.map(stu => {
       if (stu.id === paymentData.studentId) {
-        const newPaid = Number(stu.paidAmount || 0) + Number(paymentData.amount);
-        const netTuition = Number(stu.tuitionTotal || 0) - Number(stu.discountAmount || 0);
-        const newRemaining = Math.max(0, netTuition - newPaid);
+        const newPaid = stu.isSpecialCase ? 0 : (Number(stu.paidAmount || 0) + Number(paymentData.amount));
+        const netTuition = stu.isSpecialCase ? 0 : (Number(stu.tuitionTotal || 0) - Number(stu.discountAmount || 0));
+        const newRemaining = stu.isSpecialCase ? 0 : Math.max(0, netTuition - newPaid);
         return {
           ...stu,
           paidAmount: newPaid,
