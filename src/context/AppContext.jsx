@@ -1371,6 +1371,66 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const batchGradeExamResults = (examId, resultsArray) => {
+    if (!examId || !Array.isArray(resultsArray) || resultsArray.length === 0) return;
+
+    let examSubject = 'الرياضيات';
+
+    setExams((prev) => {
+      const updated = prev.map((ex) => {
+        if (ex.id === examId) {
+          examSubject = ex.subject || ex.title || 'الرياضيات';
+          const existingResults = (ex.results || []).filter(
+            (r) => !resultsArray.some((nr) => String(nr.studentId) === String(r.studentId))
+          );
+          const newEntries = resultsArray.map((nr) => ({
+            studentId: nr.studentId,
+            score: Number(nr.score),
+            evaluation: nr.evaluation || 'أداء جيد'
+          }));
+          return { ...ex, results: [...existingResults, ...newEntries] };
+        }
+        return ex;
+      });
+      dbSaveCollection('school_exams', updated);
+      return updated;
+    });
+
+    let coreSubName = examSubject;
+    if (examSubject.includes('(') && examSubject.includes(')')) {
+      const match = examSubject.match(/\(([^)]+)\)/);
+      if (match && match[1]) coreSubName = match[1].trim();
+    }
+
+    setDailyMarks((prev) => {
+      let updated = [...prev];
+      resultsArray.forEach((nr) => {
+        const existingIdx = updated.findIndex(
+          (m) => String(m.studentId) === String(nr.studentId) && (m.examId === examId || m.subjectName === coreSubName)
+        );
+        const markEntry = {
+          id: existingIdx >= 0 ? updated[existingIdx].id : `DM-${Date.now().toString().slice(-4)}-${nr.studentId}`,
+          studentId: nr.studentId,
+          subjectName: coreSubName,
+          subject: coreSubName,
+          examId,
+          score: Number(nr.score),
+          maxScore: 100,
+          type: 'اختبار تقييمي',
+          notes: nr.evaluation || 'اختبار تقييمي',
+          date: new Date().toISOString().split('T')[0]
+        };
+        if (existingIdx >= 0) {
+          updated[existingIdx] = markEntry;
+        } else {
+          updated.unshift(markEntry);
+        }
+      });
+      dbSaveCollection('school_daily_marks', updated);
+      return updated;
+    });
+  };
+
   const addExpense = (exp) => {
     const newExp = {
       id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
@@ -2153,6 +2213,7 @@ export const AppProvider = ({ children }) => {
     exams,
     addExam,
     gradeExamResult,
+    batchGradeExamResults,
     expenses,
     addExpense,
     deleteExpense,
