@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const TuitionModule = () => {
-  const { lang, t, currentRole, students = [], payTuition, updateStudent, selectedStudentId, addMessage, siteSettings, verifyAdminPassword } = useApp();
+  const { lang, t, currentRole, students = [], payTuition, batchPayTuition, updateStudent, selectedStudentId, addMessage, siteSettings, verifyAdminPassword } = useApp();
 
   const isAr = lang === 'ar';
   const safeStudents = students || [];
@@ -169,7 +169,7 @@ export const TuitionModule = () => {
     });
   }, [allFamilies, searchTerm]);
 
-  // Recalculate automatic deduction per sibling
+  // Recalculate automatic deduction per sibling (Exact, real distribution without any missing amounts)
   const updateFamilyDeductions = (amount, mode = 'equal', currentFam) => {
     const fam = currentFam || selectedFamilyForPay;
     if (!fam) return;
@@ -181,24 +181,110 @@ export const TuitionModule = () => {
       return;
     }
 
+    const deductions = {};
+    eligibleMembers.forEach(m => { deductions[m.id] = 0; });
+
+    if (totalAmount <= 0) {
+      setMemberDeductions(deductions);
+      return;
+    }
+
     if (mode === 'equal' || !mode) {
-      // Split payment amount equally across all eligible siblings with dues
-      const withDebt = eligibleMembers.filter(m => getStudentRemaining(m) > 0);
-      const targetList = withDebt.length > 0 ? withDebt : eligibleMembers;
-      const count = targetList.length;
+      // 100% Real, exact equal distribution:
+      // Splits equally among siblings with remaining dues.
+      // If a sibling's remaining debt is smaller than the equal share, cap it at that debt
+      // and redistribute the excess to the remaining siblings with balance until all dollars are allocated.
+      const membersData = eligibleMembers.map(m => ({
+        id: m.id,
+        debt: getStudentRemaining(m),
+        allocated: 0
+      }));
 
-      const splitAmount = Math.floor(totalAmount / count);
-      const remainder = totalAmount % count;
+      const hasDebtors = membersData.some(m => m.debt > 0);
 
-      const deductions = {};
-      eligibleMembers.forEach(m => { deductions[m.id] = 0; });
-      targetList.forEach((m, idx) => {
-        deductions[m.id] = splitAmount + (idx === 0 ? remainder : 0);
+      if (!hasDebtors) {
+        // If no one has recorded debt, split purely equally among all siblings
+        const count = membersData.length;
+        const share = Math.floor(totalAmount / count);
+        const rem = totalAmount % count;
+        membersData.forEach((m, idx) => {
+          deductions[m.id] = share + (idx === 0 ? rem : 0);
+        });
+        setMemberDeductions(deductions);
+        return;
+      }
+
+      let unallocated = totalAmount;
+
+      while (unallocated > 0) {
+        const activeDebtors = membersData.filter(m => m.debt - m.allocated > 0);
+        if (activeDebtors.length === 0) {
+          // All debt is 100% covered! Place any remaining surplus onto the first sibling
+          membersData[0].allocated += unallocated;
+          unallocated = 0;
+          break;
+        }
+
+        const share = Math.floor(unallocated / activeDebtors.length);
+        const rem = unallocated % activeDebtors.length;
+
+        if (share === 0) {
+          // Distribute the remaining small amount (e.g. 1-2 dollars) 1 dollar at a time
+          let left = unallocated;
+          for (let i = 0; i < activeDebtors.length && left > 0; i++) {
+            activeDebtors[i].allocated += 1;
+            left -= 1;
+          }
+          if (left > 0) {
+            membersData[0].allocated += left;
+          }
+          unallocated = 0;
+          break;
+        }
+
+        let allocatedThisRound = 0;
+        let anyCapped = false;
+
+        for (let i = 0; i < activeDebtors.length; i++) {
+          const debtor = activeDebtors[i];
+          const target = share + (i === 0 ? rem : 0);
+          const maxCanTake = debtor.debt - debtor.allocated;
+
+          if (target >= maxCanTake) {
+            debtor.allocated += maxCanTake;
+            allocatedThisRound += maxCanTake;
+            anyCapped = true;
+          } else {
+            debtor.allocated += target;
+            allocatedThisRound += target;
+          }
+        }
+
+        unallocated -= allocatedThisRound;
+
+        if (!anyCapped || allocatedThisRound === 0) {
+          if (unallocated > 0) {
+            membersData[0].allocated += unallocated;
+            unallocated = 0;
+          }
+          break;
+        }
+      }
+
+      membersData.forEach(m => {
+        deductions[m.id] = m.allocated;
       });
+
+      // Strict integrity check: ensure sum of deductions === totalAmount
+      const allocatedSum = Object.values(deductions).reduce((sum, v) => sum + Number(v || 0), 0);
+      const diff = totalAmount - allocatedSum;
+      if (diff !== 0 && membersData.length > 0) {
+        deductions[membersData[0].id] = Math.max(0, (deductions[membersData[0].id] || 0) + diff);
+      }
+
       setMemberDeductions(deductions);
     } else if (mode === 'waterfall') {
       let remToDistribute = totalAmount;
-      const deductions = {};
       eligibleMembers.forEach(m => {
         const debt = getStudentRemaining(m);
         if (debt > 0 && remToDistribute > 0) {
@@ -256,14 +342,15 @@ export const TuitionModule = () => {
     const paymentDate = new Date().toISOString().split('T')[0];
     const receiptNo = `REC-FAM-${Date.now().toString().slice(-6)}`;
 
+    // 1. Batch pay tuition across all siblings in ONE atomic operation
+    batchPayTuition(deductions, payMethod);
+
     let newHistory = { ...paymentHistory };
     const receiptMembers = [];
 
     (selectedFamilyForPay.members || []).forEach(m => {
       const allocated = Number(deductions[m.id] || 0);
       if (allocated > 0) {
-        payTuition(m.id, allocated, payMethod);
-
         const stuHistory = newHistory[m.id] || [];
         const newEntry = {
           id: `PAY-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
@@ -1367,242 +1454,301 @@ export const TuitionModule = () => {
         document.body
       )}
 
-      {/* ── Receipt Modal (Guaranteed 1 Page Print) ─────────────────────────── */}
+      {/* ── Receipt Modal (Guaranteed 2 Copies on 1 A4 Page Print) ─────────────────────────── */}
       {showReceiptModal && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto receipt-print-backdrop">
-          <div className="receipt-printable-card border-2 border-[#0284C7] rounded-3xl p-5 sm:p-7 max-w-lg w-full space-y-4 shadow-2xl animate-scale-up relative my-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto receipt-print-backdrop">
+          <div className="max-w-2xl w-full my-auto space-y-3">
             
-            <style>{`
-              /* On Screen Styles (Normal Light/Dark Mode) */
-              @media screen {
-                .receipt-printable-card {
-                  background-color: #ffffff;
-                  color: #0f172a;
-                }
-                html.dark .receipt-printable-card {
-                  background-color: #1e293b !important;
-                  color: #f8fafc !important;
-                  border-color: #38bdf8 !important;
-                }
-                
-                .receipt-details-box {
-                  background-color: #f8fafc;
-                }
-                html.dark .receipt-details-box {
-                  background-color: #0f172a !important;
-                }
-
-                .receipt-stamp-badge {
-                  background-color: rgba(2, 132, 199, 0.1);
-                  color: #0284c7;
-                }
-                html.dark .receipt-stamp-badge {
-                  background-color: rgba(56, 189, 248, 0.15) !important;
-                  color: #38bdf8 !important;
-                }
-              }
-
-              /* On Print Styles (Forces absolute black/white receipt look) */
-              @media print {
-                html, html.dark, body, html.dark body, 
-                .receipt-print-backdrop, .receipt-printable-card, .receipt-printable-card * {
-                  color-scheme: light !important;
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-
-                body > #root {
-                  display: none !important;
-                }
-
-                body {
-                  background-color: #ffffff !important;
-                  background: #ffffff !important;
-                  color: #000000 !important;
-                }
-
-                .receipt-print-backdrop, html.dark .receipt-print-backdrop {
-                  position: absolute !important;
-                  left: 0 !important;
-                  top: 0 !important;
-                  width: 100% !important;
-                  height: 100% !important;
-                  background: #ffffff !important;
-                  background-color: #ffffff !important;
-                  backdrop-filter: none !important;
-                  padding: 0 !important;
-                  margin: 0 !important;
-                  display: flex !important;
-                  align-items: center !important;
-                  justify-content: center !important;
-                  z-index: 999999 !important;
-                  box-shadow: none !important;
-                }
-
-                .receipt-printable-card, html.dark .receipt-printable-card {
-                  border: 1px solid #000000 !important;
-                  box-shadow: none !important;
-                  margin: auto !important;
-                  padding: 24px !important;
-                  background: #ffffff !important;
-                  background-color: #ffffff !important;
-                  color: #000000 !important;
-                  width: 100% !important;
-                  max-width: 480px !important;
-                  border-radius: 0px !important;
-                }
-
-                .receipt-details-box {
-                  background: transparent !important;
-                  background-color: transparent !important;
-                  border: 1px solid #cbd5e1 !important;
-                }
-
-                /* Force absolute black text and transparent background on all inner elements */
-                .receipt-printable-card div,
-                .receipt-printable-card span,
-                .receipt-printable-card p,
-                .receipt-printable-card h3,
-                .receipt-printable-card img {
-                  color: #000000 !important;
-                  background: transparent !important;
-                  background-color: transparent !important;
-                }
-                
-                .receipt-printable-card div, .receipt-printable-card span {
-                  border-color: #000000 !important;
-                }
-
-                .receipt-stamp-badge {
-                  background: transparent !important;
-                  background-color: transparent !important;
-                  color: #000000 !important;
-                  border-color: #000000 !important;
-                }
-
-                .no-print {
-                  display: none !important;
-                }
-              }
-            `}</style>
-            
-            <div className="flex items-center justify-between border-b-2 border-slate-200 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center border border-[#0284C7] shadow-sm overflow-hidden shrink-0">
-                  <img src="/emblem.png" alt="Logo" className="w-full h-full object-cover rounded-lg" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-[#0284C7] leading-tight">
-                    {isAr ? (siteSettings?.schoolName || 'مدرسة الدعم التعليمي') : (siteSettings?.schoolNameEn || 'Educational Support School')}
-                  </h3>
-                  <span className="text-[10px] text-slate-500 font-bold block">إيصال استلام مالي رسمي • Official Payment Receipt</span>
-                </div>
-              </div>
-
+            {/* Action Bar (Screen Only) */}
+            <div className="no-print bg-white border border-[#E2E8F0] p-3 rounded-2xl flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-2">
-                <button onClick={() => window.print()}
-                  className="no-print bg-[#0284C7] hover:bg-[#0369A1] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all cursor-pointer">
-                  <Printer className="w-3.5 h-3.5" /> طباعة 🖨️
+                <span className="text-xs font-bold text-slate-700">
+                  📄 {isAr ? 'معاينة إيصال الاستلام المالي (نسختان على ورقة A4 واحدة):' : 'Payment Receipt Preview (2 copies per A4 sheet):'}
+                </span>
+                <span className="text-[10px] font-mono bg-sky-50 text-[#0284C7] font-bold px-2 py-0.5 rounded-md border border-sky-200">
+                  {showReceiptModal.receiptNo}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>{isAr ? 'طباعة الإيصالين 🖨️' : 'Print Receipts'}</span>
                 </button>
-                <button onClick={() => setShowReceiptModal(null)}
-                  className="no-print w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer">✕</button>
+                <button
+                  type="button"
+                  onClick={() => setShowReceiptModal(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
-            <div className="receipt-details-box p-4 rounded-2xl border border-[#E2E8F0] space-y-2.5 text-xs font-mono">
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">{isAr ? 'رقم الإيصال:' : 'Receipt No:'}</span>
-                <span className="font-bold text-[#0284C7]">{showReceiptModal.receiptNo}</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">{isAr ? 'تاريخ الاستلام:' : 'Payment Date:'}</span>
-                <span className="font-bold text-slate-700">{showReceiptModal.date}</span>
-              </div>
+            {/* Printable Container holding Two Identical Receipts for 1 Page Print */}
+            <div className="receipt-print-wrapper space-y-3">
+              <style>{`
+                /* Screen Mode Styles */
+                @media screen {
+                  .receipt-printable-card {
+                    background-color: #ffffff;
+                    color: #0f172a;
+                    border: 2px solid #0284C7;
+                    border-radius: 1.25rem;
+                    padding: 1rem 1.25rem;
+                    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+                  }
+                  .receipt-details-box {
+                    background-color: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                  }
+                }
 
-              {showReceiptModal.isFamilyReceipt ? (
-                <>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">{isAr ? 'عائلة / ولي أمر:' : 'Family / Guardian:'}</span>
-                    <span className="font-bold text-[#0F172A] text-sm">{showReceiptModal.familyName || showReceiptModal.parentName}</span>
-                  </div>
-                  {showReceiptModal.parentPhone && (
-                    <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                      <span className="text-slate-500">{isAr ? 'رقم الهاتف:' : 'Phone:'}</span>
-                      <span className="font-bold text-slate-700" dir="ltr">{showReceiptModal.parentPhone}</span>
+                /* Print Mode Styles: Forces top-start, compact < half-page per receipt */
+                @media print {
+                  @page {
+                    size: A4 portrait;
+                    margin: 5mm 8mm;
+                  }
+
+                  html, html.dark, body, html.dark body, 
+                  .receipt-print-backdrop, .receipt-print-wrapper, .receipt-printable-card, .receipt-printable-card * {
+                    color-scheme: light !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
+
+                  body > #root {
+                    display: none !important;
+                  }
+
+                  body {
+                    background-color: #ffffff !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                  }
+
+                  .receipt-print-backdrop, html.dark .receipt-print-backdrop {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    background: #ffffff !important;
+                    background-color: #ffffff !important;
+                    backdrop-filter: none !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    display: block !important;
+                    z-index: 999999 !important;
+                    box-shadow: none !important;
+                  }
+
+                  .receipt-print-wrapper {
+                    display: block !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                  }
+
+                  .receipt-printable-card, html.dark .receipt-printable-card {
+                    border: 1px solid #000000 !important;
+                    box-shadow: none !important;
+                    margin: 0 auto 4px auto !important;
+                    padding: 8px 12px !important;
+                    background: #ffffff !important;
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    border-radius: 0px !important;
+                    box-sizing: border-box !important;
+                    page-break-inside: avoid !important;
+                  }
+
+                  .receipt-details-box {
+                    background: transparent !important;
+                    background-color: transparent !important;
+                    border: 1px solid #cbd5e1 !important;
+                    padding: 4px 8px !important;
+                  }
+
+                  .receipt-printable-card div,
+                  .receipt-printable-card span,
+                  .receipt-printable-card p,
+                  .receipt-printable-card h3,
+                  .receipt-printable-card img {
+                    color: #000000 !important;
+                    background: transparent !important;
+                    background-color: transparent !important;
+                  }
+                  
+                  .receipt-printable-card div, .receipt-printable-card span {
+                    border-color: #000000 !important;
+                  }
+
+                  .receipt-stamp-badge {
+                    background: transparent !important;
+                    background-color: transparent !important;
+                    color: #000000 !important;
+                    border-color: #000000 !important;
+                  }
+
+                  .no-print {
+                    display: none !important;
+                  }
+                }
+              `}</style>
+
+              {/* Render Helper for Single Receipt Item (Used for Both Top & Bottom Copies) */}
+              {[
+                { copyKey: 'parent', labelAr: 'نسخة ولي الأمر (الأصلية)', labelEn: "Parent's Original Copy" },
+                { copyKey: 'school', labelAr: 'نسخة الإدارة والمحاسبة', labelEn: 'School Archive Copy' }
+              ].map(({ copyKey, labelAr, labelEn }, copyIndex) => (
+                <React.Fragment key={copyKey}>
+                  {copyIndex === 1 && (
+                    <div className="flex items-center justify-center my-1 text-slate-400 text-[10px] font-mono select-none">
+                      <span className="w-full border-b-2 border-dashed border-slate-300 text-center flex items-center justify-center gap-2 py-0.5">
+                        ✂️ {isAr ? 'خط القص ──────── قسيمة مكررة (إيصالين على ورقة A4 واحدة) ──────── خط القص' : 'Cut Line ──── Duplicate Receipt (Two on One Page) ──── Cut Line'} ✂️
+                      </span>
                     </div>
                   )}
 
-                  {/* Sibling deductions breakdown table */}
-                  <div className="my-2 pt-2 border-t border-slate-200">
-                    <p className="text-[11px] font-black text-[#0284C7] mb-1.5 flex items-center justify-between">
-                      <span>{isAr ? '📋 تفاصيل توزيع الدفعة على الإخوة:' : 'Sibling Allocations:'}</span>
-                      <span className="text-[10px] text-slate-500 font-normal">({showReceiptModal.membersList?.length || 0} {isAr ? 'أبناء' : 'children'})</span>
-                    </p>
-                    <table className="w-full text-center border-collapse text-[11px]">
-                      <thead>
-                        <tr className="border-b border-slate-300 text-slate-600 bg-slate-50 font-bold">
-                          <th className="py-1 px-1 text-right">{isAr ? 'التلميذ' : 'Student'}</th>
-                          <th className="py-1 px-1">{isAr ? 'الصف' : 'Grade'}</th>
-                          <th className="py-1 px-1">{isAr ? 'المخصوم' : 'Deducted'}</th>
-                          <th className="py-1 px-1">{isAr ? 'المتبقي' : 'Remaining'}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {(showReceiptModal.membersList || []).map((m, idx) => (
-                          <tr key={idx} className="py-1">
-                            <td className="py-1 px-1 text-right font-bold text-slate-800">{m.name}</td>
-                            <td className="py-1 px-1 text-slate-500 text-[10px]">{m.grade} ({m.classRoom})</td>
-                            <td className="py-1 px-1 font-black text-emerald-600">${m.allocated}</td>
-                            <td className="py-1 px-1 font-bold text-red-600">${m.remaining}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">{isAr ? 'اسم الطالب:' : 'Student Name:'}</span>
-                    <span className="font-bold text-[#0F172A] text-sm">{showReceiptModal.studentName}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">{isAr ? 'الصف / الشعبة:' : 'Grade:'}</span>
-                    <span className="font-bold text-slate-700">{showReceiptModal.grade}</span>
-                  </div>
-                </>
-              )}
+                  <div className="receipt-printable-card relative text-right text-[#0F172A]">
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-white p-0.5 flex items-center justify-center border border-[#0284C7] shadow-xs overflow-hidden shrink-0">
+                          <img src="/emblem.png" alt="Logo" className="w-full h-full object-cover rounded-md" />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-black text-[#0284C7] leading-tight">
+                            {isAr ? (siteSettings?.schoolName || 'مدرسة الدعم التعليمي') : (siteSettings?.schoolNameEn || 'Educational Support School')}
+                          </h3>
+                          <span className="text-[9px] text-slate-500 font-bold block">
+                            إيصال استلام مالي رسمي • Official Payment Receipt
+                          </span>
+                        </div>
+                      </div>
 
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">{isAr ? 'طريقة الدفع:' : 'Payment Method:'}</span>
-                <span className="font-bold text-slate-800">{showReceiptModal.method === 'fresh_cash' ? 'Fresh Cash USD' : 'OMT / Whish Transfer'}</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-100 pb-1.5 bg-emerald-50/60 p-1.5 rounded-lg">
-                <span className="text-emerald-800 font-bold">{isAr ? (showReceiptModal.isFamilyReceipt ? 'إجمالي المدفوع للعائلة:' : 'المبلغ المدفوع بالدولار:') : 'Total Paid (USD):'}</span>
-                <span className="font-black text-emerald-600 text-sm">${showReceiptModal.amountUSD} USD</span>
-              </div>
-              <div className="flex justify-between p-1.5 rounded-lg bg-red-50/60">
-                <span className="text-red-800 font-bold">{isAr ? (showReceiptModal.isFamilyReceipt ? 'صافي المتبقي على العائلة:' : 'القسط المتبقي:') : 'Remaining Balance:'}</span>
-                <span className="font-black text-red-600">${showReceiptModal.remainingUSD} USD</span>
-              </div>
+                      <div className="text-left">
+                        <span className="inline-block px-2 py-0.5 rounded-md text-[9px] font-black border border-[#0284C7] bg-sky-50 text-[#0284C7]">
+                          {isAr ? labelAr : labelEn}
+                        </span>
+                        <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                          {showReceiptModal.receiptNo}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Metadata summary bar */}
+                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px] font-mono mb-2">
+                      <div>
+                        <span className="text-slate-400 text-[9px] block">{isAr ? 'تاريخ الاستلام:' : 'Date:'}</span>
+                        <span className="font-bold text-slate-800">{showReceiptModal.date}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-[9px] block">{isAr ? 'عائلة / ولي الأمر:' : 'Family / Guardian:'}</span>
+                        <span className="font-bold text-slate-800 truncate block">
+                          {showReceiptModal.familyName || showReceiptModal.parentName || showReceiptModal.studentName}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-[9px] block">{isAr ? 'طريقة الدفع:' : 'Method:'}</span>
+                        <span className="font-bold text-slate-800">
+                          {showReceiptModal.method === 'fresh_cash' ? 'Fresh Cash USD (نقداً)' : 'OMT / Whish (تحويل)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Siblings Table or Single Student Breakdown */}
+                    {showReceiptModal.isFamilyReceipt ? (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden mb-2">
+                        <table className="w-full text-center border-collapse text-[10px]">
+                          <thead>
+                            <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold">
+                              <th className="py-1 px-2 text-right">{isAr ? 'اسم التلميذ' : 'Student'}</th>
+                              <th className="py-1 px-1.5">{isAr ? 'الصف / الشعبة' : 'Grade'}</th>
+                              <th className="py-1 px-1.5">{isAr ? 'الدفعة المخصومة' : 'Deducted'}</th>
+                              <th className="py-1 px-1.5">{isAr ? 'المتبقي عليه' : 'Remaining'}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-mono">
+                            {(showReceiptModal.membersList || []).map((m, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50">
+                                <td className="py-1 px-2 text-right font-bold text-slate-800 font-sans">{m.name}</td>
+                                <td className="py-1 px-1.5 text-slate-500 text-[9px]">{m.grade} ({m.classRoom || 'أ'})</td>
+                                <td className="py-1 px-1.5 font-black text-emerald-600">${m.allocated}</td>
+                                <td className="py-1 px-1.5 font-bold text-red-600">${m.remaining}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs mb-2">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">{isAr ? 'اسم الطالب:' : 'Student:'}</span>
+                          <span className="font-bold text-slate-800">{showReceiptModal.studentName}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">{isAr ? 'الصف:' : 'Grade:'}</span>
+                          <span className="font-bold text-slate-600">{showReceiptModal.grade}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Financial Totals Row */}
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-2">
+                      <div className="bg-emerald-50 border border-emerald-200 p-1.5 rounded-xl flex items-center justify-between">
+                        <span className="text-emerald-800 font-bold text-[10px]">
+                          {isAr ? (showReceiptModal.isFamilyReceipt ? 'إجمالي المدفوع للعائلة:' : 'المبلغ المدفوع بالدولار:') : 'Total Paid:'}
+                        </span>
+                        <span className="font-black text-emerald-600 text-sm">
+                          ${showReceiptModal.amountUSD} USD
+                        </span>
+                      </div>
+                      <div className="bg-red-50 border border-red-200 p-1.5 rounded-xl flex items-center justify-between">
+                        <span className="text-red-800 font-bold text-[10px]">
+                          {isAr ? (showReceiptModal.isFamilyReceipt ? 'صافي المتبقي على العائلة:' : 'القسط المتبقي:') : 'Total Remaining:'}
+                        </span>
+                        <span className="font-black text-red-600 text-sm">
+                          ${showReceiptModal.remainingUSD} USD
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Signature & Stamp Row */}
+                    <div className="flex justify-between items-end pt-1 border-t border-slate-200 text-[10px] text-slate-500">
+                      <div>
+                        <span className="font-bold">{isAr ? 'توقيع المحاسب / الإدارة:' : 'Accountant Signature:'}</span>
+                        <div className="h-5 border-b border-slate-300 w-28 mt-0.5" />
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full receipt-stamp-badge font-black text-[9px] border border-[#0284C7]/20 text-[#0284C7]">
+                        {isAr ? 'ختم المدرسة الرسمي 💮' : 'Official School Stamp'}
+                      </span>
+                    </div>
+                  </div>
+                </React.Fragment>
+              ))}
             </div>
 
-            <div className="flex justify-between items-end pt-3 border-t border-slate-200 text-[11px] text-slate-500">
-              <div>
-                <p className="font-bold">{isAr ? 'توقيع المحاسب / الإدارة:' : 'Accountant Signature:'}</p>
-                <div className="h-7 border-b border-slate-300 w-32 mt-1" />
-              </div>
-              <span className="px-3 py-1 rounded-full receipt-stamp-badge font-black text-[10px] border border-[#0284C7]/20">
-                {isAr ? 'ختم المدرسة الرسمي 💮' : 'Official School Stamp'}
-              </span>
-            </div>
-
-            <div className="no-print flex justify-end gap-3 pt-2 border-t border-slate-100">
-              <button onClick={() => setShowReceiptModal(null)} className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer">{t('close')}</button>
-              <button onClick={() => window.print()} className="px-5 py-2.5 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-md transition-all">
-                <Printer className="w-4 h-4 text-white" /> طباعة الإيصال 🖨️
+            {/* Screen Close Button Footer */}
+            <div className="no-print flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowReceiptModal(null)}
+                className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer"
+              >
+                {t('close')}
               </button>
             </div>
+
           </div>
         </div>,
         document.body

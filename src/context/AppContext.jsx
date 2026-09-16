@@ -1495,6 +1495,22 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const batchPayTuition = (allocationsMap, method) => {
+    setStudents((prev) => {
+      const updated = prev.map((s) => {
+        const alloc = Number(allocationsMap[s.id] || allocationsMap[String(s.id)] || 0);
+        if (alloc > 0) {
+          const currentPaid = Number(s.tuitionPaid || 0);
+          return { ...s, tuitionPaid: currentPaid + alloc };
+        }
+        return s;
+      });
+      localStorage.setItem('school_students', JSON.stringify(updated));
+      dbSaveCollection('school_students', updated);
+      return updated;
+    });
+  };
+
   const registerTutoring = (courseId, studentId, customFee = null) => {
     setTutoringCourses((prev) => {
       const updated = prev.map((c) => {
@@ -2108,6 +2124,7 @@ export const AppProvider = ({ children }) => {
     updateAgendaItem,
     deleteAgendaItem,
     payTuition,
+    batchPayTuition,
     registerTutoring,
     unregisterTutoring,
     updateBusStatus,
