@@ -41,7 +41,7 @@ export const TuitionModule = () => {
   // Family Payment Modal States
   const [selectedFamilyForPay, setSelectedFamilyForPay] = useState(null); // family obj for direct payment
   const [memberDeductions, setMemberDeductions] = useState({}); // { [studentId]: amount }
-  const [distributionMode, setDistributionMode] = useState('waterfall'); // 'waterfall' | 'equal' | 'custom'
+  const [distributionMode, setDistributionMode] = useState('equal'); // 'equal' (default) | 'waterfall' | 'custom'
   const [payAmount, setPayAmount] = useState('');
   const [payDesc, setPayDesc]     = useState('دفعة من القسط المدرسي');
   const [payMethod, setPayMethod] = useState('fresh_cash');
@@ -100,57 +100,65 @@ export const TuitionModule = () => {
       return `fam_${String(student.familyId).trim()}`;
     }
 
-    // 2. Never merge students into old cards by generic/dummy phone or generic parent name!
-    const rawPhone = (student.parentPhone || student.phone || '').replace(/[^0-9]/g, '');
-    const isGenericPhone = !rawPhone || rawPhone === '96103123456' || rawPhone === '123456' || rawPhone.length < 8;
-    
-    const pName = (student.parentName || '').trim().toLowerCase();
-    const isGenericParent = !pName || pName.startsWith('والد الطالب') || pName.startsWith('parent of');
+    // 2. Fallback: match by parentPhone if available (clean non-empty numbers >= 8 digits)
+    const phone = String(student.parentPhone || student.phone || '')
+      .replace(/[^0-9]/g, '');
+    const parentName = String(student.parentName || student.guardianName || '')
+      .trim().toLowerCase();
 
-    // Only group if BOTH a specific custom phone AND an identical parent name exist AND familyName matches
-    if (!isGenericPhone && !isGenericParent && student.familyName) {
-      return `family_${student.familyName.trim().toLowerCase()}_${rawPhone}`;
+    const isGenericParent = !parentName || parentName.length < 3 || ['ولي امر', 'ولي أمر', 'غير محدد', 'اب', 'أم', 'أب'].includes(parentName);
+
+    if (phone.length >= 8) {
+      if (!isGenericParent) {
+        return `family_${parentName}_${phone}`;
+      }
+      return `phone_${phone}`;
     }
 
-    // 3. Otherwise, each student has their own distinct separate card!
+    // 3. Independent individual student
     return `stu_${student.id}`;
   };
 
-  // Group unique families across all students
+  // Group all students into unified Family Units
   const allFamilies = useMemo(() => {
-    const map = {};
-    (safeStudents || []).forEach(stu => {
-      const fKey = getStudentFamilyKey(stu);
-      if (!map[fKey]) {
-        map[fKey] = {
-          key: fKey,
-          familyId: stu.familyId || fKey,
-          familyName: stu.familyName || (stu.parentName ? `عائلة ${stu.parentName.split(' ').slice(-1)[0] || stu.parentName}` : `عائلة الطالب ${stu.name}`),
-          parentName: stu.parentName || `والد الطالب ${stu.name}`,
-          parentPhone: (stu.parentPhone || stu.phone || '').trim(),
-          motherPhone: stu.motherPhone || '',
-          isSpecialCase: Boolean(stu.isSpecialCase),
-          members: []
-        };
-      }
-      if (stu.isSpecialCase) {
-        map[fKey].isSpecialCase = true;
-      }
-      map[fKey].members.push(stu);
-    });
-    return Object.values(map);
-  }, [safeStudents]);
+    const map = new Map();
 
-  // Filtered families based on search term
+    safeStudents.forEach(stu => {
+      const key = getStudentFamilyKey(stu);
+      if (!map.has(key)) {
+        map.set(key, {
+          key: key,
+          familyName: stu.parentName || (isAr ? `عائلة ${stu.name}` : `${stu.name}'s Family`),
+          parentName: stu.parentName || stu.guardianName || (isAr ? 'ولي الأمر' : 'Parent'),
+          parentPhone: stu.parentPhone || stu.phone || '',
+          members: [],
+          isSpecialCase: true, // will be flipped to false if any member is non-special
+          hasFrozen: false
+        });
+      }
+
+      const fam = map.get(key);
+      fam.members.push(stu);
+      if (!stu.isSpecialCase) fam.isSpecialCase = false;
+      if (stu.frozen) fam.hasFrozen = true;
+    });
+
+    return Array.from(map.values());
+  }, [safeStudents, isAr]);
+
+  // Filtered Families based on search term
   const filteredFamilies = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return allFamilies;
+    if (!searchTerm.trim()) return allFamilies;
+    const term = searchTerm.trim().toLowerCase();
+
     return allFamilies.filter(fam => {
-      const matchFamily = (fam.familyName || '').toLowerCase().includes(term) ||
-                          (fam.parentName || '').toLowerCase().includes(term) ||
-                          (fam.parentPhone || '').toLowerCase().includes(term) ||
-                          (fam.motherPhone || '').toLowerCase().includes(term);
-      const matchMember = (fam.members || []).some(m => 
+      const matchFamily = (
+        (fam.familyName || '').toLowerCase().includes(term) ||
+        (fam.parentName || '').toLowerCase().includes(term) ||
+        (fam.parentPhone || '').includes(term)
+      );
+
+      const matchMember = fam.members.some(m =>
         (m.name || '').toLowerCase().includes(term) ||
         (m.nameEn || '').toLowerCase().includes(term) ||
         (m.grade || '').toLowerCase().includes(term) ||
@@ -162,7 +170,7 @@ export const TuitionModule = () => {
   }, [allFamilies, searchTerm]);
 
   // Recalculate automatic deduction per sibling
-  const updateFamilyDeductions = (amount, mode, currentFam) => {
+  const updateFamilyDeductions = (amount, mode = 'equal', currentFam) => {
     const fam = currentFam || selectedFamilyForPay;
     if (!fam) return;
     const totalAmount = Math.max(0, Number(amount) || 0);
@@ -173,7 +181,22 @@ export const TuitionModule = () => {
       return;
     }
 
-    if (mode === 'waterfall') {
+    if (mode === 'equal' || !mode) {
+      // Split payment amount equally across all eligible siblings with dues
+      const withDebt = eligibleMembers.filter(m => getStudentRemaining(m) > 0);
+      const targetList = withDebt.length > 0 ? withDebt : eligibleMembers;
+      const count = targetList.length;
+
+      const splitAmount = Math.floor(totalAmount / count);
+      const remainder = totalAmount % count;
+
+      const deductions = {};
+      eligibleMembers.forEach(m => { deductions[m.id] = 0; });
+      targetList.forEach((m, idx) => {
+        deductions[m.id] = splitAmount + (idx === 0 ? remainder : 0);
+      });
+      setMemberDeductions(deductions);
+    } else if (mode === 'waterfall') {
       let remToDistribute = totalAmount;
       const deductions = {};
       eligibleMembers.forEach(m => {
@@ -189,18 +212,6 @@ export const TuitionModule = () => {
       if (remToDistribute > 0 && eligibleMembers.length > 0) {
         deductions[eligibleMembers[0].id] = (deductions[eligibleMembers[0].id] || 0) + remToDistribute;
       }
-      setMemberDeductions(deductions);
-    } else if (mode === 'equal') {
-      const withDebt = eligibleMembers.filter(m => getStudentRemaining(m) > 0);
-      const targetList = withDebt.length > 0 ? withDebt : eligibleMembers;
-      const splitAmount = Math.floor(totalAmount / targetList.length);
-      const remainder = totalAmount % targetList.length;
-
-      const deductions = {};
-      eligibleMembers.forEach(m => { deductions[m.id] = 0; });
-      targetList.forEach((m, idx) => {
-        deductions[m.id] = splitAmount + (idx === 0 ? remainder : 0);
-      });
       setMemberDeductions(deductions);
     }
   };
@@ -231,7 +242,7 @@ export const TuitionModule = () => {
     setPayAmount('');
     setPayDesc(isAr ? `دفعة من القسط المدرسي لعائلة ${fam.familyName}` : `Tuition payment for ${fam.familyName}`);
     setPayMethod('fresh_cash');
-    setDistributionMode('waterfall');
+    setDistributionMode('equal');
     setMemberDeductions({});
   };
 
@@ -977,14 +988,14 @@ export const TuitionModule = () => {
 
       {/* ── Family Direct Payment Modal (Deducts across all siblings) ──────────────── */}
       {selectedFamilyForPay && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 overflow-y-auto">
           <form onSubmit={handleFamilyPaySubmit}
-            className="bg-white dark:bg-[#1E293B] border-2 border-[#0284C7] rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A] dark:text-slate-100 relative my-auto text-right">
+            className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A] relative my-auto text-right">
             
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <button type="button" onClick={() => setSelectedFamilyForPay(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer">✕</button>
-              <h3 className="text-base font-bold text-[#0284C7] dark:text-sky-400 flex items-center gap-2">
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors">✕</button>
+              <h3 className="text-base font-black text-[#0284C7] flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-[#0284C7]" />
                 <span>
                   {selectedFamilyForPay.members.length > 1
@@ -996,24 +1007,29 @@ export const TuitionModule = () => {
             </div>
 
             {/* Total Family Debt Info */}
-            <div className="bg-sky-50 dark:bg-sky-950/30 p-3 rounded-2xl border border-sky-200 dark:border-sky-800 flex items-center justify-between text-xs">
+            <div className="bg-sky-50 p-3.5 rounded-2xl border border-sky-200 flex items-center justify-between text-xs">
               <div className="font-mono text-left">
-                <span className="text-slate-500 text-[10px] block">{isAr ? 'إجمالي المتبقي على العائلة:' : 'Total Family Remaining:'}</span>
-                <span className="text-sm font-black text-red-600 font-mono">
+                <span className="text-slate-500 text-[10px] font-bold block">{isAr ? 'إجمالي المتبقي على العائلة:' : 'Total Family Remaining:'}</span>
+                <span className="text-base font-black text-red-600 font-mono">
                   ${selectedFamilyForPay.members.reduce((sum, m) => sum + getStudentRemaining(m), 0)} USD
                 </span>
               </div>
               <div className="text-right">
-                <span className="font-bold text-slate-800 dark:text-slate-200 block">{selectedFamilyForPay.parentName}</span>
-                <span className="text-[10px] text-slate-500">{isAr ? `عدد الأبناء: ${selectedFamilyForPay.members.length} طلاب` : `${selectedFamilyForPay.members.length} students`}</span>
+                <span className="font-bold text-slate-800 text-sm block">{selectedFamilyForPay.parentName}</span>
+                <span className="text-[11px] text-slate-500 font-medium">{isAr ? `عدد الأبناء: ${selectedFamilyForPay.members.length} طلاب` : `${selectedFamilyForPay.members.length} students`}</span>
               </div>
             </div>
 
             {/* Payment Amount Input */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {isAr ? 'المبلغ الإجمالي المدفوع ($ USD)' : 'Total Paid Amount ($ USD)'} <span className="text-red-500">*</span>
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800">
+                  {isAr ? 'المبلغ الإجمالي المدفوع ($ USD)' : 'Total Paid Amount ($ USD)'} <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[11px] font-bold text-[#0284C7] bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
+                  {isAr ? '⚖️ يُقسم بالتساوي على الإخوة' : '⚖️ Split equally'}
+                </span>
+              </div>
               <input 
                 type="number" 
                 required 
@@ -1025,7 +1041,7 @@ export const TuitionModule = () => {
                   updateFamilyDeductions(val, distributionMode);
                 }}
                 placeholder="مثال: 100 أو 300 أو 500..."
-                className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2.5 text-base font-mono font-black focus:outline-none focus:border-[#0284C7] text-center" 
+                className="w-full bg-[#F8FAFC] border-2 border-sky-300 focus:border-[#0284C7] focus:bg-white text-[#0F172A] rounded-2xl px-4 py-2.5 text-base font-mono font-black focus:outline-none text-center shadow-inner transition-colors" 
                 autoFocus
               />
             </div>
@@ -1038,57 +1054,57 @@ export const TuitionModule = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setDistributionMode('waterfall');
-                        updateFamilyDeductions(payAmount, 'waterfall');
+                        setDistributionMode('equal');
+                        updateFamilyDeductions(payAmount, 'equal');
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${distributionMode === 'waterfall' ? 'bg-[#0284C7] text-white border-[#0284C7]' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                      className={`px-3 py-1 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${distributionMode === 'equal' ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'}`}
                     >
-                      ⚡ {isAr ? 'توزيع تلقائي (حسب الأقدمية)' : 'Waterfall'}
+                      ⚖️ {isAr ? 'توزيع بالتساوي' : 'Equal Split'}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        setDistributionMode('equal');
-                        updateFamilyDeductions(payAmount, 'equal');
+                        setDistributionMode('waterfall');
+                        updateFamilyDeductions(payAmount, 'waterfall');
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${distributionMode === 'equal' ? 'bg-[#0284C7] text-white border-[#0284C7]' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                      className={`px-3 py-1 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${distributionMode === 'waterfall' ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'}`}
                     >
-                      ⚖️ {isAr ? 'توزيع بالتساوي' : 'Equal Split'}
+                      ⚡ {isAr ? 'توزيع حسب الأقدمية' : 'Waterfall'}
                     </button>
                   </div>
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                    {isAr ? 'توزيع الخصم على الإخوة:' : 'Deduction per sibling:'}
+                  <span className="text-[11px] font-bold text-slate-700">
+                    {isAr ? 'تفاصيل الخصم لكل تلميذ:' : 'Deduction per sibling:'}
                   </span>
                 </div>
 
-                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
                   <table className="w-full text-xs text-right">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 font-bold">
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[10px] text-slate-600 font-bold">
                         <th className="p-2.5">{isAr ? 'التلميذ' : 'Student'}</th>
                         <th className="p-2.5">{isAr ? 'المتبقي الحالي' : 'Current Debt'}</th>
-                        <th className="p-2.5">{isAr ? 'الخصم من الدفعة ($)' : 'Deduction ($)'}</th>
+                        <th className="p-2.5 text-center">{isAr ? 'الخصم من الدفعة ($)' : 'Deduction ($)'}</th>
                         <th className="p-2.5">{isAr ? 'المتبقي بعد السداد' : 'New Remaining'}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                    <tbody className="divide-y divide-slate-100 font-mono">
                       {selectedFamilyForPay.members.map((m) => {
                         const mRem = getStudentRemaining(m);
                         const allocated = Number(memberDeductions[m.id] || 0);
                         const newRem = Math.max(0, mRem - allocated);
 
                         return (
-                          <tr key={m.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                            <td className="p-2 font-sans font-bold text-slate-800 dark:text-slate-200">
+                          <tr key={m.id} className="hover:bg-sky-50/40 transition-colors">
+                            <td className="p-2 font-sans font-bold text-slate-800">
                               <div>
                                 <span>{m.name}</span>
-                                <span className="text-[9px] text-slate-400 block font-normal">{m.grade} ({m.classRoom || 'أ'})</span>
+                                <span className="text-[10px] text-slate-400 block font-normal">{m.grade} ({m.classRoom || 'أ'})</span>
                               </div>
                             </td>
                             <td className="p-2 text-red-600 font-bold">
                               {m.isSpecialCase ? '⭐ 0$' : `$${mRem}`}
                             </td>
-                            <td className="p-2">
+                            <td className="p-2 text-center">
                               {m.isSpecialCase ? (
                                 <span className="text-[10px] text-amber-600 font-bold">معفى</span>
                               ) : (
@@ -1097,12 +1113,12 @@ export const TuitionModule = () => {
                                   min="0"
                                   value={memberDeductions[m.id] ?? 0}
                                   onChange={(e) => handleIndividualDeductionChange(m.id, e.target.value)}
-                                  className="w-20 bg-white dark:bg-slate-950 border border-sky-300 text-emerald-600 font-bold rounded-lg px-2 py-1 text-xs text-right focus:outline-none"
+                                  className="w-24 bg-[#F8FAFC] border border-sky-300 focus:border-[#0284C7] focus:bg-white text-emerald-600 font-black rounded-lg px-2 py-1 text-xs text-center focus:outline-none transition-colors"
                                 />
                               )}
                             </td>
                             <td className="p-2 font-bold">
-                              <span className={newRem === 0 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}>
+                              <span className={newRem === 0 ? 'text-emerald-600' : 'text-slate-700'}>
                                 {m.isSpecialCase ? '0$' : `$${newRem}`}
                               </span>
                             </td>
@@ -1113,32 +1129,32 @@ export const TuitionModule = () => {
                   </table>
                 </div>
 
-                <div className="text-[10px] text-[#0284C7] dark:text-sky-400 font-bold flex items-center justify-between px-1">
-                  <span>⚡ سيتم خصم المبالغ فوراً وبشكل متزامن من حسابات جميع الإخوة!</span>
-                  <span>إجمالي المخصص: ${Object.values(memberDeductions).reduce((sum, v) => sum + Number(v || 0), 0)} USD</span>
+                <div className="text-[11px] text-[#0284C7] font-bold flex items-center justify-between px-1">
+                  <span>⚡ يخصم المبلغ تلقائياً من حسابات الإخوة بالتساوي!</span>
+                  <span className="font-mono bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200">إجمالي الموزع: ${Object.values(memberDeductions).reduce((sum, v) => sum + Number(v || 0), 0)} USD</span>
                 </div>
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isAr ? 'بيان / وصف الدفعة' : 'Payment Note / Description'}</label>
+              <label className="text-xs font-semibold text-slate-700">{isAr ? 'بيان / وصف الدفعة' : 'Payment Note / Description'}</label>
               <input type="text" value={payDesc} onChange={(e) => setPayDesc(e.target.value)}
                 placeholder={isAr ? 'مثال: دفعة قسط شهرية...' : 'e.g. Monthly tuition payment...'}
-                className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7]" />
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0284C7] focus:bg-white text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none font-medium transition-colors" />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('paymentMethod')}</label>
+              <label className="text-xs font-semibold text-slate-700">{isAr ? 'طريقة الدفع:' : 'Payment Method:'}</label>
               <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}
-                className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer font-bold">
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0284C7] focus:bg-white text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer font-bold transition-colors">
                 <option value="fresh_cash">💵 Fresh Cash USD (نقداً بالمدرسة)</option>
                 <option value="omt">📲 OMT / Whish Money (تحويل مالي)</option>
               </select>
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button type="button" onClick={() => setSelectedFamilyForPay(null)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer">{t('cancel')}</button>
-              <button type="submit" className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer flex items-center gap-1.5">
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button type="button" onClick={() => setSelectedFamilyForPay(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors">{t('cancel')}</button>
+              <button type="submit" className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer flex items-center gap-1.5 transition-all">
                 <Check className="w-4 h-4" /> {isAr ? 'تأكيد خصم الدفعة من الإخوة وإصدار الإيصال 🧾' : 'Confirm & Deduct Payment'}
               </button>
             </div>
