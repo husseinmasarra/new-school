@@ -25,19 +25,14 @@ import { GraduationCap } from 'lucide-react';
 const MainContent = () => {
   const getTabFromHash = () => {
     const hash = window.location.hash.replace(/^#\/?/, '');
-    return hash || 'dashboard';
+    if (hash) return hash;
+    const saved = localStorage.getItem('school_active_tab');
+    return saved || 'dashboard';
   };
 
   const [activeTab, setActiveTabState] = useState(getTabFromHash);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { lang, dir, t, currentUser, currentRole } = useApp();
-
-  // Prevent student printing globally (Ctrl+P, Cmd+P, window.print)
-  useEffect(() => {
-    if (currentUser) {
-      setActiveTab('dashboard');
-    }
-  }, [currentUser]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-role', currentRole || 'admin');
@@ -68,9 +63,12 @@ const MainContent = () => {
   }, [currentRole, lang]);
 
   const setActiveTab = (newTab) => {
-    if (newTab !== activeTab) {
+    if (newTab) {
       setActiveTabState(newTab);
-      window.history.pushState({ tab: newTab }, '', `#/${newTab}`);
+      localStorage.setItem('school_active_tab', newTab);
+      if (window.location.hash !== `#/${newTab}`) {
+        window.history.pushState({ tab: newTab }, '', `#/${newTab}`);
+      }
     }
     setIsSidebarOpen(false);
   };
@@ -79,13 +77,15 @@ const MainContent = () => {
     const handlePopState = () => {
       const currentTab = getTabFromHash();
       setActiveTabState(currentTab);
+      localStorage.setItem('school_active_tab', currentTab);
     };
 
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('hashchange', handlePopState);
 
-    if (!window.location.hash) {
-      window.history.replaceState({ tab: 'dashboard' }, '', '#/dashboard');
+    const initialTab = getTabFromHash();
+    if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#/') {
+      window.history.replaceState({ tab: initialTab }, '', `#/${initialTab}`);
     }
 
     return () => {

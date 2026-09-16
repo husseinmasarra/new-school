@@ -162,7 +162,20 @@ export const AppProvider = ({ children }) => {
     return cleanSettings;
   });
 
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('school_logged_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading logged user', e);
+    }
+    return null;
+  });
 
   const currentRole = currentUser?.role || 'admin';
 
@@ -942,6 +955,8 @@ export const AppProvider = ({ children }) => {
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('school_logged_user');
+    localStorage.removeItem('school_active_tab');
+    window.location.hash = '#/dashboard';
   };
 
   const updateSiteSettings = (newSettings) => {

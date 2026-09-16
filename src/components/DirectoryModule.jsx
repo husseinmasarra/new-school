@@ -52,8 +52,16 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
 
   const [activeTab, setActiveTab] = useState(initialSubTab);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGradeFilter, setSelectedGradeFilter] = useState('all');
-  const [studentsViewMode, setStudentsViewMode] = useState('table'); // 'table' (default) or 'cards'
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState(() => localStorage.getItem('school_students_grade_filter') || 'all');
+  const [studentsViewMode, setStudentsViewMode] = useState(() => localStorage.getItem('school_students_view_mode') || 'table'); // 'table' (default) or 'cards'
+
+  useEffect(() => {
+    localStorage.setItem('school_students_grade_filter', selectedGradeFilter);
+  }, [selectedGradeFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('school_students_view_mode', studentsViewMode);
+  }, [studentsViewMode]);
 
   useEffect(() => {
     if (initialSubTab) {
