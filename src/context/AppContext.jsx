@@ -693,7 +693,7 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('school_pillar', activePillar);
   }, [activePillar]);
 
-  // Ensure every grade has non-duplicate standard sections: أ, ب, ج, د, هـ
+  // Ensure every grade has non-duplicate standard sections initially, without re-adding deleted ones
   useEffect(() => {
     if (!grades || grades.length === 0) return;
 
@@ -731,13 +731,10 @@ export const AppProvider = ({ children }) => {
         }
       });
 
-      // 2. Ensure all 5 sections exist for each grade
-      grades.forEach((grd, gIdx) => {
-        standardSections.forEach((sec, sIdx) => {
-          const comboKey = `${grd.id || grd.name}_${normSec(sec.letter)}`;
-          if (!seen.has(comboKey)) {
-            hasChanges = true;
-            seen.add(comboKey);
+      // 2. Only seed standard sections if classrooms list is completely empty
+      if (deduped.length === 0) {
+        grades.forEach((grd, gIdx) => {
+          standardSections.forEach((sec, sIdx) => {
             const numG = grd.id ? grd.id.replace(/[^0-9]/g, '') || (gIdx + 1) : (gIdx + 1);
             deduped.push({
               id: `CLS-${numG}-${sec.suffix}`,
@@ -749,9 +746,10 @@ export const AppProvider = ({ children }) => {
               supervisor: sIdx === 0 ? 'أ. طارق خوري' : (sIdx === 1 ? 'أ. مريم صالح' : (sIdx === 2 ? 'أ. سامر العلي' : 'إشراف القسم')),
               roomNumber: `${numG}0${sec.suffix}`
             });
-          }
+          });
         });
-      });
+        hasChanges = true;
+      }
 
       if (hasChanges) {
         localStorage.setItem('school_classrooms', JSON.stringify(deduped));
@@ -1143,6 +1141,38 @@ export const AppProvider = ({ children }) => {
     setGrades((prev) => {
       const updated = [...prev, newGrade];
       localStorage.setItem('school_grades', JSON.stringify(updated));
+      dbSaveCollection('school_grades', updated);
+      return updated;
+    });
+  };
+
+  const updateGrade = (id, updatedFields) => {
+    setGrades((prev) => {
+      const target = prev.find((g) => g.id === id);
+      const updated = prev.map((g) => (g.id === id ? { ...g, ...updatedFields } : g));
+      localStorage.setItem('school_grades', JSON.stringify(updated));
+      dbSaveCollection('school_grades', updated);
+
+      // If grade name changed, sync gradeName in classrooms and students as well
+      if (target && updatedFields.name && updatedFields.name !== target.name) {
+        setClassrooms((clsPrev) => {
+          const clsUpdated = clsPrev.map((c) =>
+            (c.gradeId === id || c.gradeName === target.name) ? { ...c, gradeName: updatedFields.name } : c
+          );
+          localStorage.setItem('school_classrooms', JSON.stringify(clsUpdated));
+          dbSaveCollection('school_classrooms', clsUpdated);
+          return clsUpdated;
+        });
+
+        setStudents((stuPrev) => {
+          const stuUpdated = stuPrev.map((s) =>
+            s.grade === target.name ? { ...s, grade: updatedFields.name } : s
+          );
+          localStorage.setItem('school_students', JSON.stringify(stuUpdated));
+          dbSaveCollection('school_students', stuUpdated);
+          return stuUpdated;
+        });
+      }
       return updated;
     });
   };
@@ -1151,6 +1181,7 @@ export const AppProvider = ({ children }) => {
     setGrades((prev) => {
       const updated = prev.filter((g) => g.id !== id);
       localStorage.setItem('school_grades', JSON.stringify(updated));
+      dbSaveCollection('school_grades', updated);
       return updated;
     });
   };
@@ -1187,10 +1218,35 @@ export const AppProvider = ({ children }) => {
     return added;
   };
 
+  const updateClassroom = (id, updatedFields) => {
+    setClassrooms((prev) => {
+      const target = prev.find((c) => c.id === id);
+      const updated = prev.map((c) => (c.id === id ? { ...c, ...updatedFields } : c));
+      localStorage.setItem('school_classrooms', JSON.stringify(updated));
+      dbSaveCollection('school_classrooms', updated);
+
+      // If sectionName changed, sync sectionName in students as well
+      if (target && updatedFields.sectionName && updatedFields.sectionName !== target.sectionName) {
+        setStudents((stuPrev) => {
+          const stuUpdated = stuPrev.map((s) => {
+            const isMatch = (s.grade === target.gradeName) && 
+              (s.classRoom === target.sectionName || s.classroom === target.sectionName);
+            return isMatch ? { ...s, classRoom: updatedFields.sectionName, classroom: updatedFields.sectionName } : s;
+          });
+          localStorage.setItem('school_students', JSON.stringify(stuUpdated));
+          dbSaveCollection('school_students', stuUpdated);
+          return stuUpdated;
+        });
+      }
+      return updated;
+    });
+  };
+
   const deleteClassroom = (id) => {
     setClassrooms((prev) => {
       const updated = prev.filter((c) => c.id !== id);
       localStorage.setItem('school_classrooms', JSON.stringify(updated));
+      dbSaveCollection('school_classrooms', updated);
       return updated;
     });
   };
@@ -2081,9 +2137,11 @@ export const AppProvider = ({ children }) => {
     deleteSubject,
     grades,
     addGrade,
+    updateGrade,
     deleteGrade,
     classrooms,
     addClassroom,
+    updateClassroom,
     deleteClassroom,
     students,
     teachers,

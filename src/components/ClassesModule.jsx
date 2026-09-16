@@ -17,7 +17,10 @@ import {
   Printer,
   X,
   UserCheck,
-  Eye
+  Eye,
+  Edit3,
+  Palette,
+  Save
 } from 'lucide-react';
 
 export const ClassesModule = ({ initialSubTab = 'grades' }) => {
@@ -28,9 +31,11 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
     currentUser,
     grades = [], 
     addGrade, 
+    updateGrade,
     deleteGrade, 
     classrooms = [], 
     addClassroom, 
+    updateClassroom,
     deleteClassroom, 
     students = [], 
     teachers = [],
@@ -262,11 +267,140 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
   const presetColors = [
     { hex: '#0284C7', label: isAr ? 'أزرق سماوي (Sky Blue)' : 'Sky Blue' },
     { hex: '#10b981', label: isAr ? 'أخضر زمردي (Emerald)' : 'Emerald' },
-    { hex: '#a855f7', label: isAr ? 'بنفسجي (Purple)' : 'Purple' },
+    { hex: '#8B5CF6', label: isAr ? 'بنفسجي ملكي (Purple)' : 'Purple' },
     { hex: '#EF4444', label: isAr ? 'أحمر قرمزي (Vibrant Red)' : 'Vibrant Red' },
-    { hex: '#f59e0b', label: isAr ? 'ذهبي (Mustard Gold)' : 'Mustard Gold' },
-    { hex: '#06b6d4', label: isAr ? 'سماوي (Cyan)' : 'Cyan' }
+    { hex: '#F59E0B', label: isAr ? 'ذهبي خردلي (Mustard Gold)' : 'Mustard Gold' },
+    { hex: '#06B6D4', label: isAr ? 'سماوي بحري (Cyan)' : 'Cyan' },
+    { hex: '#EC4899', label: isAr ? 'وردي ياقوتي (Rose)' : 'Rose' },
+    { hex: '#F97316', label: isAr ? 'برتقالي مشرق (Orange)' : 'Orange' },
+    { hex: '#3B82F6', label: isAr ? 'أزرق نيلي (Indigo Blue)' : 'Indigo Blue' },
+    { hex: '#64748B', label: isAr ? 'رمادي راقي (Slate)' : 'Slate' }
   ];
+
+  // Edit Grade Modal State
+  const [editingGrade, setEditingGrade] = useState(null);
+  const [editGradeName, setEditGradeName] = useState('');
+  const [editGradeNameEn, setEditGradeNameEn] = useState('');
+  const [editGradeStage, setEditGradeStage] = useState('التعليم الأساسي');
+  const [editGradeStageEn, setEditGradeStageEn] = useState('Primary School');
+  const [editGradeTuition, setEditGradeTuition] = useState('700');
+  const [editGradeColor, setEditGradeColor] = useState('#0284C7');
+
+  // Inline Section Add inside Edit Grade Modal
+  const [newSecNameInGrade, setNewSecNameInGrade] = useState('');
+  const [newSecRoomInGrade, setNewSecRoomInGrade] = useState('');
+
+  // Inline Section Edit inside Edit Grade Modal
+  const [inlineEditingSecId, setInlineEditingSecId] = useState(null);
+  const [inlineSecName, setInlineSecName] = useState('');
+  const [inlineSecRoom, setInlineSecRoom] = useState('');
+  const [inlineSecSupervisor, setInlineSecSupervisor] = useState('');
+  const [inlineSecCapacity, setInlineSecCapacity] = useState('30');
+
+  // Edit Classroom/Section Modal State (standalone)
+  const [editingClassroom, setEditingClassroom] = useState(null);
+  const [editClassGradeId, setEditClassGradeId] = useState('');
+  const [editClassSectionName, setEditClassSectionName] = useState('');
+  const [editClassSectionNameEn, setEditClassSectionNameEn] = useState('');
+  const [editClassRoomNumber, setEditClassRoomNumber] = useState('');
+  const [editClassCapacity, setEditClassCapacity] = useState('30');
+  const [editClassSupervisor, setEditClassSupervisor] = useState('');
+
+  const handleOpenEditGradeModal = (grd) => {
+    setEditingGrade(grd);
+    setEditGradeName(grd.name || '');
+    setEditGradeNameEn(grd.nameEn || grd.name || '');
+    setEditGradeStage(grd.stage || 'التعليم الأساسي');
+    setEditGradeStageEn(grd.stageEn || 'Primary School');
+    setEditGradeTuition(String(grd.tuitionFee || '700'));
+    setEditGradeColor(grd.color || '#0284C7');
+    setNewSecNameInGrade('');
+    setNewSecRoomInGrade('');
+    setInlineEditingSecId(null);
+  };
+
+  const handleEditGradeSubmit = (e) => {
+    e.preventDefault();
+    if (!editingGrade || !editGradeName.trim()) return;
+
+    if (updateGrade) {
+      updateGrade(editingGrade.id, {
+        name: editGradeName.trim(),
+        nameEn: editGradeNameEn.trim() || editGradeName.trim(),
+        stage: editGradeStage,
+        stageEn: editGradeStageEn,
+        tuitionFee: Number(editGradeTuition) || 0,
+        color: editGradeColor
+      });
+    }
+
+    setEditingGrade(null);
+    setSuccessMsg(isAr ? 'تم تحديث اسم ولون وبيانات الصف الدراسي بنجاح! 🎨' : 'Grade updated successfully!');
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleAddSectionToCurrentGrade = () => {
+    if (!editingGrade || !newSecNameInGrade.trim()) return;
+    const normSec = (s) => (s || '').replace(/الشعبة|\(|\)|[\s\-_]/g, '').replace(/[أإآ]/g, 'ا').replace(/[هة]/g, 'ه').trim();
+    
+    const isDuplicate = safeClassrooms.some(
+      (c) => (c.gradeId === editingGrade.id || c.gradeName === editingGrade.name) &&
+             normSec(c.sectionName) === normSec(newSecNameInGrade)
+    );
+
+    if (isDuplicate) {
+      alert(isAr ? '⚠️ هذه الشعبة موجودة مسبقاً في هذا الصف!' : '⚠️ Section already exists!');
+      return;
+    }
+
+    addClassroom({
+      gradeId: editingGrade.id,
+      gradeName: editGradeName || editingGrade.name,
+      sectionName: newSecNameInGrade.trim(),
+      sectionNameEn: newSecNameInGrade.trim(),
+      capacity: 30,
+      supervisor: 'إشراف القسم',
+      roomNumber: newSecRoomInGrade.trim() || '101'
+    });
+
+    setNewSecNameInGrade('');
+    setNewSecRoomInGrade('');
+    setSuccessMsg(isAr ? 'تم إضافة الشعبة للصف بنجاح!' : 'Section added successfully!');
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleOpenEditClassroomModal = (cls) => {
+    setEditingClassroom(cls);
+    setEditClassGradeId(cls.gradeId || '');
+    setEditClassSectionName(cls.sectionName || '');
+    setEditClassSectionNameEn(cls.sectionNameEn || cls.sectionName || '');
+    setEditClassRoomNumber(cls.roomNumber || '101');
+    setEditClassCapacity(String(cls.capacity || '30'));
+    setEditClassSupervisor(cls.supervisor || 'إشراف القسم');
+  };
+
+  const handleEditClassroomSubmit = (e) => {
+    e.preventDefault();
+    if (!editingClassroom || !editClassSectionName.trim()) return;
+
+    const parentGrade = safeGrades.find(g => g.id === editClassGradeId) || safeGrades.find(g => g.name === editingClassroom.gradeName);
+
+    if (updateClassroom) {
+      updateClassroom(editingClassroom.id, {
+        gradeId: editClassGradeId || editingClassroom.gradeId,
+        gradeName: parentGrade ? parentGrade.name : editingClassroom.gradeName,
+        sectionName: editClassSectionName.trim(),
+        sectionNameEn: editClassSectionNameEn.trim() || editClassSectionName.trim(),
+        roomNumber: editClassRoomNumber.trim(),
+        capacity: Number(editClassCapacity) || 30,
+        supervisor: editClassSupervisor.trim()
+      });
+    }
+
+    setEditingClassroom(null);
+    setSuccessMsg(isAr ? 'تم حفظ وتحديث بيانات الشعبة بنجاح! ✏️' : 'Section updated successfully!');
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
 
   const handleAddGradeSubmit = (e) => {
     e.preventDefault();
@@ -488,6 +622,7 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                 key={grd.id}
                 onClick={() => setShowStudentsModal({ title: `قائمة طلاب ${grd.name}`, gradeName: grd.name, sectionName: null })}
                 className="interactive-card bg-white border border-[#E2E8F0] rounded-3xl p-6 space-y-4 shadow-sm hover:border-[#0284C7] hover:shadow-lg transition-all cursor-pointer relative group"
+                style={{ borderTop: `4px solid ${grd.color || '#0284C7'}` }}
               >
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-3">
@@ -504,16 +639,32 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                   </div>
 
                   {currentRole === 'admin' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteGrade(grd.id);
-                      }}
-                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer"
-                      title={t('delete')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditGradeModal(grd);
+                        }}
+                        className="py-1.5 px-2.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                        title={isAr ? 'تعديل اسم ولون وشُعب الصف' : 'Edit Grade & Sections'}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{isAr ? 'تعديل 🎨' : 'Edit 🎨'}</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(isAr ? `هل أنت متأكد من حذف ${grd.name}؟` : `Delete ${grd.name}?`)) {
+                            deleteGrade(grd.id);
+                          }
+                        }}
+                        className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer"
+                        title={t('delete')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -534,6 +685,17 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                       <BookmarkCheck className="w-4 h-4 text-[#0284C7]" />
                       <span>{isAr ? `الشعب الدراسية التابعة (${gradeSections.length}):` : `Sections (${gradeSections.length}):`}</span>
                     </span>
+                    {currentRole === 'admin' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditGradeModal(grd);
+                        }}
+                        className="text-[11px] text-[#0284C7] hover:underline font-bold"
+                      >
+                        {isAr ? '+ إدارة الشعب' : '+ Manage'}
+                      </button>
+                    )}
                   </span>
 
                   {gradeSections.length === 0 ? (
@@ -541,8 +703,17 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {gradeSections.map((sec) => (
-                        <span key={sec.id} className="px-2.5 py-1 bg-sky-50 text-[#0284C7] border border-sky-200 rounded-xl text-[11px] font-bold">
-                          {isAr ? sec.sectionName : sec.sectionNameEn} (قاعة {sec.roomNumber})
+                        <span 
+                          key={sec.id} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditClassroomModal(sec);
+                          }}
+                          className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-[#0284C7] border border-sky-200 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                          title={isAr ? 'انقر لتعديل بيانات هذه الشعبة' : 'Click to edit section'}
+                        >
+                          <span>{isAr ? sec.sectionName : sec.sectionNameEn} (قاعة {sec.roomNumber})</span>
+                          <Edit3 className="w-2.5 h-2.5 opacity-60" />
                         </span>
                       ))}
                     </div>
@@ -599,16 +770,32 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
                   </div>
 
                   {currentRole === 'admin' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteClassroom(cls.id);
-                      }}
-                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer"
-                      title={t('delete')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditClassroomModal(cls);
+                        }}
+                        className="py-1.5 px-2.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                        title={isAr ? 'تعديل الشعبة والقاعة' : 'Edit Section'}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{isAr ? 'تعديل' : 'Edit'}</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(isAr ? `هل أنت متأكد من حذف ${cls.sectionName} من ${cls.gradeName}؟` : `Delete section?`)) {
+                            deleteClassroom(cls.id);
+                          }
+                        }}
+                        className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer"
+                        title={t('delete')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -1269,6 +1456,343 @@ export const ClassesModule = ({ initialSubTab = 'grades' }) => {
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <button type="button" onClick={() => setShowAddClassroomModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">{t('cancel')}</button>
               <button type="submit" className="px-5 py-2 btn-mustard rounded-xl text-xs font-bold shadow cursor-pointer">{t('save')}</button>
+            </div>
+          </form>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Modal: Edit Grade, Theme Color & Sections ────────────────────────── */}
+      {editingGrade && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <form
+            onSubmit={handleEditGradeSubmit}
+            className="bg-white border-2 rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A] relative my-auto max-h-[90vh] overflow-y-auto text-right"
+            style={{ borderColor: editGradeColor || '#0284C7' }}
+          >
+            {/* Header with Live Color Icon */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <button
+                type="button"
+                onClick={() => setEditingGrade(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <h3 className="text-base font-bold text-[#0F172A] flex items-center gap-1.5 justify-end">
+                    <span>{isAr ? 'تعديل الصف الدراسي ولونه وشُعبه' : 'Edit Grade, Theme & Sections'}</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    {isAr ? 'يمكنك تغيير اسم الصف، لونه المخصص، وإدارة شُعبه وتعديلها مباشرة' : 'Customize grade name, color, and manage its sections'}
+                  </p>
+                </div>
+                <div 
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-sm shadow transition-all shrink-0"
+                  style={{ backgroundColor: editGradeColor || '#0284C7' }}
+                >
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">{isAr ? 'اسم الصف الدراسي (عربي)' : 'Grade Name (Arabic)'} <span className="text-red-500">*</span></label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editGradeName} 
+                  onChange={(e) => setEditGradeName(e.target.value)} 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] text-right" 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">{isAr ? 'اسم الصف (إنجليزي)' : 'Grade Name (English)'}</label>
+                <input 
+                  type="text" 
+                  value={editGradeNameEn} 
+                  onChange={(e) => setEditGradeNameEn(e.target.value)} 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] text-right" 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">{isAr ? 'المرحلة التعليمية' : 'Stage'}</label>
+                <select 
+                  value={editGradeStage} 
+                  onChange={(e) => setEditGradeStage(e.target.value)} 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer text-right"
+                >
+                  <option value="رياض الأطفال">رياض الأطفال (Kindergarten)</option>
+                  <option value="التعليم الأساسي">التعليم الأساسي (Primary)</option>
+                  <option value="المرحلة المتوسطة">المرحلة المتوسطة (Middle School)</option>
+                  <option value="المرحلة الثانوية">المرحلة الثانوية (High School)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">{isAr ? 'القسط السنوي ($ USD)' : 'Tuition Fee ($ USD)'}</label>
+                <input 
+                  type="number" 
+                  value={editGradeTuition} 
+                  onChange={(e) => setEditGradeTuition(e.target.value)} 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none text-right" 
+                />
+              </div>
+            </div>
+
+            {/* Color Palette Selector */}
+            <div className="space-y-2 bg-[#F8FAFC] p-3.5 rounded-2xl border border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono font-bold text-slate-500">{editGradeColor}</span>
+                  <div className="w-5 h-5 rounded-md border border-slate-300 shadow-2xs" style={{ backgroundColor: editGradeColor }} />
+                </div>
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-[#0284C7]" />
+                  <span>{isAr ? 'تعديل لون الصف الدراسي:' : 'Grade Theme Color:'}</span>
+                </label>
+              </div>
+
+              {/* 10 Presets Swatches */}
+              <div className="flex flex-wrap items-center gap-2 justify-end">
+                {/* Custom Color input */}
+                <label className="flex items-center gap-1 bg-white border border-slate-200 hover:border-[#0284C7] rounded-xl px-2 py-1 text-[11px] font-bold text-slate-600 cursor-pointer shadow-2xs">
+                  <input 
+                    type="color" 
+                    value={editGradeColor} 
+                    onChange={(e) => setEditGradeColor(e.target.value)} 
+                    className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent"
+                  />
+                  <span>{isAr ? 'لون مخصص 🎨' : 'Custom'}</span>
+                </label>
+
+                {presetColors.map((col) => (
+                  <button
+                    key={col.hex}
+                    type="button"
+                    onClick={() => setEditGradeColor(col.hex)}
+                    className={`w-8 h-8 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-center ${
+                      editGradeColor.toLowerCase() === col.hex.toLowerCase() ? 'border-slate-800 scale-110 shadow-md ring-2 ring-sky-300' : 'border-transparent opacity-85 hover:opacity-100 hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: col.hex }}
+                    title={col.label}
+                  >
+                    {editGradeColor.toLowerCase() === col.hex.toLowerCase() && <span className="text-white text-xs font-bold">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Manage Sections of this Grade */}
+            <div className="space-y-3 bg-white p-3.5 rounded-2xl border border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <span className="text-[10px] font-bold text-slate-400">
+                  {safeClassrooms.filter(c => c.gradeId === editingGrade.id || c.gradeName === editingGrade.name).length} {isAr ? 'شُعب حالية' : 'sections'}
+                </span>
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <BookmarkCheck className="w-4 h-4 text-[#0284C7]" />
+                  <span>{isAr ? 'شُعب هذا الصف الدراسي وتعديلها:' : 'Sections of this Grade:'}</span>
+                </span>
+              </div>
+
+              {/* List of Sections */}
+              <div className="space-y-2 max-h-48 overflow-y-auto pe-1">
+                {safeClassrooms.filter(c => c.gradeId === editingGrade.id || c.gradeName === editingGrade.name).length === 0 ? (
+                  <p className="text-xs text-slate-400 italic py-2 text-center">{isAr ? 'لا توجد شعب مضافة لهذا الصف حالياً.' : 'No sections added yet.'}</p>
+                ) : (
+                  safeClassrooms.filter(c => c.gradeId === editingGrade.id || c.gradeName === editingGrade.name).map((sec) => (
+                    <div key={sec.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(isAr ? `هل أنت متأكد من حذف ${sec.sectionName} من هذا الصف؟` : `Delete section?`)) {
+                              deleteClassroom(sec.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="حذف الشعبة من هذا الصف"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleOpenEditClassroomModal(sec);
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-sky-50 text-[#0284C7] border border-sky-200 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                          title="تعديل بيانات هذه الشعبة"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>تعديل ✏️</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-right">
+                        <div>
+                          <span className="font-bold text-[#0F172A] block">{sec.sectionName}</span>
+                          <span className="text-[10px] text-slate-400 font-mono block">قاعة: {sec.roomNumber} • سعة: {sec.capacity} • {sec.supervisor}</span>
+                        </div>
+                        <span className="w-6 h-6 rounded-lg bg-sky-100 text-[#0284C7] font-bold text-xs flex items-center justify-center shrink-0">
+                          {sec.sectionName.replace(/[^أ-يA-Za-z0-9]/g, '') || 'أ'}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Quick Add Section directly into this Grade */}
+              <div className="pt-2 border-t border-slate-100 flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
+                <button
+                  type="button"
+                  onClick={handleAddSectionToCurrentGrade}
+                  disabled={!newSecNameInGrade.trim()}
+                  className="px-3 py-1.5 bg-[#0284C7] hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+                >
+                  + إضافة شعبة
+                </button>
+                <input
+                  type="text"
+                  value={newSecRoomInGrade}
+                  onChange={(e) => setNewSecRoomInGrade(e.target.value)}
+                  placeholder={isAr ? 'القاعة (مثال: 102)' : 'Room'}
+                  className="w-28 bg-[#F8FAFC] border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-mono font-bold focus:outline-none text-center"
+                />
+                <input
+                  type="text"
+                  value={newSecNameInGrade}
+                  onChange={(e) => setNewSecNameInGrade(e.target.value)}
+                  placeholder={isAr ? 'اسم شعبة جديدة (مثال: الشعبة و)' : 'New section name...'}
+                  className="flex-1 bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-[#0284C7] text-right"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+              <button 
+                type="button" 
+                onClick={() => setEditingGrade(null)} 
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                {t('cancel')}
+              </button>
+              <button 
+                type="submit" 
+                className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition-all hover:opacity-90"
+                style={{ backgroundColor: editGradeColor || '#0284C7' }}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isAr ? 'حفظ وتثبيت تعديلات الصف واللون 💾' : 'Save Changes'}</span>
+              </button>
+            </div>
+          </form>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Modal: Standalone Edit Classroom / Section ───────────────────────── */}
+      {editingClassroom && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <form
+            onSubmit={handleEditClassroomSubmit}
+            className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A] relative my-auto text-right"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <button
+                type="button"
+                onClick={() => setEditingClassroom(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+              <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
+                <DoorOpen className="w-5 h-5 text-[#0284C7]" />
+                <span>{isAr ? 'تعديل الشعبة والقاعة الدراسية' : 'Edit Section Classroom'}</span>
+              </h3>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-700">{isAr ? 'الصف التابع له' : 'Parent Grade'} <span className="text-red-500">*</span></label>
+              <select 
+                value={editClassGradeId} 
+                onChange={(e) => setEditClassGradeId(e.target.value)} 
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer text-right"
+              >
+                {safeGrades.map((g) => (
+                  <option key={g.id} value={g.id}>{isAr ? g.name : g.nameEn}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">{isAr ? 'اسم الشعبة ورقم القاعة' : 'Section Name & Room'} <span className="text-red-500">*</span></label>
+              <div className="grid grid-cols-2 gap-3">
+                <input 
+                  type="text" 
+                  value={editClassRoomNumber} 
+                  onChange={(e) => setEditClassRoomNumber(e.target.value)} 
+                  placeholder="رقم القاعة (101)" 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none text-center" 
+                />
+                <input 
+                  type="text" 
+                  required 
+                  value={editClassSectionName} 
+                  onChange={(e) => setEditClassSectionName(e.target.value)} 
+                  placeholder="الشعبة (أ)..." 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0284C7] text-right" 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">{isAr ? 'المعلم المشرف' : 'Supervisor'}</label>
+                <input 
+                  type="text" 
+                  value={editClassSupervisor} 
+                  onChange={(e) => setEditClassSupervisor(e.target.value)} 
+                  placeholder="أ. طارق خوري..." 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none text-right" 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">{isAr ? 'السعة القصوى (طالب)' : 'Max Capacity'}</label>
+                <input 
+                  type="number" 
+                  value={editClassCapacity} 
+                  onChange={(e) => setEditClassCapacity(e.target.value)} 
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none text-center" 
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+              <button 
+                type="button" 
+                onClick={() => setEditingClassroom(null)} 
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                {t('cancel')}
+              </button>
+              <button 
+                type="submit" 
+                className="px-5 py-2 btn-mustard rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isAr ? 'حفظ تعديل الشعبة 💾' : 'Save Section'}</span>
+              </button>
             </div>
           </form>
         </div>,
