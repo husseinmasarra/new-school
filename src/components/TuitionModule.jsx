@@ -1478,7 +1478,7 @@ export const TuitionModule = () => {
 
       {/* ── Receipt Modal (Single Receipt Sized at Exactly Half A4 Sheet) ─────────────────────────── */}
       {showReceiptModal && createPortal(
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto receipt-print-backdrop">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto receipt-print-backdrop print-container">
           <div className="max-w-2xl w-full my-auto space-y-3">
             
             {/* Action Bar (Screen Only) */}
@@ -1534,7 +1534,7 @@ export const TuitionModule = () => {
                 @media print {
                   @page {
                     size: A4 portrait;
-                    margin: 6mm 10mm;
+                    margin: 8mm 12mm 0 12mm;
                   }
 
                   html, html.dark, body, html.dark body, 
@@ -1544,7 +1544,7 @@ export const TuitionModule = () => {
                     print-color-adjust: exact !important;
                   }
 
-                  body > #root {
+                  body > #root, #root {
                     display: none !important;
                   }
 
@@ -1554,12 +1554,12 @@ export const TuitionModule = () => {
                     color: #000000 !important;
                     margin: 0 !important;
                     padding: 0 !important;
+                    height: 100% !important;
                   }
 
                   .receipt-print-backdrop, html.dark .receipt-print-backdrop {
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
+                    position: static !important;
+                    inset: auto !important;
                     width: 100% !important;
                     height: auto !important;
                     background: #ffffff !important;
@@ -1570,41 +1570,46 @@ export const TuitionModule = () => {
                     display: block !important;
                     z-index: 999999 !important;
                     box-shadow: none !important;
+                    overflow: visible !important;
                   }
 
                   .receipt-print-wrapper {
                     display: block !important;
                     width: 100% !important;
-                    margin: 0 !important;
+                    margin: 0 auto !important;
                     padding: 0 !important;
+                    page-break-inside: avoid !important;
+                    page-break-after: avoid !important;
                   }
 
                   .receipt-printable-card, html.dark .receipt-printable-card {
                     border: 1.5px solid #000000 !important;
                     box-shadow: none !important;
                     margin: 0 auto !important;
-                    padding: 10px 14px !important;
+                    padding: 8px 12px !important;
                     background: #ffffff !important;
                     background-color: #ffffff !important;
                     color: #000000 !important;
                     width: 100% !important;
-                    max-width: 100% !important;
-                    /* Half A4 height is ~138mm - 142mm */
-                    min-height: 132mm !important;
-                    max-height: 142mm !important;
-                    border-radius: 0px !important;
+                    max-width: 186mm !important;
+                    /* Strictly Half of A4 Sheet height (130mm to 134mm max) */
+                    height: 130mm !important;
+                    max-height: 134mm !important;
+                    border-radius: 6px !important;
                     box-sizing: border-box !important;
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: space-between !important;
                     page-break-inside: avoid !important;
+                    page-break-after: avoid !important;
+                    overflow: hidden !important;
                   }
 
                   .receipt-details-box {
                     background: transparent !important;
                     background-color: transparent !important;
                     border: 1px solid #cbd5e1 !important;
-                    padding: 6px 10px !important;
+                    padding: 4px 8px !important;
                   }
 
                   .receipt-printable-card div,
@@ -1754,6 +1759,13 @@ export const TuitionModule = () => {
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Scissor Cut Line (Half A4 Sheet Border Indicator) */}
+              <div className="hidden print:flex items-center justify-center gap-3 pt-3 text-[10px] text-slate-400 font-mono select-none">
+                <span className="tracking-widest opacity-60">----------------------------------------------------</span>
+                <span className="font-bold shrink-0">✂️ {isAr ? 'قص الورقة هنا (نصف ورقة A4)' : 'Cut paper here (Half A4)'}</span>
+                <span className="tracking-widest opacity-60">----------------------------------------------------</span>
               </div>
             </div>
 

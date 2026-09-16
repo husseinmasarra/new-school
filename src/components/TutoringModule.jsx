@@ -1589,7 +1589,7 @@ export const TutoringModule = () => {
 
       {/* ─── MODAL 5: PRINTABLE OFFICIAL TUTORING RECEIPT ──────────────────────── */}
       {showReceiptModal && selectedReceipt && createPortal(
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 receipt-print-backdrop print-container">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl text-[#0F172A]">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#032541] flex items-center gap-2">
