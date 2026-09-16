@@ -205,6 +205,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
 
   // Student Details Modal State
   const [showStudentDetailModal, setShowStudentDetailModal] = useState(null);
+  const [showFamilyDetailModal, setShowFamilyDetailModal] = useState(null);
 
   // Success Toast State
   const [successMsg, setSuccessMsg] = useState('');
@@ -636,24 +637,34 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
     return Object.values(map);
   }, [safeStudents]);
 
-  // Filtered families based on search
+  // Filtered families based on search and grade filter
   const filteredFamilies = useMemo(() => {
-    if (!searchTerm.trim()) return allUniqueFamilies;
     const term = searchTerm.toLowerCase().trim();
     return allUniqueFamilies.filter(fam => {
-      if (fam.familyName.toLowerCase().includes(term)) return true;
-      if (fam.parentName.toLowerCase().includes(term)) return true;
-      if (fam.parentPhone.toLowerCase().includes(term)) return true;
-      return fam.members.some(m => 
-        (m.name || '').toLowerCase().includes(term) ||
-        (m.nameEn || '').toLowerCase().includes(term) ||
-        (m.username || '').toLowerCase().includes(term) ||
-        (m.id || '').toLowerCase().includes(term) ||
-        (m.grade || '').toLowerCase().includes(term) ||
-        (m.classRoom || '').toLowerCase().includes(term)
-      );
+      if (term) {
+        const matchesTerm = fam.familyName.toLowerCase().includes(term) ||
+          fam.parentName.toLowerCase().includes(term) ||
+          fam.parentPhone.toLowerCase().includes(term) ||
+          (fam.motherPhone || '').toLowerCase().includes(term) ||
+          fam.members.some(m => 
+            (m.name || '').toLowerCase().includes(term) ||
+            (m.nameEn || '').toLowerCase().includes(term) ||
+            (m.username || '').toLowerCase().includes(term) ||
+            (m.id || '').toLowerCase().includes(term) ||
+            (m.grade || '').toLowerCase().includes(term) ||
+            (m.classRoom || '').toLowerCase().includes(term)
+          );
+        if (!matchesTerm) return false;
+      }
+      if (selectedGradeFilter === 'special_cases') {
+        return fam.members.some(m => m.isSpecialCase);
+      }
+      if (selectedGradeFilter !== 'all') {
+        return fam.members.some(m => (m.grade || '').includes(selectedGradeFilter));
+      }
+      return true;
     });
-  }, [allUniqueFamilies, searchTerm]);
+  }, [allUniqueFamilies, searchTerm, selectedGradeFilter]);
 
   const handleExportStudentsExcel = () => {
     const headers = ['المعرف', 'اسم الطالب', 'Name En', 'الصف', 'الشعبة', 'اسم ولي الأمر', 'هاتف ولي الأمر', 'الحساب المقبوض ($)', 'المتبقي ($)'];
@@ -829,7 +840,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                {isAr ? `الكل (${safeStudents.length})` : `All (${safeStudents.length})`}
+                {isAr ? `كل العائلات (${allUniqueFamilies.length})` : `All Families (${allUniqueFamilies.length})`}
               </button>
               <button
                 onClick={() => setSelectedGradeFilter(selectedGradeFilter === 'special_cases' ? 'all' : 'special_cases')}
@@ -839,7 +850,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                     : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
                 }`}
               >
-                ⭐ {isAr ? 'حالات خاصة' : 'Special Cases'} ({safeStudents.filter(s => s.isSpecialCase).length})
+                ⭐ {isAr ? 'حالات خاصة' : 'Special Cases'} ({allUniqueFamilies.filter(f => f.members.some(m => m.isSpecialCase)).length})
               </button>
               {safeGrades.map((g) => {
                 const count = safeStudents.filter(s => (s.grade || '').includes(g.name)).length;
@@ -890,357 +901,328 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
         )}
       </div>
 
-      {/* STUDENTS ROSTER - GROUPED BY GRADE CARDS */}
+      {/* PARENTS & FAMILIES DIRECTORY / STUDENTS */}
       {activeTab === 'students' && (() => {
-        // Group filtered students by grade
-        const studentsByGrade = filteredStudents.reduce((acc, stu) => {
-          const g = stu.grade || (isAr ? 'الصف الأول الابتدائي' : 'Grade 1');
-          if (!acc[g]) acc[g] = [];
-          acc[g].push(stu);
-          return acc;
-        }, {});
+        // 1. When 'all' is selected: Unify into ONE card per family ("لا تفصل الصفوف هنا اجعل كرت العائلة واحد")
+        if (selectedGradeFilter === 'all') {
+          if (filteredFamilies.length === 0) {
+            return (
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl p-10 text-center text-slate-400 space-y-2">
+                <Users className="w-12 h-12 mx-auto opacity-30 text-[#0284C7]" />
+                <p className="text-sm font-bold">{isAr ? 'لا توجد عائلات مطابقة لخيارات البحث حالياً.' : 'No families found matching filters.'}</p>
+              </div>
+            );
+          }
 
-        const gradeKeys = Object.keys(studentsByGrade);
-        if (gradeKeys.length === 0) {
+          return (
+            <div className="space-y-4">
+              {/* Header Badge */}
+              <div className="flex items-center justify-between border-b border-[#0284C7]/20 pb-2">
+                <div className="flex items-center gap-3">
+                  <span className="w-2.5 h-6 bg-[#0284C7] rounded-full block" />
+                  <h3 className="text-sm font-extrabold text-[#0284C7] flex items-center gap-2">
+                    <span>{isAr ? 'كروت أولياء الأمور والعائلات' : 'Family & Parent Cards'}</span>
+                    <span className="bg-sky-50 text-[#0284C7] text-[10px] px-2 py-0.5 rounded-full font-black border border-sky-200">
+                      {filteredFamilies.length} {isAr ? 'عائلة' : 'Families'}
+                    </span>
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-slate-400 hidden sm:inline">
+                  {isAr ? '💡 كرت موحد لكل عائلة — اضغط على الكرت لعرض تفاصيل الأبناء' : 'Unified card per family — click card to view children'}
+                </span>
+              </div>
+
+              {studentsViewMode === 'table' ? (
+                /* كل كرت بسطر: اسم الأب، رقم الهاتف، القسط المتبقي فقط للعائلة (والباقي داخل الكرت) */
+                <div className="space-y-2.5">
+                  {filteredFamilies.map((family, fIdx) => {
+                    const isFamilySpecialCase = family.members.every(s => s.isSpecialCase) || (family.members.length === 1 && family.members[0].isSpecialCase);
+                    const combinedTotalUSD = isFamilySpecialCase
+                      ? 0
+                      : family.members.reduce((sum, s) => {
+                          const trans = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
+                          const tTotal = s.isSpecialCase ? 0 : (s.tuitionTotal ?? 700);
+                          return sum + Number(tTotal) + trans;
+                        }, 0);
+                    const combinedDiscountUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionDiscount) || 0), 0);
+                    const combinedPaidUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionPaid) || 0), 0);
+                    const combinedRemUSD = Math.max(0, combinedTotalUSD - combinedDiscountUSD - combinedPaidUSD);
+                    const cleanPhone = (family.parentPhone || '').replace(/[^0-9]/g, '');
+
+                    return (
+                      <div
+                        key={family.key}
+                        onClick={() => {
+                          if (family.members.length === 1) {
+                            setShowStudentDetailModal(family.members[0]);
+                          } else {
+                            setShowFamilyDetailModal(family);
+                          }
+                        }}
+                        className="w-full bg-white hover:bg-sky-50/70 border border-slate-200 hover:border-[#0284C7] rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 transition-all cursor-pointer shadow-2xs hover:shadow-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4 group"
+                        title={isAr ? 'اضغط لعرض كافة التفاصيل الكاملة' : 'Click to view full details'}
+                      >
+                        {/* 1. اسم الأب (ولي الأمر) */}
+                        <div className="flex items-center gap-3 min-w-[200px] flex-1">
+                          <span className="font-mono text-slate-400 font-bold text-xs w-6 text-center shrink-0">
+                            {fIdx + 1}
+                          </span>
+                          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-base shrink-0 border group-hover:scale-105 transition-transform ${
+                            family.members.length > 1 ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-sky-100 text-[#0284C7] border-sky-200/80'
+                          }`}>
+                            {family.members.length > 1 ? '👨‍👩‍👧‍👦' : '👨‍💼'}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[10px] text-slate-400 font-bold block">
+                              {isAr ? 'اسم الأب / ولي الأمر' : 'Father / Guardian'}
+                            </span>
+                            <div className="flex items-center gap-2 truncate">
+                              <h4 className="font-extrabold text-[#0F172A] text-sm group-hover:text-[#0284C7] transition-colors truncate">
+                                {family.parentName || (isAr ? 'غير مسجل' : 'Not Registered')}
+                              </h4>
+                              {family.members.length > 1 && (
+                                <span className="text-[9px] bg-amber-50 text-amber-900 border border-amber-300 font-black px-1.5 py-0.5 rounded-md shrink-0">
+                                  {family.members.length} {isAr ? 'أبناء' : 'children'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2. رقم الهاتف مع زر واتساب السريع */}
+                        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1.5 text-slate-700 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl font-mono font-bold text-xs dir-ltr">
+                            <span>📞</span>
+                            <span>{family.parentPhone || (isAr ? 'بدون هاتف' : 'No Phone')}</span>
+                          </div>
+                          {cleanPhone && (
+                            <a
+                              href={`https://wa.me/${cleanPhone}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors inline-flex items-center justify-center border border-emerald-200 shadow-2xs"
+                              title={isAr ? 'مراسلة ولي الأمر عبر واتساب' : 'Chat on WhatsApp'}
+                            >
+                              <span className="text-sm leading-none">💬</span>
+                            </a>
+                          )}
+                        </div>
+
+                        {/* 3. القسط المتبقي للعائلة فقط */}
+                        <div className="shrink-0 text-center sm:text-right">
+                          {isFamilySpecialCase ? (
+                            <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">
+                              <span>⭐</span>
+                              <span>{isAr ? 'حالة خاصة (معفى)' : 'Special Case (Exempt)'}</span>
+                            </span>
+                          ) : combinedRemUSD === 0 ? (
+                            <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
+                              <span>✓</span>
+                              <span>{isAr ? 'مسدد بالكامل' : 'Paid in Full'}</span>
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-50 text-red-700 border border-red-200 font-mono inline-flex items-center gap-1.5 shadow-2xs">
+                              <span className="text-slate-400 font-sans text-[11px] font-normal">{isAr ? 'المتبقي:' : 'Due:'}</span>
+                              <span className="text-sm font-black">${combinedRemUSD}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* مؤشر الضغط للتفاصيل */}
+                        <div className="flex items-center gap-1 text-xs text-[#0284C7] font-bold shrink-0 bg-sky-50 group-hover:bg-sky-100 px-2.5 py-1.5 rounded-xl border border-sky-200/60 transition-colors">
+                          <Eye className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">{isAr ? 'التفاصيل' : 'Details'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* شبكة كروت العائلات */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredFamilies.map((family) => {
+                    const isFamilySpecialCase = family.members.every(s => s.isSpecialCase) || (family.members.length === 1 && family.members[0].isSpecialCase);
+                    const combinedTotalUSD = isFamilySpecialCase
+                      ? 0
+                      : family.members.reduce((sum, s) => {
+                          const trans = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
+                          const tTotal = s.isSpecialCase ? 0 : (s.tuitionTotal ?? 700);
+                          return sum + Number(tTotal) + trans;
+                        }, 0);
+                    const combinedDiscountUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionDiscount) || 0), 0);
+                    const combinedPaidUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionPaid) || 0), 0);
+                    const combinedRemUSD = Math.max(0, combinedTotalUSD - combinedDiscountUSD - combinedPaidUSD);
+                    const cleanPhone = (family.parentPhone || '').replace(/[^0-9]/g, '');
+
+                    return (
+                      <div
+                        key={family.key}
+                        onClick={() => {
+                          if (family.members.length === 1) {
+                            setShowStudentDetailModal(family.members[0]);
+                          } else {
+                            setShowFamilyDetailModal(family);
+                          }
+                        }}
+                        className="bg-white border-2 border-slate-200 hover:border-[#0284C7] p-5 rounded-3xl shadow-xs hover:shadow-md transition-all cursor-pointer space-y-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-2xl bg-sky-100 text-[#0284C7] flex items-center justify-center font-bold text-lg shrink-0">
+                              👨‍💼
+                            </div>
+                            <div className="truncate">
+                              <span className="text-[10px] text-slate-400 font-bold block">{isAr ? 'ولي الأمر' : 'Guardian'}</span>
+                              <h4 className="font-black text-sm text-[#0F172A] truncate">{family.parentName}</h4>
+                            </div>
+                          </div>
+                          {family.members.length > 1 && (
+                            <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-black px-2 py-0.5 rounded-full shrink-0">
+                              👨‍👩‍👧‍👦 {family.members.length} {isAr ? 'أبناء' : 'children'}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl font-mono">
+                          <span className="text-slate-400 font-sans">📞 {isAr ? 'الهاتف:' : 'Phone:'}</span>
+                          <span className="font-bold text-[#0284C7] dir-ltr">{family.parentPhone || '—'}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                          <span className="text-slate-500 font-bold">{isAr ? 'القسط المتبقي:' : 'Balance Due:'}</span>
+                          {isFamilySpecialCase ? (
+                            <span className="font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">⭐ معفى</span>
+                          ) : combinedRemUSD === 0 ? (
+                            <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✓ مسدد بالكامل</span>
+                          ) : (
+                            <span className="font-mono font-black text-red-600">${combinedRemUSD}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // 2. When a specific grade filter is chosen ("وفي الصفوف يكونو مفصولين")
+        const gradeStudents = filteredStudents;
+        if (gradeStudents.length === 0) {
           return (
             <div className="bg-white border border-[#E2E8F0] rounded-3xl p-10 text-center text-slate-400 space-y-2">
               <Users className="w-12 h-12 mx-auto opacity-30 text-[#0284C7]" />
-              <p className="text-sm font-bold">{isAr ? 'لا يوجد طلاب مطابقون لخيارات البحث حالياً.' : 'No students found matching filters.'}</p>
+              <p className="text-sm font-bold">{isAr ? 'لا يوجد طلاب مطابقون في هذا الصف حالياً.' : 'No students found matching filters in this grade.'}</p>
             </div>
           );
         }
 
         return (
-          <div className="space-y-8">
-            {gradeKeys.map((gradeName) => {
-              const gradeStudents = studentsByGrade[gradeName];
-              return (
-                <div key={gradeName} className="space-y-4">
-                  {/* Grade Divider Title */}
-                  <div className="flex items-center gap-3 border-b border-[#0284C7]/20 pb-2">
-                    <span className="w-2.5 h-6 bg-[#0284C7] rounded-full block" />
-                    <h3 className="text-sm font-extrabold text-[#0284C7] flex items-center gap-2">
-                      <span>{gradeName}</span>
-                      <span className="bg-sky-50 text-[#0284C7] text-[10px] px-2 py-0.5 rounded-full font-black border border-sky-200">
-                        {gradeStudents.length} {isAr ? 'تلميذ' : 'Students'}
+          <div className="space-y-4">
+            {/* Grade Divider Title */}
+            <div className="flex items-center justify-between border-b border-[#0284C7]/20 pb-2">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-6 bg-[#0284C7] rounded-full block" />
+                <h3 className="text-sm font-extrabold text-[#0284C7] flex items-center gap-2">
+                  <span>{selectedGradeFilter === 'special_cases' ? (isAr ? 'الطلاب ذوو الحالات الخاصة' : 'Special Cases') : selectedGradeFilter}</span>
+                  <span className="bg-sky-50 text-[#0284C7] text-[10px] px-2 py-0.5 rounded-full font-black border border-sky-200">
+                    {gradeStudents.length} {isAr ? 'تلميذ' : 'Students'}
+                  </span>
+                </h3>
+              </div>
+              <span className="text-[11px] font-bold text-slate-400">
+                {isAr ? 'عرض مفصول خاص بهذا الصف الدراسي' : 'Separated grade view'}
+              </span>
+            </div>
+
+            {/* Student list for this grade */}
+            <div className="space-y-2.5">
+              {gradeStudents.map((stu, sIdx) => {
+                const stuTuition = stu.isSpecialCase ? 0 : (stu.tuitionTotal ?? 700);
+                const stuPaid = Number(stu.tuitionPaid) || 0;
+                const stuDiscount = Number(stu.tuitionDiscount) || 0;
+                const remainingUSD = Math.max(0, Number(stuTuition) - stuDiscount - stuPaid);
+                const phoneClean = (stu.parentPhone || stu.phone || '').replace(/[^0-9]/g, '');
+
+                return (
+                  <div
+                    key={stu.id}
+                    onClick={() => setShowStudentDetailModal(stu)}
+                    className="w-full bg-white hover:bg-sky-50/70 border border-slate-200 hover:border-[#0284C7] rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 transition-all cursor-pointer shadow-2xs hover:shadow-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4 group"
+                    title={isAr ? 'اضغط لعرض كافة التفاصيل الكاملة' : 'Click to view full details'}
+                  >
+                    {/* 1. اسم الطالب واسم الأب */}
+                    <div className="flex items-center gap-3 min-w-[200px] flex-1">
+                      <span className="font-mono text-slate-400 font-bold text-xs w-6 text-center shrink-0">
+                        {sIdx + 1}
                       </span>
-                    </h3>
+                      <div className="w-9 h-9 rounded-2xl bg-sky-100 text-[#0284C7] flex items-center justify-center font-bold text-base shrink-0 border border-sky-200/80 group-hover:scale-105 transition-transform">
+                        👤
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-extrabold text-[#0F172A] text-sm group-hover:text-[#0284C7] transition-colors truncate">
+                            {isAr ? stu.name : stu.nameEn}
+                          </h4>
+                          <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-mono">
+                            {stu.classRoom ? `شعبة ${stu.classRoom}` : 'شعبة أ'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-bold block truncate mt-0.5">
+                          {isAr ? 'ولي الأمر:' : 'Parent:'} {stu.parentName || (isAr ? 'غير مسجل' : 'N/A')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. رقم الهاتف */}
+                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5 text-slate-700 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl font-mono font-bold text-xs dir-ltr">
+                        <span>📞</span>
+                        <span>{stu.parentPhone || stu.phone || (isAr ? 'بدون هاتف' : 'No Phone')}</span>
+                      </div>
+                      {phoneClean && (
+                        <a
+                          href={`https://wa.me/${phoneClean}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors inline-flex items-center justify-center border border-emerald-200 shadow-2xs"
+                          title={isAr ? 'مراسلة ولي الأمر عبر واتساب' : 'Chat on WhatsApp'}
+                        >
+                          <span className="text-sm leading-none">💬</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* 3. القسط المتبقي فقط */}
+                    <div className="shrink-0 text-center sm:text-right">
+                      {stu.isSpecialCase ? (
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">
+                          <span>⭐</span>
+                          <span>{isAr ? 'حالة خاصة (معفى)' : 'Special Case (Exempt)'}</span>
+                        </span>
+                      ) : remainingUSD === 0 ? (
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
+                          <span>✓</span>
+                          <span>{isAr ? 'مسدد بالكامل' : 'Paid in Full'}</span>
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-50 text-red-700 border border-red-200 font-mono inline-flex items-center gap-1.5 shadow-2xs">
+                          <span className="text-slate-400 font-sans text-[11px] font-normal">{isAr ? 'المتبقي:' : 'Due:'}</span>
+                          <span className="text-sm font-black">${remainingUSD}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* مؤشر الضغط للتفاصيل */}
+                    <div className="flex items-center gap-1 text-xs text-[#0284C7] font-bold shrink-0 bg-sky-50 group-hover:bg-sky-100 px-2.5 py-1.5 rounded-xl border border-sky-200/60 transition-colors">
+                      <Eye className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{isAr ? 'التفاصيل' : 'Details'}</span>
+                    </div>
                   </div>
-
-                  {/* Student View: Interactive Table (Default) or Cards */}
-                  {studentsViewMode === 'table' ? (
-                    /* كل كرت بسطر: اسم الأب، رقم الهاتف، القسط المتبقي فقط (والباقي داخل الكرت يفتح عند الضغط) */
-                    <div className="space-y-2.5">
-                      {gradeStudents.map((stu, sIdx) => {
-                        const stuTuition = stu.isSpecialCase ? 0 : (stu.tuitionTotal ?? 700);
-                        const stuPaid = Number(stu.tuitionPaid) || 0;
-                        const stuDiscount = Number(stu.tuitionDiscount) || 0;
-                        const remainingUSD = Math.max(0, Number(stuTuition) - stuDiscount - stuPaid);
-                        const phoneClean = (stu.parentPhone || stu.phone || '').replace(/[^0-9]/g, '');
-
-                        return (
-                          <div
-                            key={stu.id}
-                            onClick={() => setShowStudentDetailModal(stu)}
-                            className="w-full bg-white hover:bg-sky-50/70 border border-slate-200 hover:border-[#0284C7] rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 transition-all cursor-pointer shadow-2xs hover:shadow-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4 group"
-                            title={isAr ? 'اضغط لعرض كافة التفاصيل الكاملة' : 'Click to view full details'}
-                          >
-                            {/* 1. اسم الأب (ولي الأمر) */}
-                            <div className="flex items-center gap-3 min-w-[200px] flex-1">
-                              <span className="font-mono text-slate-400 font-bold text-xs w-6 text-center shrink-0">
-                                {sIdx + 1}
-                              </span>
-                              <div className="w-9 h-9 rounded-2xl bg-sky-100 text-[#0284C7] flex items-center justify-center font-bold text-base shrink-0 border border-sky-200/80 group-hover:scale-105 transition-transform">
-                                👨‍💼
-                              </div>
-                              <div className="min-w-0">
-                                <span className="text-[10px] text-slate-400 font-bold block">
-                                  {isAr ? 'اسم الأب / ولي الأمر' : 'Father / Guardian'}
-                                </span>
-                                <h4 className="font-extrabold text-[#0F172A] text-sm group-hover:text-[#0284C7] transition-colors truncate">
-                                  {stu.parentName || (isAr ? 'غير مسجل' : 'Not Registered')}
-                                </h4>
-                              </div>
-                            </div>
-
-                            {/* 2. رقم الهاتف مع زر واتساب السريع */}
-                            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center gap-1.5 text-slate-700 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl font-mono font-bold text-xs dir-ltr">
-                                <span>📞</span>
-                                <span>{stu.parentPhone || stu.phone || (isAr ? 'بدون هاتف' : 'No Phone')}</span>
-                              </div>
-                              {phoneClean && (
-                                <a
-                                  href={`https://wa.me/${phoneClean}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors inline-flex items-center justify-center border border-emerald-200 shadow-2xs"
-                                  title={isAr ? 'مراسلة ولي الأمر عبر واتساب' : 'Chat on WhatsApp'}
-                                >
-                                  <span className="text-sm leading-none">💬</span>
-                                </a>
-                              )}
-                            </div>
-
-                            {/* 3. القسط المتبقي فقط */}
-                            <div className="shrink-0 text-center sm:text-right">
-                              {stu.isSpecialCase ? (
-                                <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">
-                                  <span>⭐</span>
-                                  <span>{isAr ? 'حالة خاصة (معفى)' : 'Special Case (Exempt)'}</span>
-                                </span>
-                              ) : remainingUSD === 0 ? (
-                                <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
-                                  <span>✓</span>
-                                  <span>{isAr ? 'مسدد بالكامل' : 'Paid in Full'}</span>
-                                </span>
-                              ) : (
-                                <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-50 text-red-700 border border-red-200 font-mono inline-flex items-center gap-1.5 shadow-2xs">
-                                  <span className="text-slate-400 font-sans text-[11px] font-normal">{isAr ? 'المتبقي:' : 'Due:'}</span>
-                                  <span className="text-sm font-black">${remainingUSD}</span>
-                                </span>
-                              )}
-                            </div>
-
-                            {/* مؤشر الضغط للتفاصيل */}
-                            <div className="flex items-center gap-1 text-xs text-[#0284C7] font-bold shrink-0 bg-sky-50 group-hover:bg-sky-100 px-2.5 py-1.5 rounded-xl border border-sky-200/60 transition-colors">
-                              <Eye className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">{isAr ? 'التفاصيل' : 'Details'}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    /* Student Cards Grid: Parent prominent at the top + card clickable to view details */
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-                      {gradeStudents.map((stu) => {
-                        const famKey = getStudentFamilyKey(stu);
-                        const siblings = safeStudents.filter(s => s.id !== stu.id && getStudentFamilyKey(s) === famKey);
-                        const hasSiblings = siblings.length > 0;
-                        const stuTuition = stu.isSpecialCase ? 0 : (stu.tuitionTotal ?? 700);
-                        const stuPaid = Number(stu.tuitionPaid) || 0;
-                        const stuDiscount = Number(stu.tuitionDiscount) || 0;
-                        const remainingUSD = Math.max(0, Number(stuTuition) - stuDiscount - stuPaid);
-                        const phoneClean = (stu.parentPhone || stu.phone || '').replace(/[^0-9]/g, '');
-
-                        return (
-                          <div
-                            key={stu.id}
-                            onClick={() => setShowStudentDetailModal(stu)}
-                            className={`bg-white border-2 p-4.5 rounded-3xl shadow-xs transition-all relative flex flex-col justify-between hover:shadow-lg hover:border-[#0284C7] cursor-pointer group ${
-                              hasSiblings 
-                                ? 'border-sky-300/80 bg-gradient-to-b from-sky-50/15 via-white to-white ring-1 ring-sky-300/20' 
-                                : 'border-[#E2E8F0]'
-                            }`}
-                            title={isAr ? 'اضغط لعرض كافة بيانات وتفاصيل التلميذ وولي الأمر' : 'Click to view student & parent full details'}
-                          >
-                            <div className="space-y-3 shrink-0">
-                              {/* 👨‍💼 PROMINENT PARENT HEADER BANNER */}
-                              <div className="bg-sky-50/80 border border-sky-200/80 p-2.5 rounded-2xl flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="w-9 h-9 rounded-xl bg-[#0284C7] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
-                                    👨‍💼
-                                  </div>
-                                  <div className="truncate">
-                                    <span className="text-[10px] text-[#0284C7] font-black block">
-                                      {isAr ? 'ولي الأمر (المسؤول):' : 'Guardian:'}
-                                    </span>
-                                    <h4 className="text-xs font-black text-[#0F172A] truncate">
-                                      {stu.parentName || (isAr ? 'غير مسجل' : 'Not Registered')}
-                                    </h4>
-                                  </div>
-                                </div>
-                                <div className="text-left shrink-0" onClick={(e) => e.stopPropagation()}>
-                                  <span className="text-[10px] font-mono font-black text-[#0284C7] dir-ltr block">
-                                    {stu.parentPhone || stu.phone || '—'}
-                                  </span>
-                                  {phoneClean && (
-                                    <a
-                                      href={`https://wa.me/${phoneClean}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-[9px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-lg mt-0.5 hover:bg-emerald-200 transition-colors"
-                                      title={isAr ? 'مراسلة ولي الأمر عبر واتساب' : 'Chat via WhatsApp'}
-                                    >
-                                      <span>واتساب</span>
-                                      <span>💬</span>
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Student Header */}
-                              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <img
-                                    src={stu.avatar || defaultAvatars[0]}
-                                    alt={stu.name}
-                                    className="w-10 h-10 rounded-2xl object-cover border-2 border-[#0284C7] shrink-0 shadow-xs"
-                                  />
-                                  <div className="truncate">
-                                    <h4 className="text-xs font-black text-[#0F172A] truncate flex items-center gap-1.5">
-                                      <span>{isAr ? stu.name : stu.nameEn}</span>
-                                    </h4>
-                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
-                                      <span>ID: {stu.id}</span>
-                                      <span>•</span>
-                                      <span className="font-bold text-[#0284C7]">{stu.classRoom ? `الشعبة (${stu.classRoom})` : 'الشعبة (أ)'}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-col items-end gap-1 shrink-0">
-                                  <span className="text-[9px] px-2 py-0.5 rounded-full font-black bg-sky-50 text-[#0284C7] border border-sky-200">
-                                    {stu.grade}
-                                  </span>
-                                  {stu.isSpecialCase && (
-                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-                                      ⭐ {isAr ? 'حالة خاصة' : 'Special Case'}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Family Link Pill (if student has siblings) */}
-                              {hasSiblings ? (
-                                <div className="bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl flex items-center justify-between text-[10px]">
-                                  <span className="font-bold text-amber-900 flex items-center gap-1 truncate">
-                                    <span>👨‍👩‍👧‍👦</span>
-                                    <span>{isAr ? `عائلة موحدة (${siblings.length + 1} إخوة)` : `Family (${siblings.length + 1} siblings)`}</span>
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveTab('families');
-                                      setSearchTerm(stu.parentPhone || stu.name);
-                                    }}
-                                    className="text-[#0284C7] font-black hover:underline shrink-0 text-[10px] cursor-pointer"
-                                  >
-                                    {isAr ? 'عرض كرت العائلة ←' : 'View Family Card →'}
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-xl text-[10px] text-slate-500 flex items-center justify-between">
-                                  <span>👤 {isAr ? 'طالب منفرد' : 'Single Student'}</span>
-                                  <span className="text-slate-400 font-mono text-[9px]">{stu.parentPhone ? `📞 ${stu.parentPhone}` : 'بدون رقم'}</span>
-                                </div>
-                              )}
-
-                              {/* Credentials */}
-                              <div className="grid grid-cols-2 gap-1.5 text-[9px] font-mono bg-slate-50 p-2 rounded-xl border border-slate-200/70">
-                                <div className="truncate">
-                                  <span className="text-slate-400 font-sans block text-[8px]">اسم المستخدم:</span>
-                                  <span className="font-black text-[#0284C7] truncate block">{stu.username}</span>
-                                </div>
-                                <div className="truncate text-left ltr:text-right">
-                                  <span className="text-slate-400 font-sans block text-[8px]">كلمة المرور:</span>
-                                  <span className="font-black text-red-600 block">{stu.password}</span>
-                                </div>
-                              </div>
-
-                              {/* Financial Summary */}
-                              <div className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-center space-y-1.5">
-                                {stu.isSpecialCase && (
-                                  <div className="text-[10px] font-black bg-amber-100 text-amber-900 py-0.5 px-2 rounded-lg border border-amber-300">
-                                    ⭐ {isAr ? 'إعفاء كامل من القسط (حالة خاصة)' : 'Full Tuition Exemption (Special Case)'}
-                                  </div>
-                                )}
-                                <div className="grid grid-cols-4 gap-1 text-[9px] font-mono">
-                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                    <span className="text-slate-400 block text-[8px]">القسط:</span>
-                                    <span className="font-extrabold text-[#0F172A]">${stuTuition}</span>
-                                  </div>
-                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                    <span className="text-slate-400 block text-[8px]">المدفوع:</span>
-                                    <span className="font-extrabold text-blue-600">${stuPaid}</span>
-                                  </div>
-                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                    <span className="text-slate-400 block text-[8px]">الخصم:</span>
-                                    <span className="font-extrabold text-emerald-600">-${stuDiscount}</span>
-                                  </div>
-                                  <div className="bg-white p-1 rounded-lg border border-slate-100">
-                                    <span className="text-red-500 block text-[8px] font-bold">المتبقي:</span>
-                                    <span className="font-black text-red-600">${remainingUSD}</span>
-                                  </div>
-                                </div>
-
-                                {/* Quick Edit Paid Button */}
-                                {currentRole === 'admin' && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setQuickEditPaidStudent(stu);
-                                      setQuickPaidAmount((stu.tuitionPaid || 0).toString());
-                                    }}
-                                    className="w-full py-1 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors border border-blue-200"
-                                  >
-                                    <span>💳</span>
-                                    <span>{isAr ? 'تعديل القسط المدفوع' : 'Edit Paid Tuition'}</span>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Action Buttons Footer */}
-                            <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => setShowStudentDetailModal(stu)}
-                                  className="p-1.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] rounded-xl cursor-pointer transition-colors"
-                                  title="معاينة بيانات الحساب والتفاصيل"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handlePrintClearance(stu)}
-                                  className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl cursor-pointer transition-colors"
-                                  title="طباعة إفادة الطالب"
-                                >
-                                  <Printer className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-
-                              {currentRole === 'admin' && (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => updateStudent(stu.id, { frozen: !stu.frozen })}
-                                    className={`p-1.5 rounded-xl cursor-pointer transition-all ${
-                                      stu.frozen 
-                                        ? 'bg-red-600 text-white animate-pulse' 
-                                        : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200'
-                                    }`}
-                                    title={stu.frozen ? 'الحساب مجمد (اضغط لإلغاء التجميد)' : 'تجميد حساب الطالب'}
-                                  >
-                                    <span className="text-xs">❄️</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenEditStudentModal(stu)}
-                                    className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl cursor-pointer transition-colors"
-                                    title="تعديل الحساب"
-                                  >
-                                    <Edit3 className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => deleteStudent(stu.id)}
-                                    className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl cursor-pointer transition-colors"
-                                    title="حذف الحساب"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         );
       })()}
@@ -2517,6 +2499,227 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                 </button>
               </div>
               <button onClick={() => setShowStudentDetailModal(null)} className="px-5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer">{t('close')}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Family Detail Modal - Portal to document.body */}
+      {showFamilyDetailModal && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-2xl w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A] relative text-right rtl">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl font-black text-xl bg-amber-100 text-amber-800 border-2 border-amber-300 flex items-center justify-center shrink-0">
+                  👨‍👩‍👧‍👦
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#0284C7]">
+                    {showFamilyDetailModal.familyName || `عائلة ${showFamilyDetailModal.parentName}`}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                    <span className="font-bold text-slate-700">{isAr ? 'ولي الأمر:' : 'Parent:'} {showFamilyDetailModal.parentName}</span>
+                    <span>•</span>
+                    <span className="bg-sky-50 text-[#0284C7] px-2 py-0.5 rounded-full font-bold border border-sky-200">
+                      {showFamilyDetailModal.members.length} {isAr ? 'أبناء مسجلين' : 'Children'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowFamilyDetailModal(null)} 
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Parent Contact Numbers */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-[#F8FAFC] p-3 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div>
+                  <span className="text-slate-400 block text-[10px] font-bold">{isAr ? 'هاتف الأب / ولي الأمر:' : 'Father Phone:'}</span>
+                  <span className="font-mono font-black text-sm text-[#0284C7] dir-ltr block pt-0.5">
+                    {showFamilyDetailModal.parentPhone || (isAr ? 'غير مسجل' : 'N/A')}
+                  </span>
+                </div>
+                {showFamilyDetailModal.parentPhone && (
+                  <a
+                    href={`https://wa.me/${showFamilyDetailModal.parentPhone.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200"
+                    title="واتساب"
+                  >
+                    💬
+                  </a>
+                )}
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold">{isAr ? 'هاتف الأم:' : 'Mother Phone:'}</span>
+                <span className="font-mono font-black text-sm text-slate-700 dir-ltr block pt-0.5">
+                  {showFamilyDetailModal.motherPhone || (isAr ? 'غير مسجل' : 'N/A')}
+                </span>
+              </div>
+            </div>
+
+            {/* Combined Financial Box */}
+            {(() => {
+              const isFamilySpecialCase = showFamilyDetailModal.members.every(s => s.isSpecialCase);
+              const combinedTotalUSD = isFamilySpecialCase
+                ? 0
+                : showFamilyDetailModal.members.reduce((sum, s) => {
+                    const trans = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
+                    const tTotal = s.isSpecialCase ? 0 : (s.tuitionTotal ?? 700);
+                    return sum + Number(tTotal) + trans;
+                  }, 0);
+              const combinedDiscountUSD = showFamilyDetailModal.members.reduce((sum, s) => sum + (Number(s.tuitionDiscount) || 0), 0);
+              const combinedPaidUSD = showFamilyDetailModal.members.reduce((sum, s) => sum + (Number(s.tuitionPaid) || 0), 0);
+              const combinedRemUSD = Math.max(0, combinedTotalUSD - combinedDiscountUSD - combinedPaidUSD);
+
+              return (
+                <div className="bg-sky-50/50 border-2 border-sky-200 p-3.5 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-[#0284C7] flex items-center gap-1.5">
+                      <span>💰</span>
+                      <span>{isAr ? 'الملخص المالي الموحد لكافة أبناء العائلة:' : 'Unified Family Financial Summary:'}</span>
+                    </span>
+                    {isFamilySpecialCase ? (
+                      <span className="text-[10px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">
+                        ⭐ {isAr ? 'إعفاء كامل (حالة خاصة)' : 'Exempted (Special Case)'}
+                      </span>
+                    ) : combinedRemUSD === 0 ? (
+                      <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-300">
+                        ✓ {isAr ? 'مسدد بالكامل' : 'Paid in Full'}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-black text-red-600 font-mono">
+                        {isAr ? 'المتبقي:' : 'Due:'} ${combinedRemUSD}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-center text-xs font-mono">
+                    <div className="bg-white p-2 rounded-xl border border-slate-200">
+                      <span className="text-slate-400 block text-[9px] font-sans">{isAr ? 'إجمالي الأقساط:' : 'Total:'}</span>
+                      <span className="font-extrabold text-slate-800">${combinedTotalUSD}</span>
+                    </div>
+                    <div className="bg-white p-2 rounded-xl border border-slate-200">
+                      <span className="text-slate-400 block text-[9px] font-sans">{isAr ? 'الخصم الممنوح:' : 'Discount:'}</span>
+                      <span className="font-extrabold text-emerald-600">-${combinedDiscountUSD}</span>
+                    </div>
+                    <div className="bg-white p-2 rounded-xl border border-slate-200">
+                      <span className="text-slate-400 block text-[9px] font-sans">{isAr ? 'إجمالي المدفوع:' : 'Paid:'}</span>
+                      <span className="font-extrabold text-[#0284C7]">${combinedPaidUSD}</span>
+                    </div>
+                    <div className="bg-white p-2 rounded-xl border border-slate-200">
+                      <span className="text-red-500 block text-[9px] font-sans font-bold">{isAr ? 'المتبقي:' : 'Remaining:'}</span>
+                      <span className="font-black text-red-600">${combinedRemUSD}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Children List in this Family - Separated by Grade */}
+            <div className="space-y-2.5">
+              <span className="text-xs font-black text-slate-700 block">
+                📚 {isAr ? 'الأبناء المسجلون في المدرسة (مفصولين حسب الصفوف والشعب):' : 'Children Enrolled (Separated by Grade & Section):'}
+              </span>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                {showFamilyDetailModal.members.map((stu) => {
+                  const stuTuition = stu.isSpecialCase ? 0 : (stu.tuitionTotal ?? 700);
+                  const stuPaid = Number(stu.tuitionPaid) || 0;
+                  const stuDiscount = Number(stu.tuitionDiscount) || 0;
+                  const rem = Math.max(0, Number(stuTuition) - stuDiscount - stuPaid);
+
+                  return (
+                    <div key={stu.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={stu.avatar || defaultAvatars[0]}
+                          alt={stu.name}
+                          className="w-10 h-10 rounded-xl object-cover border border-[#0284C7] shrink-0 shadow-xs"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-extrabold text-sm text-[#0F172A] truncate">
+                              {isAr ? stu.name : stu.nameEn}
+                            </h4>
+                            <span className="text-[10px] bg-sky-100 text-[#0284C7] font-black px-2 py-0.5 rounded-md border border-sky-200 shrink-0">
+                              {stu.grade} ({stu.classRoom ? `${isAr ? 'شعبة' : 'Sec'} ${stu.classRoom}` : `${isAr ? 'شعبة أ' : 'Sec A'}`})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-0.5">
+                            <span>🔑: <b className="text-[#0284C7]">{stu.username}</b></span>
+                            <span>🔒: <b className="text-red-600">{stu.password}</b></span>
+                            <span>•</span>
+                            <span className="font-bold">
+                              {stu.isSpecialCase ? (isAr ? '⭐ معفى' : '⭐ Exempt') : rem === 0 ? (isAr ? '✓ مسدد' : '✓ Paid') : `${isAr ? 'المتبقي:' : 'Due:'} $${rem}`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowStudentDetailModal(stu);
+                          }}
+                          className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
+                          title="عرض تفاصيل الطالب الشاملة"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>{isAr ? 'التفاصيل' : 'Details'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePrintClearance(stu)}
+                          className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl cursor-pointer"
+                          title="طباعة إفادة الطالب"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        {currentRole === 'admin' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleOpenEditStudentModal(stu);
+                              }}
+                              className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 rounded-xl cursor-pointer"
+                              title="تعديل الحساب"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteStudent(stu.id)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl cursor-pointer"
+                              title="حذف الحساب"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <button 
+                onClick={() => setShowFamilyDetailModal(null)} 
+                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+              >
+                {t('close')}
+              </button>
             </div>
           </div>
         </div>,
