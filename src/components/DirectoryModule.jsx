@@ -323,6 +323,47 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
     }, 150);
   };
 
+  const handleDeleteStudentInFamily = (student) => {
+    if (!student) return;
+    const confirmMsg = isAr
+      ? `هل أنت متأكد من حذف الطالب "${student.name}" نهائياً من النظام؟`
+      : `Are you sure you want to permanently delete student "${student.name}"?`;
+
+    if (window.confirm(confirmMsg)) {
+      deleteStudent(student.id);
+      setShowFamilyDetailModal((prev) => {
+        if (!prev) return null;
+        const nextMembers = (prev.members || []).filter((m) => String(m.id) !== String(student.id));
+        if (nextMembers.length === 0) {
+          return null;
+        }
+        return {
+          ...prev,
+          members: nextMembers
+        };
+      });
+      setSuccessMsg(isAr ? `تم حذف الطالب (${student.name}) بنجاح ✓` : `Student (${student.name}) deleted successfully ✓`);
+      setTimeout(() => setSuccessMsg(''), 3500);
+    }
+  };
+
+  const handleDeleteEntireFamily = (family) => {
+    if (!family || !family.members || family.members.length === 0) return;
+    const count = family.members.length;
+    const confirmMsg = isAr
+      ? `هل أنت متأكد من حذف جميع الأبناء في عائلة (${family.familyName || family.parentName}) نهائياً؟ (العدد: ${count} أبناء)`
+      : `Are you sure you want to permanently delete all ${count} children in this family?`;
+
+    if (window.confirm(confirmMsg)) {
+      family.members.forEach((m) => {
+        deleteStudent(m.id);
+      });
+      setShowFamilyDetailModal(null);
+      setSuccessMsg(isAr ? `تم حذف جميع طلاب العائلة (${family.familyName || family.parentName}) بنجاح ✓` : `Family deleted successfully ✓`);
+      setTimeout(() => setSuccessMsg(''), 3500);
+    }
+  };
+
   const handlePrintStudentsTable = () => {
     setIsPrintingStudentsTable(true);
     setTimeout(() => {
@@ -1740,9 +1781,15 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                                             ❄️
                                           </button>
                                           <button
-                                            onClick={() => deleteStudent(member.id)}
-                                            className="p-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md cursor-pointer"
-                                            title="حذف"
+                                            onClick={() => {
+                                              if (window.confirm(isAr ? `هل أنت متأكد من حذف الطالب "${member.name}" نهائياً من النظام؟` : `Are you sure you want to delete student "${member.name}"?`)) {
+                                                deleteStudent(member.id);
+                                                setSuccessMsg(isAr ? `تم حذف الطالب (${member.name}) بنجاح ✓` : `Student (${member.name}) deleted successfully ✓`);
+                                                setTimeout(() => setSuccessMsg(''), 3500);
+                                              }
+                                            }}
+                                            className="p-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md cursor-pointer hover:scale-105 transition-transform"
+                                            title={isAr ? "حذف الطالب" : "Delete"}
                                           >
                                             <Trash2 className="w-3 h-3" />
                                           </button>
@@ -2811,9 +2858,15 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                     <button
                       type="button"
                       onClick={() => {
-                        const sid = showStudentDetailModal.id;
-                        setShowStudentDetailModal(null);
-                        deleteStudent(sid);
+                        const s = showStudentDetailModal;
+                        if (!s) return;
+                        if (window.confirm(isAr ? `هل أنت متأكد من حذف الطالب "${s.name}" نهائياً من النظام؟` : `Are you sure you want to delete student "${s.name}"?`)) {
+                          const sid = s.id;
+                          setShowStudentDetailModal(null);
+                          deleteStudent(sid);
+                          setSuccessMsg(isAr ? `تم حذف الطالب (${s.name}) بنجاح ✓` : `Student (${s.name}) deleted successfully ✓`);
+                          setTimeout(() => setSuccessMsg(''), 3500);
+                        }
                       }}
                       className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1"
                     >
@@ -3031,9 +3084,9 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => deleteStudent(stu.id)}
-                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl cursor-pointer"
-                              title="حذف الحساب"
+                              onClick={() => handleDeleteStudentInFamily(stu)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl cursor-pointer hover:scale-105 transition-transform"
+                              title={isAr ? "حذف هذا الطالب" : "Delete Student"}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -3047,7 +3100,18 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              {currentRole === 'admin' ? (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteEntireFamily(showFamilyDetailModal)}
+                  className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                  title={isAr ? 'حذف العائلة وجميع أبنائها من المدرسة' : 'Delete Entire Family'}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isAr ? 'حذف العائلة بالكامل 🗑️' : 'Delete Family 🗑️'}</span>
+                </button>
+              ) : <div />}
               <button 
                 onClick={() => setShowFamilyDetailModal(null)} 
                 className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors"

@@ -1850,15 +1850,18 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteStudent = (id) => {
+    if (!id) return;
+    const targetIdStr = String(id);
+
     setStudents((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
+      const updated = prev.filter((s) => String(s.id) !== targetIdStr);
       localStorage.setItem('school_students', JSON.stringify(updated));
       dbSaveCollection('school_students', updated);
       return updated;
     });
 
     setSystemUsers((prev) => {
-      const updatedUsers = prev.filter((u) => u.id !== id && u.studentId !== id);
+      const updatedUsers = prev.filter((u) => String(u.id) !== targetIdStr && String(u.studentId) !== targetIdStr);
       localStorage.setItem('school_system_users', JSON.stringify(updatedUsers));
       dbSaveCollection('school_system_users', updatedUsers);
       return updatedUsers;
@@ -1866,25 +1869,37 @@ export const AppProvider = ({ children }) => {
 
     // Cascade clean related records for complete interconnected integrity
     setDailyMarks((prev) => {
-      const updated = prev.filter((m) => m.studentId !== id);
+      const updated = prev.filter((m) => String(m.studentId) !== targetIdStr);
       localStorage.setItem('school_daily_marks', JSON.stringify(updated));
       dbSaveCollection('school_daily_marks', updated);
       return updated;
     });
 
     setAttendance((prev) => {
-      const updated = prev.filter((a) => a.studentId !== id);
+      const updated = prev.filter((a) => String(a.studentId) !== targetIdStr);
       localStorage.setItem('school_attendance', JSON.stringify(updated));
       dbSaveCollection('school_attendance', updated);
       return updated;
     });
 
     setBehaviorRecords((prev) => {
-      const updated = prev.filter((b) => b.studentId !== id);
+      const updated = prev.filter((b) => String(b.studentId) !== targetIdStr);
       localStorage.setItem('school_behavior', JSON.stringify(updated));
       dbSaveCollection('school_behavior', updated);
       return updated;
     });
+
+    setExams((prev) => {
+      const updated = (prev || []).map((ex) => ({
+        ...ex,
+        results: (ex.results || []).filter((r) => String(r.studentId) !== targetIdStr)
+      }));
+      localStorage.setItem('school_exams', JSON.stringify(updated));
+      dbSaveCollection('school_exams', updated);
+      return updated;
+    });
+
+    setSelectedStudentId((prev) => (String(prev) === targetIdStr ? null : prev));
   };
 
   const updateStudent = (studentId, updatedFields) => {
