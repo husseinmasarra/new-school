@@ -22,20 +22,17 @@ import {
   UserPlus, 
   KeyRound, 
   Trash2, 
-  Edit 
+  Edit,
+  Users 
 } from 'lucide-react';
 
-export const SettingsModule = () => {
+export const SettingsModule = ({ setActiveTab }) => {
   const { 
     lang, 
     t, 
     siteSettings, 
     updateSiteSettings,
     systemUsers,
-    addSystemUser,
-    updateSystemUserPermissions,
-    deleteSystemUser,
-    generateStrong8CharPassword,
     clearDemoData,
     startNewAcademicYear,
     academicYearsArchive = []
@@ -82,22 +79,6 @@ export const SettingsModule = () => {
 
   const [toastMessage, setToastMessage] = useState('');
 
-  // Add User State
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserNameEn, setNewUserNameEn] = useState('');
-  const [newUserUsername, setNewUserUsername] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState(() => generateStrong8CharPassword());
-  const [newUserRole, setNewUserRole] = useState('teacher'); // admin, teacher, driver
-  const [newUserRoleTitle, setNewUserRoleTitle] = useState('مدرس معتمد');
-  const [newUserPhone, setNewUserPhone] = useState('');
-  const [newUserAvatar, setNewUserAvatar] = useState(defaultAvatars[1]);
-  const [newUserPermissions, setNewUserPermissions] = useState(['send_lessons', 'manage_grades', 'send_messages']);
-
-  // Edit Permissions State
-  const [editingPermissionsUser, setEditingPermissionsUser] = useState(null);
-  const [editPermissionsList, setEditPermissionsList] = useState([]);
-
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -107,84 +88,6 @@ export const SettingsModule = () => {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const handleNewUserAvatarUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewUserAvatar(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRoleChange = (role) => {
-    setNewUserRole(role);
-    if (role === 'admin') {
-      setNewUserRoleTitle('مدير عام النظام');
-      setNewUserPermissions(['manage_all', 'manage_finance', 'manage_users', 'print_cards']);
-    } else if (role === 'vice_principal') {
-      setNewUserRoleTitle('مساعد مدير');
-      setNewUserPermissions(['add_student', 'record_payment', 'send_reminders', 'print_cards']);
-    } else if (role === 'teacher') {
-      setNewUserRoleTitle('مدرس معتمد');
-      setNewUserPermissions(['send_lessons', 'manage_grades', 'send_messages', 'print_cards']);
-    } else if (role === 'driver') {
-      setNewUserRoleTitle('سائق حافلة مدرسية');
-      setNewUserPermissions(['manage_bus', 'contact_parents']);
-    }
-  };
-
-  const togglePermissionCheckbox = (permId) => {
-    setNewUserPermissions((prev) =>
-      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
-    );
-  };
-
-  const toggleEditPermissionCheckbox = (permId) => {
-    setEditPermissionsList((prev) =>
-      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
-    );
-  };
-
-  const handleAddUserSubmit = (e) => {
-    e.preventDefault();
-    if (!newUserName || !newUserUsername || !newUserPassword) return;
-
-    addSystemUser({
-      name: newUserName,
-      nameEn: newUserNameEn || newUserName,
-      username: newUserUsername,
-      password: newUserPassword,
-      role: newUserRole,
-      roleTitle: newUserRoleTitle,
-      phone: newUserPhone || '+961 70 000 000',
-      avatar: newUserAvatar,
-      permissions: newUserPermissions
-    });
-
-    setNewUserName('');
-    setNewUserNameEn('');
-    setNewUserUsername('');
-    setNewUserPhone('');
-    setShowAddUserModal(false);
-    setToastMessage(isAr ? 'تم إضافة المستخدم الجديد ومنحه الصلاحيات بنجاح 🟢' : 'User added successfully!');
-    setTimeout(() => setToastMessage(''), 3500);
-  };
-
-  const handleOpenEditPermissions = (usr) => {
-    setEditingPermissionsUser(usr);
-    setEditPermissionsList(usr.permissions || []);
-  };
-
-  const handleSaveEditPermissions = () => {
-    if (!editingPermissionsUser) return;
-    updateSystemUserPermissions(editingPermissionsUser.id, editPermissionsList);
-    setEditingPermissionsUser(null);
-    setToastMessage(isAr ? 'تم تحديث صلاحيات المستخدم بنجاح 🟢' : 'Permissions updated successfully!');
-    setTimeout(() => setToastMessage(''), 3500);
   };
 
   const handleSaveSettings = (e) => {
@@ -261,95 +164,39 @@ export const SettingsModule = () => {
         )}
       </div>
 
-      {/* 🔐 USERS & ROLE PERMISSIONS MANAGEMENT */}
-      <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl space-y-6 shadow-sm text-[#0F172A]">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-[#0284C7]/10 text-[#0284C7] rounded-xl">
-              <KeyRound className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-[#0284C7]">إدارة حسابات المستخدمين ومنح الصلاحيات</h3>
-              <p className="text-xs text-slate-500">إضافة مدراء ومدرسين وسائقين وتحديد صلاحيات الوصول الدقيقة لكل مستخدم في النظام.</p>
-            </div>
+      {/* 🔐 USERS & ROLE PERMISSIONS NOTIFICATION BANNER */}
+      <div className="bg-gradient-to-r from-sky-50 via-white to-sky-50 border-2 border-[#0284C7]/30 p-6 rounded-3xl shadow-sm text-[#0F172A] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-[#0284C7] text-white rounded-2xl shadow-md shrink-0">
+            <Users className="w-6 h-6" />
           </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-extrabold text-[#0284C7]">
+                {isAr ? 'إدارة حسابات المستخدمين والصلاحيات' : 'User Accounts & Permissions'}
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                {isAr ? 'قسم مستقل جديد ✨' : 'New Dedicated Section ✨'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              {isAr 
+                ? 'تم نقل إدارة المستخدمين، المدرسين، السائقين، ومنح الصلاحيات إلى قسم مخصص ومستقل في لوحة التحكم والقائمة الجانبية لتفريغ وتنظيم الإعدادات.'
+                : 'User accounts and permissions have been moved to a dedicated section in the Dashboard and Sidebar to declutter settings.'}
+            </p>
+          </div>
+        </div>
 
+        {setActiveTab && (
           <button
-            onClick={() => setShowAddUserModal(true)}
-            className="btn-mustard flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow transition-all cursor-pointer"
+            type="button"
+            onClick={() => setActiveTab('users')}
+            className="btn-mustard flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shadow transition-all cursor-pointer shrink-0"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>إضافة مستخدم جديد وتحديد الصلاحيات</span>
+            <ShieldCheck className="w-4 h-4" />
+            <span>{isAr ? 'الانتقال لإدارة المستخدمين 👥' : 'Go to Users Management 👥'}</span>
           </button>
-        </div>
-
-        {/* Users & Permissions Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-right rtl:text-right ltr:text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-500 bg-[#F8FAFC]">
-                <th className="p-3 font-semibold">المستخدم والرمز</th>
-                <th className="p-3 font-semibold">اسم الدخول (Username)</th>
-                <th className="p-3 font-semibold">كلمة السر (8 خانات)</th>
-                <th className="p-3 font-semibold">الدور والمسمى الوظيفي</th>
-                <th className="p-3 font-semibold">الصلاحيات الممنوحة</th>
-                <th className="p-3 font-semibold text-center">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-[#0F172A]">
-              {systemUsers.map((usr) => (
-                <tr key={usr.id} className="hover:bg-[#F8FAFC] transition-all">
-                  <td className="p-3 font-bold flex items-center gap-2">
-                    <img src={usr.avatar} alt={usr.name} className="w-8 h-8 rounded-full object-cover border border-[#0284C7]" />
-                    <span>{isAr ? usr.name : usr.nameEn}</span>
-                  </td>
-                  <td className="p-3 font-mono text-[#0284C7] font-bold">{usr.username}</td>
-                  <td className="p-3 font-mono text-slate-700 tracking-widest font-black text-sm select-none">
-                    {'*'.repeat(Math.max(6, String(usr.password || '******').length))}
-                  </td>
-                  <td className="p-3 font-semibold text-slate-700">
-                    <span className="px-2 py-0.5 rounded-md bg-[#0284C7]/10 text-[#0284C7] border border-[#0284C7]/20">
-                      {usr.roleTitle || usr.role}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1">
-                      {(usr.permissions || []).map((permId) => {
-                        const opt = systemPermissionOptions.find((p) => p.id === permId);
-                        return (
-                          <span key={permId} className="px-2 py-0.5 rounded-md bg-[#0284C7]/10 border border-[#0284C7]/20 text-[11px] font-bold text-[#0284C7]">
-                            {opt ? (isAr ? opt.name : (opt.nameEn || opt.name)) : permId}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </td>
-                  <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditPermissions(usr)}
-                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-[#0284C7] rounded-lg cursor-pointer"
-                        title="تعديل الصلاحيات"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-
-                      {usr.id !== 'USER-ADMIN-01' && (
-                        <button
-                          onClick={() => deleteSystemUser(usr.id)}
-                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg cursor-pointer"
-                          title="حذف المستخدم"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        )}
       </div>
 
       {/* Main Settings Form */}
@@ -744,142 +591,7 @@ export const SettingsModule = () => {
         </div>
       </div>
 
-      {/* ── Add User Modal ──────────────────────────────────── */}
-      {showAddUserModal && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleAddUserSubmit}
-            className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A] my-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
-                إضافة مستخدم جديد وتحديد صلاحياته
-              </h3>
-              <button type="button" onClick={() => setShowAddUserModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer">✕</button>
-            </div>
 
-            {/* Avatar */}
-            <div className="flex items-center gap-4 bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]">
-              <img src={newUserAvatar} alt="Avatar" className="w-12 h-12 rounded-full object-cover border-2 border-[#0284C7]" />
-              <div className="flex flex-wrap gap-1">
-                {defaultAvatars.slice(0, 6).map((av, i) => (
-                  <button key={i} type="button" onClick={() => setNewUserAvatar(av)}
-                    className={`w-8 h-8 rounded-full overflow-hidden border-2 cursor-pointer transition-all ${newUserAvatar === av ? 'border-[#0284C7] scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-                    <img src={av} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-                <label className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center cursor-pointer hover:bg-slate-300 border-2 border-transparent">
-                  <Camera className="w-3.5 h-3.5 text-slate-600" />
-                  <input type="file" accept="image/*" onChange={handleNewUserAvatarUpload} className="hidden" />
-                </label>
-              </div>
-            </div>
-
-            {/* Basic Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-700">الاسم (عربي) <span className="text-red-500">*</span></label>
-                <input type="text" required value={newUserName} onChange={e => setNewUserName(e.target.value)}
-                  placeholder="أ.حسين علي"
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-700">Name (English)</label>
-                <input type="text" value={newUserNameEn} onChange={e => setNewUserNameEn(e.target.value)}
-                  placeholder="Hussein Ali"
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-700">اسم الدخول (Username) <span className="text-red-500">*</span></label>
-                <input type="text" required value={newUserUsername} onChange={e => setNewUserUsername(e.target.value)}
-                  placeholder="hussein.ali"
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#0284C7]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-700">كلمة السر <span className="text-red-500">*</span></label>
-                <input type="password" required value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)}
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#0284C7]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-700">رقم الهاتف</label>
-                <input type="text" value={newUserPhone} onChange={e => setNewUserPhone(e.target.value)}
-                  placeholder="+961 70 000 000"
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#0284C7]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-700">الدور</label>
-                <select value={newUserRole} onChange={e => handleRoleChange(e.target.value)}
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer">
-                  <option value="admin">🛡️ مدير عام (Admin)</option>
-                  <option value="vice_principal">⭐ مساعد مدير (Vice Principal)</option>
-                  <option value="teacher">📚 مدرس (Teacher)</option>
-                  <option value="driver">🚌 سائق (Driver)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Permissions Matrix */}
-            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 space-y-2">
-              <p className="text-xs font-extrabold text-[#0284C7] flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                <ShieldCheck className="w-4 h-4 text-[#0284C7]" /> الصلاحيات الممنوحة للمستخدم:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                {systemPermissionOptions.map(perm => (
-                  <label key={perm.id} className="flex items-center gap-2.5 text-xs font-bold text-slate-800 cursor-pointer hover:text-[#0284C7] p-2 rounded-xl bg-white border border-slate-100 hover:border-[#0284C7]/40 shadow-sm transition-all">
-                    <input type="checkbox" checked={newUserPermissions.includes(perm.id)}
-                      onChange={() => togglePermissionCheckbox(perm.id)}
-                      className="accent-[#0284C7] w-4 h-4 rounded cursor-pointer" />
-                    <span>{isAr ? perm.name : (perm.nameEn || perm.name)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <button type="button" onClick={() => setShowAddUserModal(false)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">إلغاء</button>
-              <button type="submit"
-                className="btn-mustard px-6 py-2 rounded-xl text-xs font-bold shadow cursor-pointer flex items-center gap-1.5">
-                <UserPlus className="w-4 h-4" /> إضافة المستخدم وحفظ الصلاحيات ✅
-              </button>
-            </div>
-          </form>
-        </div>,
-        document.body
-      )}
-
-      {/* Edit Permissions Modal */}
-      {editingPermissionsUser && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-[#0284C7] rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-scale-up text-[#0F172A]">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5" />
-                تعديل صلاحيات: {isAr ? editingPermissionsUser.name : editingPermissionsUser.nameEn}
-              </h3>
-              <button onClick={() => setEditingPermissionsUser(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer">✕</button>
-            </div>
-            <div className="grid grid-cols-1 gap-2 pt-1">
-              {systemPermissionOptions.map(perm => (
-                <label key={perm.id} className="flex items-center gap-2.5 text-xs font-bold text-slate-800 cursor-pointer hover:text-[#0284C7] p-2 rounded-xl bg-[#F8FAFC] border border-slate-100 hover:border-[#0284C7]/40 transition-all">
-                  <input type="checkbox" checked={editPermissionsList.includes(perm.id)}
-                    onChange={() => toggleEditPermissionCheckbox(perm.id)}
-                    className="accent-[#0284C7] w-4 h-4 rounded cursor-pointer" />
-                  <span>{isAr ? perm.name : (perm.nameEn || perm.name)}</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <button onClick={() => setEditingPermissionsUser(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">إلغاء</button>
-              <button onClick={handleSaveEditPermissions}
-                className="btn-mustard px-5 py-2 rounded-xl text-xs font-bold shadow cursor-pointer">حفظ الصلاحيات ✅</button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Start New Academic Year Modal */}
       {showNewYearModal && createPortal(

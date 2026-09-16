@@ -19,7 +19,8 @@ import {
   Wallet,
   Check,
   Clock,
-  Sparkles
+  Sparkles,
+  ShieldCheck
 } from 'lucide-react';
 import { SubjectBadge } from './SubjectBadge';
 
@@ -38,7 +39,8 @@ export const Dashboard = ({ setActiveTab }) => {
     getHonorRollStudents,
     masterTimetable = [],
     getStudentOverallGpa,
-    attendance = []
+    attendance = [],
+    systemUsers = []
   } = useApp();
 
   const isAr = lang === 'ar';
@@ -49,6 +51,7 @@ export const Dashboard = ({ setActiveTab }) => {
   const safeMessages = messages || [];
   const safeAgenda = agenda || [];
   const safeMasterTimetable = masterTimetable || [];
+  const safeSystemUsers = systemUsers || [];
 
   // Active student for Student / Parent Role
   const activeStudent = safeStudents.find((s) => s.id === selectedStudentId || s.id === currentUser?.id || s.name === currentUser?.name) || safeStudents[0] || {
@@ -1142,7 +1145,7 @@ export const Dashboard = ({ setActiveTab }) => {
       </div>
 
       {/* Interactive Metric Cards Grid in White Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         
         {/* Card 1: Total Students */}
         <div
@@ -1229,6 +1232,131 @@ export const Dashboard = ({ setActiveTab }) => {
           </div>
         </div>
 
+        {/* Card 5: System Users & Permissions */}
+        <div
+          onClick={() => setActiveTab('users')}
+          className="interactive-card bg-white border border-[#E2E8F0] p-5 rounded-3xl shadow-sm cursor-pointer hover:border-[#0284C7] group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">{isAr ? 'المستخدمين والصلاحيات' : 'Users & Permissions'}</span>
+            <div className="p-2 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl group-hover:bg-[#0284C7] group-hover:text-white transition-all">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-black text-[#0284C7] mt-3 font-mono">{safeSystemUsers.length}</p>
+          <p className="text-xs text-slate-500 mt-2 flex items-center justify-between">
+            <span className="flex items-center gap-1 font-semibold text-emerald-600">
+              <Lock className="w-3.5 h-3.5" />
+              {isAr ? 'حسابات وصلاحيات مخصصة' : 'Active Accounts'}
+            </span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#0284C7] rtl:rotate-180" />
+          </p>
+        </div>
+
+      </div>
+
+      {/* 👥 Dedicated Users & Permissions Box in Admin Dashboard */}
+      <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 space-y-4 shadow-sm text-[#0F172A]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-[#0284C7]">
+                  {isAr ? 'حسابات ومستخدمو النظام النشطين' : 'System User Accounts & Permissions'}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#0284C7]/10 text-[#0284C7] border border-[#0284C7]/20 font-mono">
+                  {safeSystemUsers.length}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                {isAr ? 'عرض سريع للمستخدمين المعتمدين، الأدوار الوظيفية، الصلاحيات، وكلمات السر المحمية.' : 'Quick preview of authorized users, role titles, and permissions.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('users')}
+              className="btn-mustard flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow transition-all cursor-pointer shrink-0"
+            >
+              <span>{isAr ? 'إدارة المستخدمين والصلاحيات كاملة ⬅️' : 'Manage All Users ⬅️'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Table of Users */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-right rtl:text-right ltr:text-left text-xs min-w-[650px]">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-500 bg-[#F8FAFC]">
+                <th className="p-3 font-semibold">{isAr ? 'المستخدم' : 'User'}</th>
+                <th className="p-3 font-semibold">{isAr ? 'اسم الدخول' : 'Username'}</th>
+                <th className="p-3 font-semibold">{isAr ? 'كلمة السر' : 'Password'}</th>
+                <th className="p-3 font-semibold">{isAr ? 'الدور الوظيفي' : 'Role'}</th>
+                <th className="p-3 font-semibold">{isAr ? 'الصلاحيات الممنوحة' : 'Permissions'}</th>
+                <th className="p-3 font-semibold text-center">{isAr ? 'إجراء' : 'Action'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {safeSystemUsers.slice(0, 5).map((usr) => (
+                <tr key={usr.id} className="hover:bg-[#F8FAFC] transition-colors">
+                  <td className="p-3 font-bold">
+                    <div className="flex items-center gap-2.5">
+                      <img src={usr.avatar || '/avatars/admin.png'} alt={usr.name} className="w-8 h-8 rounded-full object-cover border border-[#0284C7]" />
+                      <span className="font-extrabold text-[#0F172A]">{isAr ? usr.name : (usr.nameEn || usr.name)}</span>
+                    </div>
+                  </td>
+                  <td className="p-3 font-mono text-[#0284C7] font-bold">
+                    <span className="px-2 py-0.5 rounded bg-sky-50">{usr.username}</span>
+                  </td>
+                  <td className="p-3 font-mono text-slate-700 tracking-widest font-black text-xs select-none">
+                    {'*'.repeat(Math.max(6, String(usr.password || '******').length))}
+                  </td>
+                  <td className="p-3 font-semibold">
+                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${
+                      usr.role === 'admin' 
+                        ? 'bg-red-50 text-red-700 border-red-200'
+                        : usr.role === 'teacher'
+                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                        : usr.role === 'vice_principal'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    }`}>
+                      {usr.roleTitle || usr.role}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <span className="text-slate-600 font-bold text-[11px] bg-slate-100 px-2 py-0.5 rounded-md">
+                      {(usr.permissions || []).length} {isAr ? 'صلاحية' : 'permissions'}
+                    </span>
+                  </td>
+                  <td className="p-3 text-center">
+                    <button
+                      onClick={() => setActiveTab('users')}
+                      className="px-2.5 py-1 bg-[#0284C7]/10 hover:bg-[#0284C7] text-[#0284C7] hover:text-white rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                    >
+                      {isAr ? 'تعديل الصلاحيات ⚙️' : 'Edit'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {safeSystemUsers.length > 5 && (
+          <div className="text-center pt-2 border-t border-slate-100">
+            <button
+              onClick={() => setActiveTab('users')}
+              className="text-xs font-bold text-[#0284C7] hover:underline cursor-pointer"
+            >
+              {isAr ? `عرض باقي المستخدمين (${safeSystemUsers.length - 5} حسابات إضافية) وتعديل الصلاحيات ⬅️` : 'View and manage all users ⬅️'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Recent Announcements & Today Schedule Grid */}
