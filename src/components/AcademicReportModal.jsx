@@ -1,9 +1,9 @@
-import React from 'react';
-import { useSchool } from '../context/SchoolContext';
-import { Printer, X, Award, CheckCircle2 } from 'lucide-react';
+import React from'react';
+import {useSchool} from'../context/SchoolContext';
+import {Printer, X, Award, CheckCircle2} from'lucide-react';
 
 export const AcademicReportModal = () => {
-  const { selectedStudentForReport, setSelectedStudentForReport, schoolInfo, subjects, grades } = useSchool();
+  const {selectedStudentForReport, setSelectedStudentForReport, schoolInfo, subjects, grades} = useSchool();
 
   if (!selectedStudentForReport) return null;
 
@@ -15,18 +15,18 @@ export const AcademicReportModal = () => {
 
   // Calculate Average & Pass/Fail Status
   const totalScore = studentGrades.reduce((sum, g) => sum + (Number(g.total) || 0), 0);
-  const average = studentGrades.length > 0 ? (totalScore / studentGrades.length).toFixed(1) : '95.0';
+  const average = studentGrades.length > 0 ? (totalScore / studentGrades.length).toFixed(1) :'95.0';
   const numAvg = Number(average);
   const isFail = numAvg < 40;
   const gradeStatus = isFail 
-    ? 'راسب (أقل من 40%) 🔴' 
+    ?'راسب (أقل من 40%)'
     : numAvg >= 90 
-    ? 'ممتاز مرتفع 🌟' 
+    ?'ممتاز مرتفع'
     : numAvg >= 80 
-    ? 'جيد جداً 👍' 
+    ?'جيد جداً'
     : numAvg >= 65 
-    ? 'جيد' 
-    : 'ناجح ومقبول';
+    ?'جيد'
+    :'ناجح ومقبول';
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -35,7 +35,7 @@ export const AcademicReportModal = () => {
         {/* Action Header */}
         <div className="p-4 bg-slate-900 text-white flex items-center justify-between no-print">
           <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-amber-400" />
+            <Award className="w-5 h-5 text-amber-400"/>
             <h3 className="font-bold text-sm">الشهادة الأكاديمية وكشف الدرجات الرسمي</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -43,14 +43,14 @@ export const AcademicReportModal = () => {
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-4 h-4"/>
               <span>طباعة الشهادة الرسمية</span>
             </button>
             <button
               onClick={() => setSelectedStudentForReport(null)}
               className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5"/>
             </button>
           </div>
         </div>
@@ -67,7 +67,7 @@ export const AcademicReportModal = () => {
             </div>
             <div className="text-center">
               <div className="w-16 h-16 rounded-full border-2 border-amber-500 flex items-center justify-center bg-amber-50 mx-auto shadow-inner">
-                <Award className="w-8 h-8 text-amber-600" />
+                <Award className="w-8 h-8 text-amber-600"/>
               </div>
               <span className="text-[11px] font-bold text-amber-700 block mt-1">كشف درجات معتمد</span>
             </div>
@@ -89,7 +89,7 @@ export const AcademicReportModal = () => {
             </div>
             <div>
               <span className="text-xs text-slate-500 block">المعدل العام والتقدير:</span>
-              <span className={`font-extrabold text-base ${isFail ? 'text-red-600' : 'text-emerald-700'}`}>
+              <span className={`font-extrabold text-base ${isFail ?'text-red-600':'text-emerald-700'}`}>
                 {average}% ({gradeStatus})
               </span>
             </div>
@@ -114,12 +114,12 @@ export const AcademicReportModal = () => {
                   midterm: 38,
                   finalExam: 39,
                   total: 96,
-                  status: 'ممتاز'
+                  status:'ممتاز'
                 };
                 return (
-                  <tr key={sub.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                  <tr key={sub.id} className={idx % 2 === 0 ?'bg-white':'bg-slate-50'}>
                     <td className="p-2.5 font-bold text-slate-800 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: sub.color }}></span>
+                      <span className="w-2.5 h-2.5 rounded-full"style={{backgroundColor: sub.color}}></span>
                       {sub.name}
                     </td>
                     <td className="p-2.5 text-center font-semibold text-slate-700">{subGrade.exam1}</td>
@@ -128,7 +128,7 @@ export const AcademicReportModal = () => {
                     <td className="p-2.5 text-center font-black text-sky-800">{subGrade.total}</td>
                     <td className="p-2.5 text-center">
                       <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                        {subGrade.status || 'ممتاز'}
+                        {subGrade.status ||'ممتاز'}
                       </span>
                     </td>
                   </tr>
@@ -140,11 +140,11 @@ export const AcademicReportModal = () => {
           {/* Behavior & General Evaluation */}
           <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600"/>
               <span>السلوك والمواظبة: <strong>ممتاز (100/100)</strong> - يتمتع الطالب بحسن الخلق والمشاركة الفعالة.</span>
             </div>
-            <span className={`font-bold ${isFail ? 'text-red-600' : 'text-emerald-800'}`}>
-              {isFail ? 'النتيجة الرسمية: راسب (أقل من 40%) 🔴' : 'المرتبة: لوحة شرف الأوائل 🏆'}
+            <span className={`font-bold ${isFail ?'text-red-600':'text-emerald-800'}`}>
+              {isFail ?'النتيجة الرسمية: راسب (أقل من 40%)':'المرتبة: لوحة شرف الأوائل'}
             </span>
           </div>
 

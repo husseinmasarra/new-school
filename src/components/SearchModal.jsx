@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useSchool } from '../context/SchoolContext';
-import { Search, X, User, GraduationCap, BookOpen, Receipt, ArrowLeft } from 'lucide-react';
+import React, {useState, useEffect} from'react';
+import {useSchool} from'../context/SchoolContext';
+import {Search, X, User, GraduationCap, BookOpen, Receipt, ArrowLeft} from'lucide-react';
 
 export const SearchModal = () => {
   const {
@@ -45,7 +45,7 @@ export const SearchModal = () => {
         
         {/* Search Input Bar */}
         <div className="flex items-center px-4 py-3 border-b border-slate-200 gap-3">
-          <Search className="w-5 h-5 text-sky-600" />
+          <Search className="w-5 h-5 text-sky-600"/>
           <input
             type="text"
             placeholder="ابحث عن طالب، ولي أمر، معلم، مادة، أو رقم إيصال..."
@@ -58,7 +58,7 @@ export const SearchModal = () => {
             onClick={() => setIsSearchOpen(false)}
             className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5"/>
           </button>
         </div>
 
@@ -66,36 +66,36 @@ export const SearchModal = () => {
         <div className="max-h-96 overflow-y-auto p-4 space-y-4">
           
           {/* Quick Shortcuts if query is empty */}
-          {query.trim() === '' && (
+          {query.trim() ===''&& (
             <div className="space-y-2">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">روابط سريعة</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => { setActiveTab('add-student'); setIsSearchOpen(false); }}
+                  onClick={() => {setActiveTab('add-student'); setIsSearchOpen(false);}}
                   className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:border-sky-400 hover:bg-sky-50 text-right text-sm text-slate-700 font-semibold transition"
                 >
-                  <span className="p-1.5 rounded-lg bg-sky-100 text-sky-600">➕</span>
+                  <span className="p-1.5 rounded-lg bg-sky-100 text-sky-600"></span>
                   إضافة طالب جديد
                 </button>
                 <button
-                  onClick={() => { setActiveTab('tuition'); setIsSearchOpen(false); }}
+                  onClick={() => {setActiveTab('tuition'); setIsSearchOpen(false);}}
                   className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-right text-sm text-slate-700 font-semibold transition"
                 >
-                  <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-600">💵</span>
+                  <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-600"></span>
                   سجل الأقساط والدفعات
                 </button>
                 <button
-                  onClick={() => { setActiveTab('attendance'); setIsSearchOpen(false); }}
+                  onClick={() => {setActiveTab('attendance'); setIsSearchOpen(false);}}
                   className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-right text-sm text-slate-700 font-semibold transition"
                 >
-                  <span className="p-1.5 rounded-lg bg-purple-100 text-purple-600">📋</span>
+                  <span className="p-1.5 rounded-lg bg-purple-100 text-purple-600"></span>
                   رصد الحضور والغياب
                 </button>
                 <button
-                  onClick={() => { setActiveTab('grades'); setIsSearchOpen(false); }}
+                  onClick={() => {setActiveTab('grades'); setIsSearchOpen(false);}}
                   className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-right text-sm text-slate-700 font-semibold transition"
                 >
-                  <span className="p-1.5 rounded-lg bg-amber-100 text-amber-600">📝</span>
+                  <span className="p-1.5 rounded-lg bg-amber-100 text-amber-600"></span>
                   رصد العلامات والشهادات
                 </button>
               </div>
@@ -106,7 +106,7 @@ export const SearchModal = () => {
           {filteredStudents.length > 0 && (
             <div>
               <div className="text-xs font-bold text-slate-400 mb-2 flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5" />
+                <GraduationCap className="w-3.5 h-3.5"/>
                 <span>الطلاب ({filteredStudents.length})</span>
               </div>
               <div className="space-y-1">
@@ -128,7 +128,7 @@ export const SearchModal = () => {
                         <p className="text-xs text-slate-500">{student.grade} - شعبة {student.section} | ولي الأمر: {student.parentName}</p>
                       </div>
                     </div>
-                    <ArrowLeft className="w-4 h-4 text-slate-400" />
+                    <ArrowLeft className="w-4 h-4 text-slate-400"/>
                   </div>
                 ))}
               </div>
@@ -139,7 +139,7 @@ export const SearchModal = () => {
           {filteredTeachers.length > 0 && (
             <div>
               <div className="text-xs font-bold text-slate-400 mb-2 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" />
+                <User className="w-3.5 h-3.5"/>
                 <span>المعلمين ({filteredTeachers.length})</span>
               </div>
               <div className="space-y-1">
@@ -161,7 +161,7 @@ export const SearchModal = () => {
                         <p className="text-xs text-slate-500">{teacher.specialty}</p>
                       </div>
                     </div>
-                    <ArrowLeft className="w-4 h-4 text-slate-400" />
+                    <ArrowLeft className="w-4 h-4 text-slate-400"/>
                   </div>
                 ))}
               </div>
@@ -172,7 +172,7 @@ export const SearchModal = () => {
           {filteredReceipts.length > 0 && (
             <div>
               <div className="text-xs font-bold text-slate-400 mb-2 flex items-center gap-1.5">
-                <Receipt className="w-3.5 h-3.5" />
+                <Receipt className="w-3.5 h-3.5"/>
                 <span>إيصالات القبض ({filteredReceipts.length})</span>
               </div>
               <div className="space-y-1">
@@ -196,10 +196,10 @@ export const SearchModal = () => {
             </div>
           )}
 
-          {query.trim() !== '' && filteredStudents.length === 0 && filteredTeachers.length === 0 && filteredReceipts.length === 0 && (
+          {query.trim() !==''&& filteredStudents.length === 0 && filteredTeachers.length === 0 && filteredReceipts.length === 0 && (
             <div className="text-center py-8 text-slate-400">
-              <Search className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p>لم يتم العثور على نتائج مطابقة لـ "{query}"</p>
+              <Search className="w-10 h-10 mx-auto mb-2 opacity-40"/>
+              <p>لم يتم العثور على نتائج مطابقة لـ"{query}"</p>
             </div>
           )}
 

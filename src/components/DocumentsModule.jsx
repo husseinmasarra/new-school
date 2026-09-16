@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { 
+﻿import React, {useState} from'react';
+import {useApp} from'../context/AppContext';
+import {
   FolderArchive, 
   FileText, 
   CheckCircle2, 
@@ -13,10 +13,10 @@ import {
   Search,
   FileSpreadsheet,
   FileCode
-} from 'lucide-react';
+} from'lucide-react';
 
 export const DocumentsModule = () => {
-  const { 
+  const {
     lang, 
     t, 
     currentRole, 
@@ -30,11 +30,11 @@ export const DocumentsModule = () => {
     deleteStudyResource
   } = useApp();
 
-  const isAr = lang === 'ar';
+  const isAr = lang ==='ar';
   const safeStudents = students || [];
   const safeSubjects = subjects || [];
 
-  const [activeTab, setActiveTab] = useState('resources'); // 'resources' (المكتبة التعليمية) or 'archive' (أرشيف الهويات)
+  const [activeTab, setActiveTab] = useState('resources'); //'resources'(المكتبة التعليمية) or'archive'(أرشيف الهويات)
   const [selectedStuId, setSelectedStuId] = useState(selectedStudentId || safeStudents[0]?.id);
   const [newDocName, setNewDocName] = useState('');
   const [docImage, setDocImage] = useState('');
@@ -43,7 +43,7 @@ export const DocumentsModule = () => {
   // Study Materials Modal State
   const [showAddResourceModal, setShowAddResourceModal] = useState(false);
   const [resTitle, setResTitle] = useState('');
-  const [resSubject, setResSubject] = useState(safeSubjects[0]?.name || '');
+  const [resSubject, setResSubject] = useState(safeSubjects[0]?.name ||'');
   const [resGrade, setResGrade] = useState('الصف السادس الابتدائي');
   const [resType, setResType] = useState('PDF');
   const [filterSubject, setFilterSubject] = useState('all');
@@ -69,7 +69,7 @@ export const DocumentsModule = () => {
     uploadStudentDoc(selectedStudent.id, newDocName, docImage);
     setNewDocName('');
     setDocImage('');
-    setSuccessToast(isAr ? 'تمت أرشفة وثيقة الطالب وصورتها بنجاح 🟢' : 'Document archived successfully!');
+    setSuccessToast(isAr ?'تمت أرشفة وثيقة الطالب وصورتها بنجاح':'Document archived successfully!');
     setTimeout(() => setSuccessToast(''), 3000);
   };
 
@@ -80,19 +80,19 @@ export const DocumentsModule = () => {
       subject: resSubject,
       grade: resGrade,
       type: resType,
-      teacherName: currentUser?.name || 'أ. معلم المادة',
-      link: '#',
-      icon: resType === 'PDF' ? '📄' : resType === 'Document' ? '📐' : '💻'
+      teacherName: currentUser?.name ||'أ. معلم المادة',
+      link:'#',
+      icon: resType ==='PDF'?'': resType ==='Document'?'':''
     });
 
     setShowAddResourceModal(false);
     setResTitle('');
-    setSuccessToast(isAr ? 'تم إضافة المرفق والملخص التعليمي إلى المكتبة بنجاح 📚' : 'Resource added successfully!');
+    setSuccessToast(isAr ?'تم إضافة المرفق والملخص التعليمي إلى المكتبة بنجاح':'Resource added successfully!');
     setTimeout(() => setSuccessToast(''), 3500);
   };
 
   const filteredResources = (studyResources || []).filter((r) => {
-    const matchSubject = filterSubject === 'all' || r.subject === filterSubject;
+    const matchSubject = filterSubject ==='all'|| r.subject === filterSubject;
     const matchSearch = !searchTerm || r.title.includes(searchTerm) || r.subject.includes(searchTerm);
     return matchSubject && matchSearch;
   });
@@ -103,7 +103,7 @@ export const DocumentsModule = () => {
       {/* Toast Banner */}
       {successToast && (
         <div className="bg-emerald-600 text-white p-4 rounded-2xl flex items-center gap-3 text-xs font-bold animate-fade-in shadow-xl border border-emerald-300">
-          <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
+          <CheckCircle2 className="w-5 h-5 text-white shrink-0"/>
           <span>{successToast}</span>
         </div>
       )}
@@ -112,11 +112,11 @@ export const DocumentsModule = () => {
       <div className="bg-gradient-to-r from-[#0284C7] via-sky-700 to-[#0369A1] text-white p-6 rounded-3xl shadow-lg relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1 relative z-10">
           <h2 className="text-xl font-black flex items-center gap-2.5">
-            <BookOpen className="w-6 h-6 text-amber-300" />
-            <span>{isAr ? 'مكتبة المرفقات والملخصات والأرشيف المدرسي' : 'Study Materials Library & Digital Archive'}</span>
+            <BookOpen className="w-6 h-6 text-amber-300"/>
+            <span>{isAr ?'مكتبة المرفقات والملخصات والأرشيف المدرسي':'Study Materials Library & Digital Archive'}</span>
           </h2>
           <p className="text-xs text-sky-100 font-medium">
-            {isAr ? 'مركز التحميل الإلكتروني للملخصات وأوراق العمل وأرشيف الوثائق الرسمية' : 'Digital resource center for worksheets, study PDFs, and student document archives'}
+            {isAr ?'مركز التحميل الإلكتروني للملخصات وأوراق العمل وأرشيف الوثائق الرسمية':'Digital resource center for worksheets, study PDFs, and student document archives'}
           </p>
         </div>
 
@@ -124,24 +124,24 @@ export const DocumentsModule = () => {
           <button
             onClick={() => setActiveTab('resources')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'resources' ? 'bg-white text-[#0284C7] shadow-md font-extrabold' : 'text-white hover:bg-white/10'
+              activeTab ==='resources'?'bg-white text-[#0284C7] shadow-md font-extrabold':'text-white hover:bg-white/10'
             }`}
           >
-            📚 المكتبة والملخصات التعليمية
+             المكتبة والملخصات التعليمية
           </button>
           <button
             onClick={() => setActiveTab('archive')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'archive' ? 'bg-white text-[#0284C7] shadow-md font-extrabold' : 'text-white hover:bg-white/10'
+              activeTab ==='archive'?'bg-white text-[#0284C7] shadow-md font-extrabold':'text-white hover:bg-white/10'
             }`}
           >
-            📁 أرشيف الهويات والوثائق
+             أرشيف الهويات والوثائق
           </button>
         </div>
       </div>
 
       {/* TAB 1: STUDY RESOURCES LIBRARY */}
-      {activeTab === 'resources' && (
+      {activeTab ==='resources'&& (
         <div className="space-y-6">
           {/* Top Filter Bar & Add Resource Button */}
           <div className="bg-white border border-[#E2E8F0] p-4.5 rounded-3xl shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -168,16 +168,16 @@ export const DocumentsModule = () => {
                   placeholder="ابحث عن ملف أو ملخص..."
                   className="bg-[#F8FAFC] border border-slate-200 text-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none pe-8"
                 />
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"/>
               </div>
             </div>
 
-            {currentRole !== 'student' && (
+            {currentRole !=='student'&& (
               <button
                 onClick={() => setShowAddResourceModal(true)}
                 className="px-5 py-2.5 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-2xl text-xs font-black shadow flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4"/>
                 <span>رفع ملخص أو ورقة عمل +</span>
               </button>
             )}
@@ -187,7 +187,7 @@ export const DocumentsModule = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {filteredResources.length === 0 ? (
               <div className="col-span-3 text-center py-12 bg-white rounded-3xl border border-slate-200 text-slate-400 space-y-2">
-                <BookOpen className="w-12 h-12 mx-auto opacity-30 text-[#0284C7]" />
+                <BookOpen className="w-12 h-12 mx-auto opacity-30 text-[#0284C7]"/>
                 <p className="text-xs font-bold">لا يوجد ملخصات أو ملفات تعليمية مضافة حالياً.</p>
               </div>
             ) : (
@@ -209,8 +209,8 @@ export const DocumentsModule = () => {
                     </h4>
 
                     <div className="text-[11px] text-slate-500 font-bold space-y-0.5">
-                      <span className="block text-[#0284C7]">📚 {res.subject} • {res.grade}</span>
-                      <span className="block text-slate-400">👨‍🏫 المعلم: {res.teacherName}</span>
+                      <span className="block text-[#0284C7]"> {res.subject} • {res.grade}</span>
+                      <span className="block text-slate-400"> المعلم: {res.teacherName}</span>
                     </div>
                   </div>
 
@@ -219,21 +219,21 @@ export const DocumentsModule = () => {
                       href={res.link}
                       onClick={(e) => {
                         e.preventDefault();
-                        alert(`جاري تحميل الملف التعليمي: ${res.title} 📄`);
+                        alert(`جاري تحميل الملف التعليمي: ${res.title}`);
                       }}
                       className="flex-1 bg-sky-50 hover:bg-[#0284C7] text-[#0284C7] hover:text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-3.5 h-3.5"/>
                       <span>تحميل الملخص PDF</span>
                     </a>
 
-                    {currentRole === 'admin' && (
+                    {currentRole ==='admin'&& (
                       <button
                         onClick={() => deleteStudyResource(res.id)}
                         className="p-2 text-red-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-colors"
                         title="حذف"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4"/>
                       </button>
                     )}
                   </div>
@@ -245,11 +245,11 @@ export const DocumentsModule = () => {
       )}
 
       {/* TAB 2: OFFICIAL STUDENT IDENTITY ARCHIVE */}
-      {activeTab === 'archive' && (
+      {activeTab ==='archive'&& (
         <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <h3 className="text-sm font-bold text-[#0284C7] flex items-center gap-2">
-              <FolderArchive className="w-5 h-5" />
+              <FolderArchive className="w-5 h-5"/>
               <span>أرشفة وثائق وهويات الطلاب الرسمية:</span>
             </h3>
 
@@ -265,7 +265,7 @@ export const DocumentsModule = () => {
           </div>
 
           {/* Upload Form */}
-          {currentRole !== 'student' && (
+          {currentRole !=='student'&& (
             <form onSubmit={handleUploadDocSubmit} className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-2xl space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
@@ -285,8 +285,8 @@ export const DocumentsModule = () => {
               </div>
 
               <div className="flex justify-end">
-                <button type="submit" className="px-5 py-2 bg-[#0284C7] text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer">
-                  <Upload className="w-4 h-4" /> أرشفة الصورة وحفظها 📁
+                <button type="submit"className="px-5 py-2 bg-[#0284C7] text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer">
+                  <Upload className="w-4 h-4"/> أرشفة الصورة وحفظها 
                 </button>
               </div>
             </form>
@@ -302,12 +302,12 @@ export const DocumentsModule = () => {
               selectedStudent.documents.map((doc, idx) => (
                 <div key={idx} className="p-3 bg-[#F8FAFC] border border-slate-200 rounded-2xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#0284C7]" />
-                    <span className="text-xs font-bold">{doc.name || 'وثيقة إثبات شخصية'}</span>
+                    <FileText className="w-4 h-4 text-[#0284C7]"/>
+                    <span className="text-xs font-bold">{doc.name ||'وثيقة إثبات شخصية'}</span>
                   </div>
                   {doc.url && (
-                    <a href={doc.url} target="_blank" rel="noreferrer" className="text-xs text-[#0284C7] font-bold hover:underline">
-                      عرض الوثيقة 👁️
+                    <a href={doc.url} target="_blank"rel="noreferrer"className="text-xs text-[#0284C7] font-bold hover:underline">
+                      عرض الوثيقة 
                     </a>
                   )}
                 </div>
@@ -326,7 +326,7 @@ export const DocumentsModule = () => {
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
+                <BookOpen className="w-5 h-5"/>
                 <span>إضافة ملخص تعليمي / ورقة عمل للمكتبة</span>
               </h3>
               <button
@@ -371,16 +371,16 @@ export const DocumentsModule = () => {
                   onChange={(e) => setResType(e.target.value)}
                   className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none"
                 >
-                  <option value="PDF">مستند PDF 📄</option>
-                  <option value="Document">ورقة عمل / تمارين 📐</option>
-                  <option value="Zip / Code">كود / مشروع برمجيات 💻</option>
+                  <option value="PDF">مستند PDF </option>
+                  <option value="Document">ورقة عمل / تمارين </option>
+                  <option value="Zip / Code">كود / مشروع برمجيات </option>
                 </select>
               </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <button type="button" onClick={() => setShowAddResourceModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">إلغاء</button>
-              <button type="submit" className="px-5 py-2 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-xl text-xs font-bold shadow cursor-pointer">حفظ ونشر المرفق 🌟</button>
+              <button type="button"onClick={() => setShowAddResourceModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">إلغاء</button>
+              <button type="submit"className="px-5 py-2 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-xl text-xs font-bold shadow cursor-pointer">حفظ ونشر المرفق </button>
             </div>
           </form>
         </div>

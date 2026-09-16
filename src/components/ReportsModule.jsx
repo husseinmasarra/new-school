@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { Printer, FileSpreadsheet, CheckCircle2, GraduationCap, DollarSign, Search, Users, UserCheck, X } from 'lucide-react';
+import React, {useState} from'react';
+import {useApp} from'../context/AppContext';
+import {Printer, FileSpreadsheet, CheckCircle2, GraduationCap, DollarSign, Search, Users, UserCheck, X} from'lucide-react';
 
 export const ReportsModule = () => {
-  const { 
+  const {
     lang, t, currentRole, currentUser, students = [], subjects = [], selectedStudentId,
     dailyMarks = [], addDailyMark, deleteDailyMark,
     getStudentSubjectScores, getStudentOverallGpa, behaviorRecords = []
   } = useApp();
 
-  const isAr = lang === 'ar';
+  const isAr = lang ==='ar';
   const safeStudents = students || [];
 
   const getDynamicAcademicYear = () => {
@@ -17,9 +17,9 @@ export const ReportsModule = () => {
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth() + 1;
     if (currentMonth >= 9) {
-      return `${currentYear} - ${currentYear + 1}`;
+      return`${currentYear} - ${currentYear + 1}`;
     } else {
-      return `${currentYear - 1} - ${currentYear}`;
+      return`${currentYear - 1} - ${currentYear}`;
     }
   };
 
@@ -28,10 +28,10 @@ export const ReportsModule = () => {
     const day = today.getDate();
     const year = today.getFullYear();
     const levantMonths = [
-      'كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران',
-      'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'
+      'كانون الثاني','شباط','آذار','نيسان','أيار','حزيران',
+      'تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'
     ];
-    return `${day} ${levantMonths[today.getMonth()]} ${year}`;
+    return`${day} ${levantMonths[today.getMonth()]} ${year}`;
   };
 
   const [reportType, setReportType] = useState('academic'); // academic, financial, attendance, daily_log
@@ -40,20 +40,20 @@ export const ReportsModule = () => {
   const [reportGradeFilter, setReportGradeFilter] = useState('all');
 
   const getSectionLetter = (str) => {
-    if (!str) return '';
+    if (!str) return'';
     const m = str.match(/[\(\s\-\_]([أبجدA-Z])[\)\s\-\_]?$/) || str.match(/([أبجدA-Z])/g);
-    return m ? m[m.length - 1] : '';
+    return m ? m[m.length - 1] :'';
   };
 
-  const normGradeStr = (str) => (str || '')
+  const normGradeStr = (str) => (str ||'')
     .toLowerCase()
-    .replace(/[أإآ]/g, 'ا')
-    .replace('الابتدائي', '')
-    .replace('المتوسط', '')
-    .replace('الثانوي', '')
-    .replace('الصف', '')
-    .replace('الشعبة', '')
-    .replace(/[\(\)\-\_\s]/g, '');
+    .replace(/[أإآ]/g,'ا')
+    .replace('الابتدائي','')
+    .replace('المتوسط','')
+    .replace('الثانوي','')
+    .replace('الصف','')
+    .replace('الشعبة','')
+    .replace(/[\(\)\-\_\s]/g,'');
 
   const isStudentAssignedToTeacher = (student, assignedList) => {
     if (!assignedList || assignedList.length === 0) return true;
@@ -63,7 +63,7 @@ export const ReportsModule = () => {
     return assignedList.some((assignedItem) => {
       const aGrade = normGradeStr(assignedItem);
       const aSec = getSectionLetter(assignedItem);
-      const gradeMatches = !sGrade || !aGrade || aGrade.includes(sGrade) || sGrade.includes(aGrade.replace(/[أبجدA-Z]/g, ''));
+      const gradeMatches = !sGrade || !aGrade || aGrade.includes(sGrade) || sGrade.includes(aGrade.replace(/[أبجدA-Z]/g,''));
       const secMatches = !sSec || !aSec || sSec === aSec;
       return gradeMatches && secMatches;
     });
@@ -73,18 +73,18 @@ export const ReportsModule = () => {
   const filteredReportStudents = safeStudents.filter((s) => {
     const term = reportSearchTerm.toLowerCase().trim();
     const matchesSearch = !term ||
-                          (s.name || '').toLowerCase().includes(term) ||
-                          (s.nameEn || '').toLowerCase().includes(term) ||
-                          (s.id || '').toLowerCase().includes(term) ||
-                          (s.username || '').toLowerCase().includes(term) ||
-                          (s.grade || '').toLowerCase().includes(term) ||
-                          (s.classRoom || '').toLowerCase().includes(term) ||
-                          (s.parentName || '').toLowerCase().includes(term) ||
-                          (s.parentPhone || '').includes(term) ||
-                          (s.phone || '').includes(term) ||
-                          (s.ministryClearance || '').toLowerCase().includes(term);
-    const matchesGrade = reportGradeFilter === 'all' || (s.grade || '').includes(reportGradeFilter);
-    const matchesTeacherAssignment = currentRole !== 'teacher' || isStudentAssignedToTeacher(s, currentUser?.assignedClassrooms || currentUser?.assignedClasses || []);
+                          (s.name ||'').toLowerCase().includes(term) ||
+                          (s.nameEn ||'').toLowerCase().includes(term) ||
+                          (s.id ||'').toLowerCase().includes(term) ||
+                          (s.username ||'').toLowerCase().includes(term) ||
+                          (s.grade ||'').toLowerCase().includes(term) ||
+                          (s.classRoom ||'').toLowerCase().includes(term) ||
+                          (s.parentName ||'').toLowerCase().includes(term) ||
+                          (s.parentPhone ||'').includes(term) ||
+                          (s.phone ||'').includes(term) ||
+                          (s.ministryClearance ||'').toLowerCase().includes(term);
+    const matchesGrade = reportGradeFilter ==='all'|| (s.grade ||'').includes(reportGradeFilter);
+    const matchesTeacherAssignment = currentRole !=='teacher'|| isStudentAssignedToTeacher(s, currentUser?.assignedClassrooms || currentUser?.assignedClasses || []);
     return matchesSearch && matchesGrade && matchesTeacherAssignment;
   });
 
@@ -94,11 +94,11 @@ export const ReportsModule = () => {
   // New Daily Mark Form Modal State
   const [showAddMarkModal, setShowAddMarkModal] = useState(false);
   const [newMark, setNewMark] = useState({
-    subjectName: (subjects && subjects[0]?.name) || '',
-    type: 'أعمال السنة',
+    subjectName: (subjects && subjects[0]?.name) ||'',
+    type:'أعمال السنة',
     score: 20,
     maxScore: 20,
-    notes: 'مشاركة ممتازة وتفاعل يومي'
+    notes:'مشاركة ممتازة وتفاعل يومي'
   });
 
   const selectedStudent = safeStudents.find((s) => s.id === stuId) || safeStudents[0];
@@ -115,11 +115,11 @@ export const ReportsModule = () => {
   const isOverallPass = overallPercentage >= 40;
 
   const computedClassroomRank = (() => {
-    if (!selectedStudent) return 'N/A';
+    if (!selectedStudent) return'N/A';
     const peers = safeStudents.filter(
       (s) => s.grade === selectedStudent.grade && (s.classRoom === selectedStudent.classRoom || (!s.classRoom && !selectedStudent.classRoom))
     );
-    if (peers.length <= 1) return isAr ? 'الأول (1)' : '1st (1)';
+    if (peers.length <= 1) return isAr ?'الأول (1)':'1st (1)';
     const peerGpas = peers.map((p) => ({
       id: p.id,
       gpa: Number(getStudentOverallGpa ? getStudentOverallGpa(p.id) : 0)
@@ -127,17 +127,17 @@ export const ReportsModule = () => {
     peerGpas.sort((a, b) => b.gpa - a.gpa);
     const rankIndex = peerGpas.findIndex((x) => x.id === selectedStudent.id) + 1;
     const ordinalNamesAr = {
-      1: 'الأول', 2: 'الثاني', 3: 'الثالث', 4: 'الرابع', 5: 'الخامس',
-      6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر'
+      1:'الأول', 2:'الثاني', 3:'الثالث', 4:'الرابع', 5:'الخامس',
+      6:'السادس', 7:'السابع', 8:'الثامن', 9:'التاسع', 10:'العاشر'
     };
-    const rankWord = isAr ? (ordinalNamesAr[rankIndex] || `${rankIndex}`) : `${rankIndex}`;
-    return `${rankWord} (${rankIndex})`;
+    const rankWord = isAr ? (ordinalNamesAr[rankIndex] ||`${rankIndex}`) :`${rankIndex}`;
+    return`${rankWord} (${rankIndex})`;
   })();
 
   const computedGradeRank = (() => {
-    if (!selectedStudent) return 'N/A';
+    if (!selectedStudent) return'N/A';
     const peers = safeStudents.filter((s) => s.grade === selectedStudent.grade);
-    if (peers.length <= 1) return isAr ? 'الأول (1)' : '1st (1)';
+    if (peers.length <= 1) return isAr ?'الأول (1)':'1st (1)';
     const peerGpas = peers.map((p) => ({
       id: p.id,
       gpa: Number(getStudentOverallGpa ? getStudentOverallGpa(p.id) : 0)
@@ -145,20 +145,20 @@ export const ReportsModule = () => {
     peerGpas.sort((a, b) => b.gpa - a.gpa);
     const rankIndex = peerGpas.findIndex((x) => x.id === selectedStudent.id) + 1;
     const ordinalNamesAr = {
-      1: 'الأول', 2: 'الثاني', 3: 'الثالث', 4: 'الرابع', 5: 'الخامس',
-      6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر'
+      1:'الأول', 2:'الثاني', 3:'الثالث', 4:'الرابع', 5:'الخامس',
+      6:'السادس', 7:'السابع', 8:'الثامن', 9:'التاسع', 10:'العاشر'
     };
-    const rankWord = isAr ? (ordinalNamesAr[rankIndex] || `${rankIndex}`) : `${rankIndex}`;
-    return `${rankWord} (${rankIndex})`;
+    const rankWord = isAr ? (ordinalNamesAr[rankIndex] ||`${rankIndex}`) :`${rankIndex}`;
+    return`${rankWord} (${rankIndex})`;
   })();
 
   const computedBehaviorScore = (() => {
     let score = 100;
     const records = (behaviorRecords || []).filter(r => r.studentId === selectedStudent?.id);
     records.forEach(r => {
-      if (r.type === 'سلبي' || r.type?.toLowerCase() === 'negative' || r.type === 'إرشاد وسلوك') {
+      if (r.type ==='سلبي'|| r.type?.toLowerCase() ==='negative'|| r.type ==='إرشاد وسلوك') {
         score -= 5;
-      } else if (r.type === 'إيجابي' || r.type?.toLowerCase() === 'positive') {
+      } else if (r.type ==='إيجابي'|| r.type?.toLowerCase() ==='positive') {
         score += 2;
       }
     });
@@ -169,11 +169,11 @@ export const ReportsModule = () => {
     return (
       <div className="bg-white border border-[#E2E8F0] p-10 rounded-3xl text-center space-y-4 max-w-lg mx-auto my-12 animate-fade-in shadow-sm text-[#0F172A]">
         <div className="w-16 h-16 bg-[#0284C7]/10 text-[#0284C7] rounded-3xl flex items-center justify-center mx-auto">
-          <Printer className="w-8 h-8" />
+          <Printer className="w-8 h-8"/>
         </div>
-        <h3 className="text-lg font-bold text-[#0284C7]">{isAr ? 'لا يوجد طلاب مضافون حالياً لإصدار التقارير 📄' : 'No Students Available for Reports'}</h3>
+        <h3 className="text-lg font-bold text-[#0284C7]">{isAr ?'لا يوجد طلاب مضافون حالياً لإصدار التقارير':'No Students Available for Reports'}</h3>
         <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-          {isAr ? 'يمكنك إضافة طالب جديد من قسم (دليل المدرسة) لبدء إستخراج التقارير والشهادات المدرسية.' : 'Add a student from Directory to generate reports.'}
+          {isAr ?'يمكنك إضافة طالب جديد من قسم (دليل المدرسة) لبدء إستخراج التقارير والشهادات المدرسية.':'Add a student from Directory to generate reports.'}
         </p>
       </div>
     );
@@ -187,14 +187,14 @@ export const ReportsModule = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm text-[#0F172A]">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
-              <Printer className="w-6 h-6" />
+              <Printer className="w-6 h-6"/>
             </div>
             <div>
               <h2 className="text-xl font-bold text-[#0284C7]">{t('reportsTitle')}</h2>
               <p className="text-xs text-slate-500 mt-1">
                 {isAr 
-                  ? "إصدار وطباعة كافة التقارير الأكاديمية والمالية وكشوف الحسابات والشهادات المدرسية."
-                  : "Generate and print academic report cards, financial ledger statements, and attendance logs."}
+                  ?"إصدار وطباعة كافة التقارير الأكاديمية والمالية وكشوف الحسابات والشهادات المدرسية."
+                  :"Generate and print academic report cards, financial ledger statements, and attendance logs."}
               </p>
             </div>
           </div>
@@ -203,7 +203,7 @@ export const ReportsModule = () => {
           <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-xl">
             <span className="text-xs text-slate-500 font-medium">{t('studentName')}:</span>
             <select
-              value={stuId || ''}
+              value={stuId ||''}
               onChange={(e) => setStuId(e.target.value)}
               className="bg-transparent text-xs font-bold text-[#0F172A] focus:outline-none cursor-pointer"
             >
@@ -221,26 +221,26 @@ export const ReportsModule = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div className="p-2 bg-[#0284C7]/10 text-[#0284C7] rounded-xl">
-                <Users className="w-5 h-5" />
+                <Users className="w-5 h-5"/>
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-[#0284C7]">
-                  {isAr ? `اختيار كرت الطالب لإصدار التقرير والشهادة (${filteredReportStudents.length} طالب)` : `Select Student Card for Report (${filteredReportStudents.length})`}
+                  {isAr ?`اختيار كرت الطالب لإصدار التقرير والشهادة (${filteredReportStudents.length} طالب)`:`Select Student Card for Report (${filteredReportStudents.length})`}
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  {isAr ? 'انقر على كرت أي طالب لاختياره ومعاينة كشف علاماته وتقاريره المدرسية فوراً' : 'Click any student card to select and view their official report card'}
+                  {isAr ?'انقر على كرت أي طالب لاختياره ومعاينة كشف علاماته وتقاريره المدرسية فوراً':'Click any student card to select and view their official report card'}
                 </p>
               </div>
             </div>
 
             {/* Smart Search Bar */}
             <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 text-[#0284C7] absolute top-2.5 right-3 rtl:right-3 ltr:left-3 pointer-events-none" />
+              <Search className="w-4 h-4 text-[#0284C7] absolute top-2.5 right-3 rtl:right-3 ltr:left-3 pointer-events-none"/>
               <input
                 type="text"
                 value={reportSearchTerm}
                 onChange={(e) => setReportSearchTerm(e.target.value)}
-                placeholder={isAr ? '🔍 البحث الذكي في كروت الطلاب...' : 'Search student cards...'}
+                placeholder={isAr ?'البحث الذكي في كروت الطلاب...':'Search student cards...'}
                 className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-9 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7] transition-all"
               />
               {reportSearchTerm && (
@@ -262,23 +262,23 @@ export const ReportsModule = () => {
               <button
                 onClick={() => setReportGradeFilter('all')}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
-                  reportGradeFilter === 'all'
-                    ? 'bg-[#0284C7] text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  reportGradeFilter ==='all'
+                    ?'bg-[#0284C7] text-white'
+                    :'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {isAr ? `الكل (${safeStudents.length})` : `All (${safeStudents.length})`}
+                {isAr ?`الكل (${safeStudents.length})`:`All (${safeStudents.length})`}
               </button>
               {availableGrades.map((gradeName) => {
-                const count = safeStudents.filter(s => (s.grade || '').includes(gradeName)).length;
+                const count = safeStudents.filter(s => (s.grade ||'').includes(gradeName)).length;
                 return (
                   <button
                     key={gradeName}
-                    onClick={() => setReportGradeFilter(reportGradeFilter === gradeName ? 'all' : gradeName)}
+                    onClick={() => setReportGradeFilter(reportGradeFilter === gradeName ?'all': gradeName)}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
                       reportGradeFilter === gradeName
-                        ? 'bg-[#0284C7] text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ?'bg-[#0284C7] text-white'
+                        :'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     {gradeName} ({count})
@@ -291,7 +291,7 @@ export const ReportsModule = () => {
           {/* Student Cards Grid */}
           {filteredReportStudents.length === 0 ? (
             <div className="text-center py-6 text-slate-400 text-xs font-bold border border-dashed border-slate-200 rounded-2xl">
-              {isAr ? 'لا يوجد طالب يطابق كلمات البحث الحالية' : 'No student found matching search'}
+              {isAr ?'لا يوجد طالب يطابق كلمات البحث الحالية':'No student found matching search'}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-72 overflow-y-auto p-1 border border-slate-100 rounded-2xl bg-[#F8FAFC]">
@@ -303,20 +303,20 @@ export const ReportsModule = () => {
                     onClick={() => setStuId(s.id)}
                     className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-sky-50 border-[#0284C7] ring-2 ring-[#0284C7]/30 shadow-sm'
-                        : 'bg-white border-slate-200 hover:border-[#0284C7]/50 hover:bg-slate-50'
+                        ?'bg-sky-50 border-[#0284C7] ring-2 ring-[#0284C7]/30 shadow-sm'
+                        :'bg-white border-slate-200 hover:border-[#0284C7]/50 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-9 h-9 rounded-full font-black text-xs flex items-center justify-center shrink-0 border ${isSelected ? 'border-[#0284C7] bg-[#0284C7] text-white' : 'border-slate-300 bg-slate-100 text-slate-700'}`}>
-                        {(s.name || 'ط')[0]}
+                      <div className={`w-9 h-9 rounded-full font-black text-xs flex items-center justify-center shrink-0 border ${isSelected ?'border-[#0284C7] bg-[#0284C7] text-white':'border-slate-300 bg-slate-100 text-slate-700'}`}>
+                        {(s.name ||'ط')[0]}
                       </div>
                       <div className="truncate">
-                        <h4 className={`text-xs font-extrabold truncate ${isSelected ? 'text-[#0284C7]' : 'text-slate-800'}`}>
+                        <h4 className={`text-xs font-extrabold truncate ${isSelected ?'text-[#0284C7]':'text-slate-800'}`}>
                           {isAr ? s.name : s.nameEn}
                         </h4>
                         <span className="text-[10px] text-slate-500 font-mono block">
-                          {s.grade} ({s.classRoom || 'أ'})
+                          {s.grade} ({s.classRoom ||'أ'})
                         </span>
                       </div>
                     </div>
@@ -344,20 +344,20 @@ export const ReportsModule = () => {
           <div
             onClick={() => setReportType('academic')}
             className={`interactive-card p-6 rounded-3xl border-2 transition-all cursor-pointer space-y-3 shadow-sm ${
-              reportType === 'academic'
-                ? 'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
-                : 'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
+              reportType ==='academic'
+                ?'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
+                :'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="p-3 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
-                <GraduationCap className="w-6 h-6" />
+                <GraduationCap className="w-6 h-6"/>
               </div>
-              {reportType === 'academic' && <CheckCircle2 className="w-5 h-5 text-[#0284C7]" />}
+              {reportType ==='academic'&& <CheckCircle2 className="w-5 h-5 text-[#0284C7]"/>}
             </div>
             <h3 className="text-base font-bold text-[#0F172A] dark:text-white">{t('academicReport')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isAr ? "كشف درجات الطالب الرسمية وترتيب الصف والمعدل العام والتقييمات." : "Official student grades, rank, GPA, and teacher performance notes."}
+              {isAr ?"كشف درجات الطالب الرسمية وترتيب الصف والمعدل العام والتقييمات.":"Official student grades, rank, GPA, and teacher performance notes."}
             </p>
           </div>
 
@@ -365,42 +365,42 @@ export const ReportsModule = () => {
           <div
             onClick={() => setReportType('daily_log')}
             className={`interactive-card p-6 rounded-3xl border-2 transition-all cursor-pointer space-y-3 shadow-sm ${
-              reportType === 'daily_log'
-                ? 'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
-                : 'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
+              reportType ==='daily_log'
+                ?'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
+                :'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="p-3 bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400 rounded-2xl">
-                <FileSpreadsheet className="w-6 h-6" />
+                <FileSpreadsheet className="w-6 h-6"/>
               </div>
-              {reportType === 'daily_log' && <CheckCircle2 className="w-5 h-5 text-[#0284C7]" />}
+              {reportType ==='daily_log'&& <CheckCircle2 className="w-5 h-5 text-[#0284C7]"/>}
             </div>
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">{isAr ? 'سجل العلامات اليومية 📊' : 'Daily Marks Log'}</h3>
+            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">{isAr ?'سجل العلامات اليومية':'Daily Marks Log'}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isAr ? "رصد وإضافة علامات واختبارات الطالب اليومية وحساب المعدل التراكمي." : "Log & track daily student grades across subjects to compute GPA."}
+              {isAr ?"رصد وإضافة علامات واختبارات الطالب اليومية وحساب المعدل التراكمي.":"Log & track daily student grades across subjects to compute GPA."}
             </p>
           </div>
 
           {/* Financial Report Card (Hidden for Teachers) */}
-          {currentRole !== 'teacher' && (
+          {currentRole !=='teacher'&& (
             <div
               onClick={() => setReportType('financial')}
               className={`interactive-card p-6 rounded-3xl border-2 transition-all cursor-pointer space-y-3 shadow-sm ${
-                reportType === 'financial'
-                  ? 'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
-                  : 'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
+                reportType ==='financial'
+                  ?'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
+                  :'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
-                  <DollarSign className="w-6 h-6" />
+                  <DollarSign className="w-6 h-6"/>
                 </div>
-                {reportType === 'financial' && <CheckCircle2 className="w-5 h-5 text-[#0284C7]" />}
+                {reportType ==='financial'&& <CheckCircle2 className="w-5 h-5 text-[#0284C7]"/>}
               </div>
               <h3 className="text-base font-bold text-[#0F172A] dark:text-white">{t('financialReport')}</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                {isAr ? "كشف حساب مالي تفصيلي بالأقساط المسددة بالدولار والمبالغ المتبقية." : "Detailed student tuition payment statement in USD & remaining dues."}
+                {isAr ?"كشف حساب مالي تفصيلي بالأقساط المسددة بالدولار والمبالغ المتبقية.":"Detailed student tuition payment statement in USD & remaining dues."}
               </p>
             </div>
           )}
@@ -409,20 +409,20 @@ export const ReportsModule = () => {
           <div
             onClick={() => setReportType('attendance')}
             className={`interactive-card p-6 rounded-3xl border-2 transition-all cursor-pointer space-y-3 shadow-sm ${
-              reportType === 'attendance'
-                ? 'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
-                : 'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
+              reportType ==='attendance'
+                ?'bg-[#F8FAFC] dark:bg-[#1E293B] border-[#0284C7] ring-1 ring-[#0284C7]'
+                :'bg-white dark:bg-[#0F172A] border-[#E2E8F0] dark:border-[#334155] hover:border-slate-300'
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="p-3 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
-                <FileSpreadsheet className="w-6 h-6" />
+                <FileSpreadsheet className="w-6 h-6"/>
               </div>
-              {reportType === 'attendance' && <CheckCircle2 className="w-5 h-5 text-[#0284C7]" />}
+              {reportType ==='attendance'&& <CheckCircle2 className="w-5 h-5 text-[#0284C7]"/>}
             </div>
             <h3 className="text-base font-bold text-[#0F172A] dark:text-white">{t('attendanceReport')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isAr ? "تقرير حضور وغياب الطالب وساعات الانضباط والتأخيرات المسجلة." : "Student attendance log, discipline hours, and registered tardiness."}
+              {isAr ?"تقرير حضور وغياب الطالب وساعات الانضباط والتأخيرات المسجلة.":"Student attendance log, discipline hours, and registered tardiness."}
             </p>
           </div>
 
@@ -433,7 +433,7 @@ export const ReportsModule = () => {
       <div className="space-y-6">
         <div className="no-print bg-white border border-[#E2E8F0] rounded-3xl p-4 sm:p-6 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
-            <img src={selectedStudent.avatar} alt={selectedStudent.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#0284C7]" />
+            <img src={selectedStudent.avatar} alt={selectedStudent.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#0284C7]"/>
             <div>
               <h3 className="text-base font-bold text-[#0284C7]">{isAr ? selectedStudent.name : selectedStudent.nameEn}</h3>
               <p className="text-xs text-slate-500">{isAr ? selectedStudent.grade : selectedStudent.gradeEn} ({selectedStudent.classRoom})</p>
@@ -444,48 +444,48 @@ export const ReportsModule = () => {
             onClick={() => window.print()}
             className="btn-mustard flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shadow transition-all cursor-pointer"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4"/>
             <span>
-              {reportType === 'academic' 
-                ? (isAr ? 'طباعة التقرير الأكاديمي 🖨️' : 'Print Academic Report 🖨️')
-                : reportType === 'financial'
-                ? (isAr ? 'طباعة الكشف المالي 🖨️' : 'Print Financial Statement 🖨️')
-                : (isAr ? 'طباعة تقرير الحضور 🖨️' : 'Print Attendance Log 🖨️')}
+              {reportType ==='academic'
+                ? (isAr ?'طباعة التقرير الأكاديمي':'Print Academic Report')
+                : reportType ==='financial'
+                ? (isAr ?'طباعة الكشف المالي':'Print Financial Statement')
+                : (isAr ?'طباعة تقرير الحضور':'Print Attendance Log')}
             </span>
           </button>
         </div>
 
         {/* Academic Report Section - Harmonized Official Report Certificate */}
-        {reportType === 'academic' && (
+        {reportType ==='academic'&& (
           <div 
             className="printable-document bg-white dark:bg-[#0F172A] border-0 rounded-3xl p-6 sm:p-10 space-y-6 shadow-2xl relative my-4 text-[#0F172A] dark:text-white"
           >
             
-            {/* 🏫 Official School Crest & Header */}
+            {/* Official School Crest & Header */}
             <div className="flex flex-col sm:flex-row items-center justify-between border-b-2 border-[#0284C7] pb-5 text-center sm:text-right gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-2xl bg-white overflow-hidden shadow-md border-2 border-[#0284C7] flex items-center justify-center">
-                  <img src="/emblem.png" alt="School Logo" className="w-full h-full object-contain" />
+                  <img src="/emblem.png"alt="School Logo"className="w-full h-full object-contain"/>
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-[#0284C7] dark:text-[#38BDF8]">{isAr ? 'مدرسة الدعم التعليمي' : 'Educational Support School'}</h1>
+                  <h1 className="text-xl font-black text-[#0284C7] dark:text-[#38BDF8]">{isAr ?'مدرسة الدعم التعليمي':'Educational Support School'}</h1>
                 </div>
               </div>
 
               <div className="text-center sm:text-left space-y-1">
                 <div className="inline-block bg-[#0284C7]/10 dark:bg-[#0284C7]/20 text-[#0284C7] dark:text-[#38BDF8] px-3 py-1 rounded-full text-xs font-black border border-[#0284C7]/30">
-                  كشف درجات وشهادة تقويم رسمية 📜
+                  كشف درجات وشهادة تقويم رسمية 
                 </div>
                 <p className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 block pt-1">رقم المستند: SCH-2026/9842</p>
                 <p className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 block">التاريخ: {getLevantFormattedDate()}</p>
               </div>
             </div>
 
-            {/* 👤 Student Information Summary Box */}
+            {/* Student Information Summary Box */}
             <div className="bg-[#F8FAFC] dark:bg-[#1E293B] border border-[#0284C7]/30 dark:border-[#334155] rounded-2xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs text-[#0F172A] dark:text-white">
               <div className="flex items-center gap-3 col-span-2">
                 <div className="w-14 h-14 rounded-2xl font-black text-xl bg-[#0284C7]/10 text-[#0284C7] border-2 border-[#0284C7] flex items-center justify-center shadow-sm shrink-0">
-                  {(selectedStudent.name || 'ط')[0]}
+                  {(selectedStudent.name ||'ط')[0]}
                 </div>
                 <div>
                   <span className="text-xs font-bold text-[#0284C7] dark:text-[#38BDF8] block">اسم الطالب الرباعي:</span>
@@ -496,7 +496,7 @@ export const ReportsModule = () => {
 
               <div className="space-y-1">
                 <span className="text-xs font-bold text-[#0284C7] dark:text-[#38BDF8] block">الصف والشعبة:</span>
-                <span className="text-sm font-black text-[#0F172A] dark:text-white block">{selectedStudent.grade} ({selectedStudent.classRoom || 'أ'})</span>
+                <span className="text-sm font-black text-[#0F172A] dark:text-white block">{selectedStudent.grade} ({selectedStudent.classRoom ||'أ'})</span>
               </div>
 
               <div className="space-y-1">
@@ -504,9 +504,9 @@ export const ReportsModule = () => {
                 <span className="text-sm font-black text-[#0F172A] dark:text-white block">{getDynamicAcademicYear()} (الفصل الثاني)</span>
                 <span className="text-xs block font-bold">
                   {isOverallFail ? (
-                    <span className="text-red-600 dark:text-red-400 font-black">الحالة: راسب 🔴 (المجموع العام أقل من 40%)</span>
+                    <span className="text-red-600 dark:text-red-400 font-black">الحالة: راسب (المجموع العام أقل من 40%)</span>
                   ) : isOverallPass ? (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black">الحالة: ناجح ومجتاز 🟢</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black">الحالة: ناجح ومجتاز </span>
                   ) : (
                     <span className="text-slate-500 font-bold">الحالة: قيد الرصد</span>
                   )}
@@ -514,7 +514,7 @@ export const ReportsModule = () => {
               </div>
             </div>
 
-            {/* 📊 Official Detailed Marks Table */}
+            {/* Official Detailed Marks Table */}
             <div className="space-y-2">
               <h3 className="text-xs font-black text-[#0284C7] dark:text-[#38BDF8] flex items-center justify-between border-b border-slate-200 dark:border-[#334155] pb-2">
                 <span className="font-extrabold">جدول تفاصيل درجات المواد الدراسية للعام الحالي:</span>
@@ -537,8 +537,8 @@ export const ReportsModule = () => {
                   <tbody className="divide-y divide-slate-200 dark:divide-[#334155]">
                     {dynamicSubjectScores.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="p-8 text-center text-slate-400 font-bold">
-                          {isAr ? 'لم يتم إضافة أي مواد دراسية للنظام بعد. يمكنك إضافة المواد من قسم دليل المواد.' : 'No active subjects added yet.'}
+                        <td colSpan="7"className="p-8 text-center text-slate-400 font-bold">
+                          {isAr ?'لم يتم إضافة أي مواد دراسية للنظام بعد. يمكنك إضافة المواد من قسم دليل المواد.':'No active subjects added yet.'}
                         </td>
                       </tr>
                     ) : (
@@ -580,7 +580,7 @@ export const ReportsModule = () => {
                         <td className="p-3 border border-slate-200 dark:border-[#334155] font-black text-[#0F172A] dark:text-white">
                           المجموع العام والمعدل:
                         </td>
-                        <td colSpan="4" className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-slate-600 dark:text-slate-300">
+                        <td colSpan="4"className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-slate-600 dark:text-slate-300">
                           {totalMarksSum} من أصل {maxPossibleMarks} (المعدل: {overallPercentage}%)
                         </td>
                         <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-black text-base text-[#0284C7] dark:text-[#38BDF8]">
@@ -589,12 +589,12 @@ export const ReportsModule = () => {
                         <td className="p-3 border border-slate-200 dark:border-[#334155] text-center">
                           <span className={`px-3 py-1 rounded-md text-xs font-black inline-flex items-center gap-1 shadow-xs ${
                             isOverallFail
-                              ? 'bg-red-100 text-red-700 border border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700'
+                              ?'bg-red-100 text-red-700 border border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700'
                               : isOverallPass
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700'
-                              : 'bg-slate-100 text-slate-700 border border-slate-300'
+                              ?'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700'
+                              :'bg-slate-100 text-slate-700 border border-slate-300'
                           }`}>
-                            {isOverallFail ? 'راسب 🔴 (أقل من 40%)' : isOverallPass ? 'ناجح ومجتاز 🟢' : 'قيد الرصد'}
+                            {isOverallFail ?'راسب (أقل من 40%)': isOverallPass ?'ناجح ومجتاز':'قيد الرصد'}
                           </span>
                         </td>
                       </tr>
@@ -604,40 +604,40 @@ export const ReportsModule = () => {
               </div>
             </div>
 
-             {/* 🏅 Final Result KPI Summary Cards */}
+             {/* Final Result KPI Summary Cards */}
              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono pt-2">
                <div className={`p-3.5 rounded-2xl border text-center space-y-1 transition-all ${
                  isOverallFail
-                   ? 'bg-red-50 border-red-300 dark:bg-red-950/40 dark:border-red-800'
-                   : 'bg-sky-50 dark:bg-[#1E293B] border-sky-200 dark:border-[#334155]'
+                   ?'bg-red-50 border-red-300 dark:bg-red-950/40 dark:border-red-800'
+                   :'bg-sky-50 dark:bg-[#1E293B] border-sky-200 dark:border-[#334155]'
                }`}>
                  <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">المعدل العام والنتيجة:</span>
                  <span className={`text-xl font-black block ${
-                   isOverallFail ? 'text-red-600 dark:text-red-400' : 'text-[#0284C7] dark:text-[#38BDF8]'
+                   isOverallFail ?'text-red-600 dark:text-red-400':'text-[#0284C7] dark:text-[#38BDF8]'
                  }`}>
-                   {overallPercentage > 0 ? `${overallPercentage}%` : (isAr ? 'لا يوجد درجات' : 'N/A')}
+                   {overallPercentage > 0 ?`${overallPercentage}%`: (isAr ?'لا يوجد درجات':'N/A')}
                  </span>
                  <span className={`text-[10px] font-extrabold block ${
-                   isOverallFail ? 'text-red-600' : 'text-emerald-600'
+                   isOverallFail ?'text-red-600':'text-emerald-600'
                  }`}>
-                   {isOverallFail ? '🔴 راسب (أقل من 40%)' : isOverallPass ? '🟢 ناجح ومجتاز' : ''}
+                   {isOverallFail ?'راسب (أقل من 40%)': isOverallPass ?'ناجح ومجتاز':''}
                  </span>
                </div>
                <div className="bg-purple-50 dark:bg-[#1E293B] p-3.5 rounded-2xl border border-purple-200 dark:border-[#334155] text-center space-y-1">
                  <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">الترتيب على الشعبة:</span>
-                 <span className="text-xl font-black text-purple-700 dark:text-purple-400 block">{computedClassroomRank} 🏆</span>
+                 <span className="text-xl font-black text-purple-700 dark:text-purple-400 block">{computedClassroomRank} </span>
                </div>
                <div className="bg-indigo-50 dark:bg-[#1E293B] p-3.5 rounded-2xl border border-indigo-200 dark:border-[#334155] text-center space-y-1">
                  <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">الترتيب على المرحلة:</span>
-                 <span className="text-xl font-black text-indigo-700 dark:text-indigo-400 block">{computedGradeRank} 🌟</span>
+                 <span className="text-xl font-black text-indigo-700 dark:text-indigo-400 block">{computedGradeRank} </span>
                </div>
                <div className="bg-emerald-50 dark:bg-[#1E293B] p-3.5 rounded-2xl border border-emerald-200 dark:border-[#334155] text-center space-y-1">
                  <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">درجة الانضباط والسلوك:</span>
-                 <span className="text-xl font-black text-emerald-700 dark:text-emerald-400 block">{computedBehaviorScore} / 100 🟢</span>
+                 <span className="text-xl font-black text-emerald-700 dark:text-emerald-400 block">{computedBehaviorScore} / 100 </span>
                </div>
              </div>
 
-            {/* ✍️ Official Signatures & School Seal Space */}
+            {/* Official Signatures & School Seal Space */}
             <div className="pt-6 border-t-2 border-[#0284C7] dark:border-[#334155] grid grid-cols-3 gap-6 items-end text-xs text-[#0F172A] dark:text-white">
               <div className="text-center space-y-4">
                 <span className="font-extrabold text-[#0284C7] dark:text-[#38BDF8] text-xs block">توقيع مربي الصف ومعلم المادة:</span>
@@ -660,11 +660,11 @@ export const ReportsModule = () => {
         )}
 
         {/* Financial Statement Section */}
-        {reportType === 'financial' && (
+        {reportType ==='financial'&& (
           <div className="space-y-4">
             {selectedStudent.frozen && (
               <div className="bg-cyan-50 border-2 border-cyan-300 p-4 rounded-2xl text-cyan-900 font-bold text-xs flex items-center gap-2">
-                <span className="text-xl">❄️</span>
+                <span className="text-xl"></span>
                 <div>
                   <h4 className="font-black text-sm text-cyan-950">حساب الطالب مجمد (موقوف عن المطالبات والدفعات المتأخرة المستحقة)</h4>
                   <p className="text-[11px] text-cyan-800 font-semibold pt-0.5">تم تجميد مطالبات الدفعات المتأخرة عن هذا الحساب تلقائياً ولا يُحسب ضمن الذمم المالية النشطة.</p>
@@ -685,12 +685,12 @@ export const ReportsModule = () => {
                   ${selectedStudent.isSpecialCase ? 0 : (selectedStudent.tuitionPaid || 0)} USD
                 </span>
               </div>
-              <div className={`p-4 rounded-2xl border ${selectedStudent.isSpecialCase ? 'bg-amber-50 border-amber-300' : selectedStudent.frozen ? 'bg-cyan-50 border-cyan-300' : 'bg-[#F8FAFC] border-red-300'}`}>
-                <span className={`${selectedStudent.isSpecialCase ? 'text-amber-900 font-black' : selectedStudent.frozen ? 'text-cyan-800 font-black' : 'text-red-600 font-bold'} block`}>
-                  {selectedStudent.isSpecialCase ? 'حالة الحساب المالي:' : selectedStudent.frozen ? 'حالة المتأخرات والمطالبة:' : t('remainingAmount') + ':'}
+              <div className={`p-4 rounded-2xl border ${selectedStudent.isSpecialCase ?'bg-amber-50 border-amber-300': selectedStudent.frozen ?'bg-cyan-50 border-cyan-300':'bg-[#F8FAFC] border-red-300'}`}>
+                <span className={`${selectedStudent.isSpecialCase ?'text-amber-900 font-black': selectedStudent.frozen ?'text-cyan-800 font-black':'text-red-600 font-bold'} block`}>
+                  {selectedStudent.isSpecialCase ?'حالة الحساب المالي:': selectedStudent.frozen ?'حالة المتأخرات والمطالبة:': t('remainingAmount') +':'}
                 </span>
-                <span className={`text-lg font-bold ${selectedStudent.isSpecialCase ? 'text-amber-950 font-black' : selectedStudent.frozen ? 'text-cyan-900 font-black' : 'text-red-600'}`}>
-                  {selectedStudent.isSpecialCase ? '⭐ معفى (حالة خاصة - $0)' : selectedStudent.frozen ? '❄️ مجمد (معفى من المتأخرات)' : `$${(selectedStudent.tuitionTotal || 1200) - (selectedStudent.tuitionPaid || 0)} USD`}
+                <span className={`text-lg font-bold ${selectedStudent.isSpecialCase ?'text-amber-950 font-black': selectedStudent.frozen ?'text-cyan-900 font-black':'text-red-600'}`}>
+                  {selectedStudent.isSpecialCase ?'معفى (حالة خاصة - $0)': selectedStudent.frozen ?'مجمد (معفى من المتأخرات)':`$${(selectedStudent.tuitionTotal || 1200) - (selectedStudent.tuitionPaid || 0)} USD`}
                 </span>
               </div>
             </div>
@@ -698,37 +698,37 @@ export const ReportsModule = () => {
         )}
 
         {/* Attendance Log Section */}
-        {reportType === 'attendance' && (
+        {reportType ==='attendance'&& (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
               <div className="bg-[#F8FAFC] dark:bg-[#1E293B] p-4 rounded-2xl border border-[#E2E8F0] dark:border-[#334155]">
-                <span className="text-slate-500 dark:text-slate-400 block">{isAr ? 'أيام الحضور المسجلة:' : 'Days Present:'}</span>
-                <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">175 {isAr ? 'يوم' : 'Days'}</span>
+                <span className="text-slate-500 dark:text-slate-400 block">{isAr ?'أيام الحضور المسجلة:':'Days Present:'}</span>
+                <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">175 {isAr ?'يوم':'Days'}</span>
               </div>
               <div className="bg-[#F8FAFC] dark:bg-[#1E293B] p-4 rounded-2xl border border-[#E2E8F0] dark:border-[#334155]">
-                <span className="text-slate-500 dark:text-slate-400 block">{isAr ? 'أيام الغياب بعذر:' : 'Excused Absences:'}</span>
-                <span className="text-lg font-bold text-[#0284C7] dark:text-[#38BDF8]">2 {isAr ? 'يوم' : 'Days'}</span>
+                <span className="text-slate-500 dark:text-slate-400 block">{isAr ?'أيام الغياب بعذر:':'Excused Absences:'}</span>
+                <span className="text-lg font-bold text-[#0284C7] dark:text-[#38BDF8]">2 {isAr ?'يوم':'Days'}</span>
               </div>
               <div className="bg-[#F8FAFC] dark:bg-[#1E293B] p-4 rounded-2xl border border-[#E2E8F0] dark:border-[#334155]">
-                <span className="text-slate-500 dark:text-slate-400 block">{isAr ? 'نسبة الانضباط:' : 'Attendance Rate:'}</span>
+                <span className="text-slate-500 dark:text-slate-400 block">{isAr ?'نسبة الانضباط:':'Attendance Rate:'}</span>
                 <span className="text-lg font-bold text-[#0F172A] dark:text-white">98.8%</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* 📊 Daily Marks & Cumulative Assessment Registry Log */}
-        {reportType === 'daily_log' && (
+        {/* Daily Marks & Cumulative Assessment Registry Log */}
+        {reportType ==='daily_log'&& (
           <div className="bg-white dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-3xl p-6 space-y-6 shadow-sm">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-[#334155] pb-4">
               <div>
                 <h3 className="text-base font-bold text-[#0284C7] dark:text-[#38BDF8]">
-                  {isAr ? `سجل العلامات اليومية والتراكمية للطالب: ${selectedStudent.name}` : `Daily Marks Log: ${selectedStudent.name}`}
+                  {isAr ?`سجل العلامات اليومية والتراكمية للطالب: ${selectedStudent.name}`:`Daily Marks Log: ${selectedStudent.name}`}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {isAr 
-                    ? "رصد كافة العلامات اليومية واختبارات المواد طوال العام وتجميعها تلقائياً لاحتساب المعدل العام." 
-                    : "Track daily marks, homework, and quizzes across the entire academic year to calculate cumulative GPA."}
+                    ?"رصد كافة العلامات اليومية واختبارات المواد طوال العام وتجميعها تلقائياً لاحتساب المعدل العام."
+                    :"Track daily marks, homework, and quizzes across the entire academic year to calculate cumulative GPA."}
                 </p>
               </div>
 
@@ -736,7 +736,7 @@ export const ReportsModule = () => {
                 onClick={() => setShowAddMarkModal(true)}
                 className="btn-mustard flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow cursor-pointer"
               >
-                <span>{isAr ? 'إضافة تقييم/علامة يومية جديدة ➕' : 'Add Daily Mark ➕'}</span>
+                <span>{isAr ?'إضافة تقييم/علامة يومية جديدة':'Add Daily Mark'}</span>
               </button>
             </div>
 
@@ -757,8 +757,8 @@ export const ReportsModule = () => {
                 <tbody className="divide-y divide-slate-200 dark:divide-[#334155]">
                   {(dailyMarks.filter((m) => m.studentId === selectedStudent.id)).length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="p-8 text-center text-slate-400 font-bold">
-                        {isAr ? 'لا توجد علامات يومية مسجلة لهذا الطالب بعد. اضغط على زر الإضافة أعلاه لرصد علامة جديدة.' : 'No daily marks recorded yet for this student.'}
+                      <td colSpan="7"className="p-8 text-center text-slate-400 font-bold">
+                        {isAr ?'لا توجد علامات يومية مسجلة لهذا الطالب بعد. اضغط على زر الإضافة أعلاه لرصد علامة جديدة.':'No daily marks recorded yet for this student.'}
                       </td>
                     </tr>
                   ) : (
@@ -782,7 +782,7 @@ export const ReportsModule = () => {
                           {m.maxScore || 20}
                         </td>
                         <td className="p-3 border border-slate-200 dark:border-[#334155] text-slate-600 dark:text-slate-300 font-medium">
-                          {m.notes || '-'}
+                          {m.notes ||'-'}
                         </td>
                         <td className="p-3 border border-slate-200 dark:border-[#334155] text-center">
                           <button
@@ -790,7 +790,7 @@ export const ReportsModule = () => {
                             className="p-1.5 bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
                             title="حذف العلامة"
                           >
-                            ❌
+                            
                           </button>
                         </td>
                       </tr>
@@ -809,7 +809,7 @@ export const ReportsModule = () => {
           <div className="bg-white dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-6 shadow-2xl text-[#0F172A] dark:text-white">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#334155] pb-4">
               <h3 className="text-base font-bold text-[#0284C7] dark:text-[#38BDF8]">
-                {isAr ? `إضافة علامة يومية للطالب: ${selectedStudent.name}` : `Add Daily Mark: ${selectedStudent.name}`}
+                {isAr ?`إضافة علامة يومية للطالب: ${selectedStudent.name}`:`Add Daily Mark: ${selectedStudent.name}`}
               </h3>
               <button 
                 onClick={() => setShowAddMarkModal(false)}
@@ -836,13 +836,13 @@ export const ReportsModule = () => {
               <div className="space-y-1">
                 <label className="text-slate-600 dark:text-slate-300">المادة الدراسية:</label>
                 <select
-                  value={newMark.subjectName || (subjects && subjects[0]?.name) || ''}
-                  onChange={(e) => setNewMark({ ...newMark, subjectName: e.target.value })}
+                  value={newMark.subjectName || (subjects && subjects[0]?.name) ||''}
+                  onChange={(e) => setNewMark({...newMark, subjectName: e.target.value})}
                   className="w-full bg-[#F8FAFC] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] p-3 rounded-xl text-xs font-bold text-[#0F172A] dark:text-white focus:outline-none"
                 >
                   {(subjects || []).map((sub) => (
                     <option key={sub.id || sub.name} value={sub.name}>
-                      {sub.name} {sub.nameEn ? `(${sub.nameEn})` : ''}
+                      {sub.name} {sub.nameEn ?`(${sub.nameEn})`:''}
                     </option>
                   ))}
                 </select>
@@ -852,7 +852,7 @@ export const ReportsModule = () => {
                 <label className="text-slate-600 dark:text-slate-300">نوع التقييم / الاختبار:</label>
                 <select
                   value={newMark.type}
-                  onChange={(e) => setNewMark({ ...newMark, type: e.target.value })}
+                  onChange={(e) => setNewMark({...newMark, type: e.target.value})}
                   className="w-full bg-[#F8FAFC] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] p-3 rounded-xl text-xs font-bold text-[#0F172A] dark:text-white focus:outline-none"
                 >
                   <option value="أعمال السنة">أعمال السنة والواجبات (20)</option>
@@ -870,7 +870,7 @@ export const ReportsModule = () => {
                     min="0"
                     max={newMark.maxScore}
                     value={newMark.score}
-                    onChange={(e) => setNewMark({ ...newMark, score: Number(e.target.value) })}
+                    onChange={(e) => setNewMark({...newMark, score: Number(e.target.value)})}
                     className="w-full bg-[#F8FAFC] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] p-3 rounded-xl text-xs font-bold text-[#0F172A] dark:text-white focus:outline-none"
                     required
                   />
@@ -879,7 +879,7 @@ export const ReportsModule = () => {
                   <label className="text-slate-600 dark:text-slate-300">العلامة العظمى:</label>
                   <input
                     type="number"
-                    value={newMark.type === 'النهائي' ? 40 : 20}
+                    value={newMark.type ==='النهائي'? 40 : 20}
                     disabled
                     className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-xs font-bold text-slate-500 cursor-not-allowed"
                   />
@@ -892,7 +892,7 @@ export const ReportsModule = () => {
                   type="text"
                   placeholder="مثال: تفوق ملحوظ وحفظ سليم للقواعد"
                   value={newMark.notes}
-                  onChange={(e) => setNewMark({ ...newMark, notes: e.target.value })}
+                  onChange={(e) => setNewMark({...newMark, notes: e.target.value})}
                   className="w-full bg-[#F8FAFC] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] p-3 rounded-xl text-xs font-bold text-[#0F172A] dark:text-white focus:outline-none"
                 />
               </div>
@@ -909,7 +909,7 @@ export const ReportsModule = () => {
                   type="submit"
                   className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer"
                 >
-                  حفظ العلامة التراكمية 💾
+                  حفظ العلامة التراكمية 
                 </button>
               </div>
             </form>

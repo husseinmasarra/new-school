@@ -4,21 +4,21 @@
  * Neon (https://neon.tech) is a fully managed serverless PostgreSQL platform.
  */
 
-export const NEON_POSTGRES_SCHEMA_SQL = `-- ============================================================
--- 🐘 NEON POSTGRESQL PRODUCTION SCHEMA FOR SCHOOL PORTAL
+export const NEON_POSTGRES_SCHEMA_SQL =`-- ============================================================
+-- NEON POSTGRESQL PRODUCTION SCHEMA FOR SCHOOL PORTAL
 -- Copy & Run this SQL script in your Neon SQL Editor:
 -- ============================================================
 
 -- 1. School Settings Table
 CREATE TABLE IF NOT EXISTS school_settings (
-    id VARCHAR(50) PRIMARY KEY DEFAULT 'main',
-    school_name VARCHAR(255) DEFAULT 'مدرسة الدعم التعليمي',
-    school_name_en VARCHAR(255) DEFAULT 'Educational Support School',
-    academic_year VARCHAR(50) DEFAULT '2026/2027',
+    id VARCHAR(50) PRIMARY KEY DEFAULT'main',
+    school_name VARCHAR(255) DEFAULT'مدرسة الدعم التعليمي',
+    school_name_en VARCHAR(255) DEFAULT'Educational Support School',
+    academic_year VARCHAR(50) DEFAULT'2026/2027',
     exchange_rate NUMERIC(12,2) DEFAULT 89500.00,
-    phone VARCHAR(50) DEFAULT '+961 01 888 999',
-    email VARCHAR(100) DEFAULT 'info@school.edu.lb',
-    address TEXT DEFAULT 'بيروت - لبنان',
+    phone VARCHAR(50) DEFAULT'+961 01 888 999',
+    email VARCHAR(100) DEFAULT'info@school.edu.lb',
+    address TEXT DEFAULT'بيروت - لبنان',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS tuition_payments (
     receipt_no VARCHAR(100) NOT NULL,
     amount_usd NUMERIC(12,2) NOT NULL,
     amount_lbp NUMERIC(15,2),
-    payment_method VARCHAR(50) DEFAULT 'fresh_cash',
+    payment_method VARCHAR(50) DEFAULT'fresh_cash',
     payment_date DATE DEFAULT CURRENT_DATE,
     description TEXT,
     remaining_balance_usd NUMERIC(12,2)
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS agenda_items (
     subject VARCHAR(100),
     title VARCHAR(255) NOT NULL,
     details TEXT,
-    activity_type VARCHAR(50) DEFAULT 'homework',
+    activity_type VARCHAR(50) DEFAULT'homework',
     grade VARCHAR(100),
     classroom VARCHAR(50),
     exam_duration INT,
@@ -140,7 +140,7 @@ CREATE INDEX IF NOT EXISTS idx_advances_employee ON employee_advances(employee_i
  * Get current Neon Connection URL from Settings or localStorage
  */
 export function getNeonConnectionUrl() {
-  return localStorage.getItem('neon_database_url') || 'postgresql://neondb_owner:npg_dMHDq2Ae1FXR@ep-billowing-recipe-awh6dwin.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require';
+  return localStorage.getItem('neon_database_url') ||'postgresql://neondb_owner:npg_dMHDq2Ae1FXR@ep-billowing-recipe-awh6dwin.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require';
 }
 
 /**

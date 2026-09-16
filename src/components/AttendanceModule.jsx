@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { useApp } from '../context/AppContext';
-import { 
+import React, {useState, useMemo} from'react';
+import {useApp} from'../context/AppContext';
+import {
   UserCheck, 
   UserX, 
   Clock, 
@@ -26,10 +26,10 @@ import {
   ShieldCheck,
   Info,
   ChevronDown
-} from 'lucide-react';
+} from'lucide-react';
 
 export const AttendanceModule = () => {
-  const { 
+  const {
     lang, 
     t, 
     currentRole, 
@@ -48,7 +48,7 @@ export const AttendanceModule = () => {
     setSelectedStudentId
   } = useApp();
 
-  const isAr = lang === 'ar';
+  const isAr = lang ==='ar';
   const safeStudents = students || [];
   const safeTeachers = teachers || [];
   const safeGrades = grades || [];
@@ -56,31 +56,31 @@ export const AttendanceModule = () => {
   // Local date formatting avoiding UTC timezone shift
   const formatLocalDate = (d) => {
     const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const month = String(d.getMonth() + 1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return`${year}-${month}-${day}`;
   };
 
-  // Section extractor helper: 'الشعبة (أ)' -> 'أ'
+  // Section extractor helper:'الشعبة (أ)'->'أ'
   const getSectionLetter = (str) => {
-    if (!str) return '';
-    const clean = String(str).replace(/[أإآ]/g, 'ا');
+    if (!str) return'';
+    const clean = String(str).replace(/[أإآ]/g,'ا');
     const m = clean.match(/[\(\s\-\_]([ابجدA-Z])[\)\s\-\_]?$/) || clean.match(/([ابجدA-Z])/g);
-    const res = m ? m[m.length - 1] : '';
-    return res === 'ا' ? 'أ' : res;
+    const res = m ? m[m.length - 1] :'';
+    return res ==='ا'?'أ': res;
   };
 
   // Grade normalization helper
-  const normStr = (str) => (str || '')
+  const normStr = (str) => (str ||'')
     .trim()
     .toLowerCase()
-    .replace(/[أإآ]/g, 'ا')
-    .replace('الابتدائي', '')
-    .replace('المتوسط', '')
-    .replace('الثانوي', '')
-    .replace('الصف', '')
-    .replace('الشعبة', '')
-    .replace(/[\(\)\-\_\s]/g, '');
+    .replace(/[أإآ]/g,'ا')
+    .replace('الابتدائي','')
+    .replace('المتوسط','')
+    .replace('الثانوي','')
+    .replace('الصف','')
+    .replace('الشعبة','')
+    .replace(/[\(\)\-\_\s]/g,'');
 
   const isGradeMatch = (g1, g2) => {
     if (!g1 || !g2) return false;
@@ -94,9 +94,9 @@ export const AttendanceModule = () => {
     t.id === currentUser?.id || 
     t.username === currentUser?.username || 
     t.name === currentUser?.name
-  ) || (currentRole === 'teacher' ? currentUser : null);
+  ) || (currentRole ==='teacher'? currentUser : null);
 
-  const teacherAssignedList = (currentRole === 'teacher')
+  const teacherAssignedList = (currentRole ==='teacher')
     ? (
         activeTeacher?.assignedClassrooms?.length > 0 
           ? activeTeacher.assignedClassrooms 
@@ -109,25 +109,25 @@ export const AttendanceModule = () => {
   // Allowed grades for this user
   const availableGrades = useMemo(() => {
     return safeGrades.filter(g => {
-      if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
+      if (currentRole !=='teacher'|| teacherAssignedList.length === 0) return true;
       return teacherAssignedList.some(assigned => isGradeMatch(g.name, assigned));
     });
   }, [safeGrades, currentRole, teacherAssignedList]);
 
   // View Subtabs
   const [activeSubTab, setActiveSubTab] = useState('monthly_interactive'); 
-  // 'monthly_interactive', 'daily', 'yearly_summary'
+  //'monthly_interactive','daily','yearly_summary'
 
-  // View display mode in Daily: 'cards' or 'table'
+  // View display mode in Daily:'cards'or'table'
   const [dailyViewMode, setDailyViewMode] = useState('cards');
 
   // Selected Date for Daily attendance
   const [selectedDate, setSelectedDate] = useState(() => formatLocalDate(new Date()));
   
   // Selected Grade & Section
-  const initialGrade = availableGrades[0]?.name || safeGrades[0]?.name || 'الصف السادس الابتدائي';
+  const initialGrade = availableGrades[0]?.name || safeGrades[0]?.name ||'الصف السادس الابتدائي';
   const [selectedGrade, setSelectedGrade] = useState(initialGrade);
-  const [selectedSection, setSelectedSection] = useState('ALL'); // 'ALL', 'أ', 'ب', 'ج', 'د'
+  const [selectedSection, setSelectedSection] = useState('ALL'); //'ALL','أ','ب','ج','د'
   const [searchTerm, setSearchTerm] = useState('');
   const [toastMsg, setToastMsg] = useState('');
 
@@ -137,41 +137,41 @@ export const AttendanceModule = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
   // School days mode:
-  // 'sun_thu': Sunday to Thursday (5 days - official Arab standard)
-  // 'sat_thu': Saturday to Thursday (6 days - tutoring / institute mode)
-  // 'all_days': All days of month
+  //'sun_thu': Sunday to Thursday (5 days - official Arab standard)
+  //'sat_thu': Saturday to Thursday (6 days - tutoring / institute mode)
+  //'all_days': All days of month
   const [schoolDaysMode, setSchoolDaysMode] = useState('sun_thu');
 
-  // Quick cell popover state in monthly grid: { studentId, dateStr }
+  // Quick cell popover state in monthly grid: {studentId, dateStr}
   const [activeCellMenu, setActiveCellMenu] = useState(null);
 
   const monthsList = [
-    { num: 1, name: 'كانون الثاني / يناير' },
-    { num: 2, name: 'شباط / فبراير' },
-    { num: 3, name: 'آذار / مارس' },
-    { num: 4, name: 'نيسان / أبريل' },
-    { num: 5, name: 'أيار / مايو' },
-    { num: 6, name: 'حزيران / يونيو' },
-    { num: 7, name: 'تموز / يوليو' },
-    { num: 8, name: 'آب / أغسطس' },
-    { num: 9, name: 'أيلول / سبتمبر' },
-    { num: 10, name: 'تشرين الأول / أكتوبر' },
-    { num: 11, name: 'تشرين الثاني / نوفمبر' },
-    { num: 12, name: 'كانون الأول / ديسمبر' },
+    {num: 1, name:'كانون الثاني / يناير'},
+    {num: 2, name:'شباط / فبراير'},
+    {num: 3, name:'آذار / مارس'},
+    {num: 4, name:'نيسان / أبريل'},
+    {num: 5, name:'أيار / مايو'},
+    {num: 6, name:'حزيران / يونيو'},
+    {num: 7, name:'تموز / يوليو'},
+    {num: 8, name:'آب / أغسطس'},
+    {num: 9, name:'أيلول / سبتمبر'},
+    {num: 10, name:'تشرين الأول / أكتوبر'},
+    {num: 11, name:'تشرين الثاني / نوفمبر'},
+    {num: 12, name:'كانون الأول / ديسمبر'},
   ];
 
   // Day Name Helper in Arabic
   const getDayNameAr = (dateStr) => {
-    if (!dateStr) return '';
+    if (!dateStr) return'';
     const parts = dateStr.split('-');
     const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-    const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    return days[d.getDay()] || '';
+    const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+    return days[d.getDay()] ||'';
   };
 
   const getShortDayNameAr = (dateStr) => {
     const full = getDayNameAr(dateStr);
-    return full ? full.slice(0, 4) : '';
+    return full ? full.slice(0, 4) :'';
   };
 
   // Check if a date is a school day based on selected mode
@@ -181,11 +181,11 @@ export const AttendanceModule = () => {
     const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
     const dayNum = d.getDay(); // 0 = Sun, 1 = Mon, 2 = Tue, 3 = Wed, 4 = Thu, 5 = Fri, 6 = Sat
 
-    if (schoolDaysMode === 'sun_thu') {
+    if (schoolDaysMode ==='sun_thu') {
       // Sunday (0) to Thursday (4)
       return dayNum >= 0 && dayNum <= 4;
     }
-    if (schoolDaysMode === 'sat_thu') {
+    if (schoolDaysMode ==='sat_thu') {
       // Saturday (6) + Sunday (0) to Thursday (4) => everything except Friday (5)
       return dayNum !== 5;
     }
@@ -212,8 +212,8 @@ export const AttendanceModule = () => {
     return safeStudents.filter((s) => {
       const matchGrade = !selectedGrade || isGradeMatch(s.grade, selectedGrade);
       
-      const stuSection = getSectionLetter(s.classRoom || s.classroom) || 'أ';
-      const matchSection = selectedSection === 'ALL' || stuSection === selectedSection;
+      const stuSection = getSectionLetter(s.classRoom || s.classroom) ||'أ';
+      const matchSection = selectedSection ==='ALL'|| stuSection === selectedSection;
 
       const matchSearch = !searchTerm || 
         (s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
@@ -226,8 +226,8 @@ export const AttendanceModule = () => {
   // Student Attendance Record resolution
   const getStudentStatusForDate = (studentId, dateStr) => {
     const rec = attendance.find(a => a.studentId === studentId && a.date === dateStr);
-    if (!rec) return 'حاضر'; // default present
-    return rec.status || 'حاضر';
+    if (!rec) return'حاضر'; // default present
+    return rec.status ||'حاضر';
   };
 
   const showToast = (msg) => {
@@ -237,26 +237,26 @@ export const AttendanceModule = () => {
 
   // Single mark status (Interactive click)
   const handleMarkStatus = (student, status, dateToMark = selectedDate) => {
-    const cleanStatus = ['حاضر', 'غائب', 'متأخر', 'بعذر'].includes(status) ? status : 'حاضر';
+    const cleanStatus = ['حاضر','غائب','متأخر','بعذر'].includes(status) ? status :'حاضر';
     addAttendanceRecord({
       date: dateToMark,
       studentId: student.id,
       studentName: student.name,
       grade: student.grade || selectedGrade,
-      classRoom: student.classRoom || student.classroom || 'أ',
-      section: student.classRoom || student.classroom || 'أ',
+      classRoom: student.classRoom || student.classroom ||'أ',
+      section: student.classRoom || student.classroom ||'أ',
       status: cleanStatus,
       notes: cleanStatus
     });
 
     setActiveCellMenu(null);
-    showToast(`تم تسجيل (${student.name}): ${cleanStatus} 🟢`);
+    showToast(`تم تسجيل (${student.name}): ${cleanStatus}`);
   };
 
   // Toggle status for a cell in monthly grid (Cycle: حاضر -> غائب -> متأخر -> بعذر -> حاضر)
   const handleToggleCellStatus = (student, dateStr) => {
     const current = getStudentStatusForDate(student.id, dateStr);
-    const order = ['حاضر', 'غائب', 'متأخر', 'بعذر'];
+    const order = ['حاضر','غائب','متأخر','بعذر'];
     const nextIdx = (order.indexOf(current) + 1) % order.length;
     const nextStatus = order[nextIdx];
 
@@ -264,7 +264,7 @@ export const AttendanceModule = () => {
   };
 
   // Batch action: Mark all filtered students as present on a specific date
-  const handleBatchMarkDay = (dateStr, statusToSet = 'حاضر') => {
+  const handleBatchMarkDay = (dateStr, statusToSet ='حاضر') => {
     if (filteredStudents.length === 0) return;
 
     const records = filteredStudents.map(stu => ({
@@ -272,8 +272,8 @@ export const AttendanceModule = () => {
       studentId: stu.id,
       studentName: stu.name,
       grade: stu.grade || selectedGrade,
-      classRoom: stu.classRoom || stu.classroom || 'أ',
-      section: stu.classRoom || stu.classroom || 'أ',
+      classRoom: stu.classRoom || stu.classroom ||'أ',
+      section: stu.classRoom || stu.classroom ||'أ',
       status: statusToSet,
       notes: statusToSet
     }));
@@ -284,13 +284,13 @@ export const AttendanceModule = () => {
       records.forEach(r => addAttendanceRecord(r));
     }
 
-    showToast(statusToSet === 'حاضر' 
-      ? `تم تثبيت جميع الطلاب كـ (حاضر 🟢) ليوم ${dateStr}`
-      : `تم تحديد جميع الطلاب كـ (${statusToSet}) ليوم ${dateStr}`);
+    showToast(statusToSet ==='حاضر'
+      ?`تم تثبيت جميع الطلاب كـ (حاضر) ليوم ${dateStr}`
+      :`تم تحديد جميع الطلاب كـ (${statusToSet}) ليوم ${dateStr}`);
   };
 
   // Batch action: Mark one student present for all days of the month
-  const handleMarkStudentAllMonth = (student, statusToSet = 'حاضر') => {
+  const handleMarkStudentAllMonth = (student, statusToSet ='حاضر') => {
     if (currentMonthDays.length === 0) return;
 
     const records = currentMonthDays.map(dateStr => ({
@@ -298,8 +298,8 @@ export const AttendanceModule = () => {
       studentId: student.id,
       studentName: student.name,
       grade: student.grade || selectedGrade,
-      classRoom: student.classRoom || student.classroom || 'أ',
-      section: student.classRoom || student.classroom || 'أ',
+      classRoom: student.classRoom || student.classroom ||'أ',
+      section: student.classRoom || student.classroom ||'أ',
       status: statusToSet,
       notes: statusToSet
     }));
@@ -319,14 +319,14 @@ export const AttendanceModule = () => {
 
     const records = filteredStudents.map(stu => {
       const cur = getStudentStatusForDate(stu.id, selectedDate);
-      const next = cur === 'حاضر' ? 'غائب' : 'حاضر';
+      const next = cur ==='حاضر'?'غائب':'حاضر';
       return {
         date: selectedDate,
         studentId: stu.id,
         studentName: stu.name,
         grade: stu.grade || selectedGrade,
-        classRoom: stu.classRoom || stu.classroom || 'أ',
-        section: stu.classRoom || stu.classroom || 'أ',
+        classRoom: stu.classRoom || stu.classroom ||'أ',
+        section: stu.classRoom || stu.classroom ||'أ',
         status: next,
         notes: next
       };
@@ -338,7 +338,7 @@ export const AttendanceModule = () => {
       records.forEach(r => addAttendanceRecord(r));
     }
 
-    showToast('تم عكس حالات الحضور والغياب بنجاح 🔄');
+    showToast('تم عكس حالات الحضور والغياب بنجاح');
   };
 
   // Trigger Landscape Print
@@ -347,26 +347,26 @@ export const AttendanceModule = () => {
   };
 
   // Accurate daily stats
-  const presentCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) === 'حاضر').length;
-  const absentCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) === 'غائب').length;
-  const lateCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) === 'متأخر').length;
-  const excusedCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) === 'بعذر').length;
+  const presentCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) ==='حاضر').length;
+  const absentCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) ==='غائب').length;
+  const lateCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) ==='متأخر').length;
+  const excusedCount = filteredStudents.filter(s => getStudentStatusForDate(s.id, selectedDate) ==='بعذر').length;
   const attendanceRate = filteredStudents.length > 0 ? Math.round((presentCount / filteredStudents.length) * 100) : 100;
 
   // ─── PARENT & STUDENT VIEW ────────────────────────────────────────────────
-  if (currentRole === 'student' || currentRole === 'parent') {
+  if (currentRole ==='student'|| currentRole ==='parent') {
     const studentUser = safeStudents.find(s => 
       s.id === selectedStudentId || 
       s.id === currentUser?.id || 
       s.id === currentUser?.studentId || 
       s.name === currentUser?.name
-    ) || safeStudents[0] || { id: 'STU-101', name: currentUser?.name || 'طالب متميز', grade: 'الصف السادس' };
+    ) || safeStudents[0] || {id:'STU-101', name: currentUser?.name ||'طالب متميز', grade:'الصف السادس'};
 
     const myRecords = attendance.filter(a => a.studentId === studentUser.id);
-    const myPresents = myRecords.filter(r => r.status === 'حاضر').length;
-    const myAbsents = myRecords.filter(r => r.status === 'غائب').length;
-    const myLates = myRecords.filter(r => r.status === 'متأخر').length;
-    const myExcused = myRecords.filter(r => r.status === 'بعذر').length;
+    const myPresents = myRecords.filter(r => r.status ==='حاضر').length;
+    const myAbsents = myRecords.filter(r => r.status ==='غائب').length;
+    const myLates = myRecords.filter(r => r.status ==='متأخر').length;
+    const myExcused = myRecords.filter(r => r.status ==='بعذر').length;
     const totalLogged = myPresents + myAbsents + myLates + myExcused;
     const myRate = totalLogged > 0 ? Math.round((myPresents / totalLogged) * 100) : 100;
 
@@ -376,19 +376,19 @@ export const AttendanceModule = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
-              <UserCheck className="w-6 h-6" />
+              <UserCheck className="w-6 h-6"/>
             </div>
             <div>
               <h2 className="text-xl font-black text-[#0284C7]">سجل حضور وغياب الطالب التفاعلي</h2>
               <p className="text-xs text-slate-500 mt-1">
-                كشف إحصائي وتفصيلي لحضور التلميذ: <span className="font-bold text-slate-800">{studentUser.name}</span> ({studentUser.grade || 'صف غير محدد'} - شعبة {studentUser.classRoom || 'أ'})
+                كشف إحصائي وتفصيلي لحضور التلميذ: <span className="font-bold text-slate-800">{studentUser.name}</span> ({studentUser.grade ||'صف غير محدد'} - شعبة {studentUser.classRoom ||'أ'})
               </p>
             </div>
           </div>
 
-          {currentRole === 'parent' && safeStudents.length > 1 && (
+          {currentRole ==='parent'&& safeStudents.length > 1 && (
             <div className="flex items-center gap-2 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-2xl">
-              <Users className="w-4 h-4 text-[#0284C7]" />
+              <Users className="w-4 h-4 text-[#0284C7]"/>
               <span className="text-xs font-bold text-slate-700">تبديل التلميذ:</span>
               <select
                 value={studentUser.id}
@@ -442,8 +442,8 @@ export const AttendanceModule = () => {
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                 {myRecords.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="p-8 text-slate-400 font-bold">
-                      سجل نظيف بالكامل! التلميذ حاضر ومثالي في جميع الأيام الدراسية 🟢
+                    <td colSpan="3"className="p-8 text-slate-400 font-bold">
+                      سجل نظيف بالكامل! التلميذ حاضر ومثالي في جميع الأيام الدراسية 
                     </td>
                   </tr>
                 ) : (
@@ -454,16 +454,16 @@ export const AttendanceModule = () => {
                       </td>
                       <td className="p-3">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                          rec.status === 'حاضر' ? 'bg-emerald-100 text-emerald-800' :
-                          rec.status === 'غائب' ? 'bg-red-100 text-red-800' :
-                          rec.status === 'متأخر' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                          rec.status ==='حاضر'?'bg-emerald-100 text-emerald-800':
+                          rec.status ==='غائب'?'bg-red-100 text-red-800':
+                          rec.status ==='متأخر'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800'
                         }`}>
-                          {rec.status === 'حاضر' ? '🟢 حاضر' :
-                           rec.status === 'غائب' ? '🔴 غائب' :
-                           rec.status === 'متأخر' ? '🟡 متأخر' : '🔵 بعذر'}
+                          {rec.status ==='حاضر'?'حاضر':
+                           rec.status ==='غائب'?'غائب':
+                           rec.status ==='متأخر'?'متأخر':'بعذر'}
                         </span>
                       </td>
-                      <td className="p-3 text-left text-slate-500 font-bold">{rec.notes || '—'}</td>
+                      <td className="p-3 text-left text-slate-500 font-bold">{rec.notes ||'—'}</td>
                     </tr>
                   ))
                 )}
@@ -537,7 +537,7 @@ export const AttendanceModule = () => {
       {/* Floating Toast */}
       {toastMsg && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-[#0284C7] text-white text-xs font-black px-6 py-3 rounded-2xl shadow-2xl z-[999999] animate-bounce flex items-center gap-2 border border-sky-300 no-print">
-          <CheckCircle2 className="w-4 h-4 text-white" />
+          <CheckCircle2 className="w-4 h-4 text-white"/>
           <span>{toastMsg}</span>
         </div>
       )}
@@ -546,10 +546,10 @@ export const AttendanceModule = () => {
       <div className="bg-gradient-to-r from-[#0284C7] via-sky-700 to-[#0369A1] text-white p-6 rounded-3xl shadow-lg relative overflow-hidden flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 no-print">
         <div className="space-y-1 relative z-10">
           <div className="flex items-center gap-2.5">
-            <UserCheck className="w-7 h-7 text-amber-300" />
-            <h2 className="text-xl font-black">{isAr ? 'سجل الحضور والغياب المدرسي التفاعلي' : 'Interactive Attendance Registry'}</h2>
+            <UserCheck className="w-7 h-7 text-amber-300"/>
+            <h2 className="text-xl font-black">{isAr ?'سجل الحضور والغياب المدرسي التفاعلي':'Interactive Attendance Registry'}</h2>
             <span className="text-[10px] font-black bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/30 text-white">
-              طباعة Landscape 🖨️
+              طباعة Landscape 
             </span>
           </div>
           <p className="text-xs text-sky-100 font-medium">
@@ -563,48 +563,48 @@ export const AttendanceModule = () => {
             type="button"
             onClick={() => setActiveSubTab('monthly_interactive')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeSubTab === 'monthly_interactive' ? 'bg-white text-[#0284C7] shadow-md font-black' : 'text-white hover:bg-white/10'
+              activeSubTab ==='monthly_interactive'?'bg-white text-[#0284C7] shadow-md font-black':'text-white hover:bg-white/10'
             }`}
           >
-            <CalendarDays className="w-4 h-4" />
-            <span>📊 السجل الشهري التفاعلي</span>
+            <CalendarDays className="w-4 h-4"/>
+            <span> السجل الشهري التفاعلي</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab('daily')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeSubTab === 'daily' ? 'bg-white text-[#0284C7] shadow-md font-black' : 'text-white hover:bg-white/10'
+              activeSubTab ==='daily'?'bg-white text-[#0284C7] shadow-md font-black':'text-white hover:bg-white/10'
             }`}
           >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>📋 الكشف اليومي المباشر</span>
+            <CheckCircle2 className="w-4 h-4"/>
+            <span> الكشف اليومي المباشر</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab('yearly_summary')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeSubTab === 'yearly_summary' ? 'bg-white text-[#0284C7] shadow-md font-black' : 'text-white hover:bg-white/10'
+              activeSubTab ==='yearly_summary'?'bg-white text-[#0284C7] shadow-md font-black':'text-white hover:bg-white/10'
             }`}
           >
-            <Award className="w-4 h-4" />
-            <span>🎓 التقرير السنوي التراكمي</span>
+            <Award className="w-4 h-4"/>
+            <span> التقرير السنوي التراكمي</span>
           </button>
         </div>
       </div>
 
       {/* Teacher notice if role is teacher */}
-      {currentRole === 'teacher' && (
+      {currentRole ==='teacher'&& (
         <div className="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs no-print">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 bg-[#0284C7] text-white rounded-xl font-bold shadow-xs">👨‍🏫</span>
+            <span className="p-1.5 bg-[#0284C7] text-white rounded-xl font-bold shadow-xs"></span>
             <div>
               <span className="font-bold text-slate-800">
                 حساب الأستاذ: <strong className="text-[#0284C7]">{activeTeacher?.name || currentUser?.name}</strong>
               </span>
               <span className="text-slate-500 mr-2">
-                (الصفوف الموكلة: {teacherAssignedList.length > 0 ? teacherAssignedList.join('، ') : 'كل الصفوف'})
+                (الصفوف الموكلة: {teacherAssignedList.length > 0 ? teacherAssignedList.join('،') :'كل الصفوف'})
               </span>
             </div>
           </div>
@@ -621,7 +621,7 @@ export const AttendanceModule = () => {
           {/* 1. Grade Filter */}
           <div className="space-y-1">
             <label className="text-[11px] font-black text-slate-700 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-[#0284C7]" />
+              <Filter className="w-3.5 h-3.5 text-[#0284C7]"/>
               <span>الصف الدراسي:</span>
             </label>
             <select
@@ -638,7 +638,7 @@ export const AttendanceModule = () => {
           {/* 2. Section Filter */}
           <div className="space-y-1">
             <label className="text-[11px] font-black text-slate-700 flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-[#0284C7]" />
+              <Users className="w-3.5 h-3.5 text-[#0284C7]"/>
               <span>الشعبة المستهدفة:</span>
             </label>
             <select
@@ -655,10 +655,10 @@ export const AttendanceModule = () => {
           </div>
 
           {/* 3. Subtab Specific Filter (Date / Month) */}
-          {activeSubTab === 'daily' ? (
+          {activeSubTab ==='daily'? (
             <div className="space-y-1">
               <label className="text-[11px] font-black text-slate-700 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
+                <Calendar className="w-3.5 h-3.5 text-[#0284C7]"/>
                 <span>تاريخ اليوم ({getDayNameAr(selectedDate)}):</span>
               </label>
               <input
@@ -671,7 +671,7 @@ export const AttendanceModule = () => {
           ) : (
             <div className="space-y-1">
               <label className="text-[11px] font-black text-slate-700 flex items-center gap-1">
-                <CalendarDays className="w-3.5 h-3.5 text-[#0284C7]" />
+                <CalendarDays className="w-3.5 h-3.5 text-[#0284C7]"/>
                 <span>شهر التقرير:</span>
               </label>
               <select
@@ -689,7 +689,7 @@ export const AttendanceModule = () => {
           {/* 4. Search Filter */}
           <div className="space-y-1">
             <label className="text-[11px] font-black text-slate-700 flex items-center gap-1">
-              <Search className="w-3.5 h-3.5 text-[#0284C7]" />
+              <Search className="w-3.5 h-3.5 text-[#0284C7]"/>
               <span>بحث عن تلميذ:</span>
             </label>
             <input
@@ -709,14 +709,14 @@ export const AttendanceModule = () => {
               className="w-full bg-slate-900 hover:bg-black text-white rounded-xl py-2 px-3 text-xs font-black shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               title="طباعة السجل بالوضع الأفقي الكامل (Landscape)"
             >
-              <Printer className="w-4 h-4 text-amber-400" />
-              <span>طباعة Landscape 🖨️</span>
+              <Printer className="w-4 h-4 text-amber-400"/>
+              <span>طباعة Landscape </span>
             </button>
           </div>
         </div>
 
         {/* Extra options bar for interactive grid */}
-        {activeSubTab === 'monthly_interactive' && (
+        {activeSubTab ==='monthly_interactive'&& (
           <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="font-black text-slate-700">نظام أيام الدوام الشهري:</span>
@@ -732,7 +732,7 @@ export const AttendanceModule = () => {
             </div>
 
             <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
-              <span>💡 دلالة الرموز في الجدول:</span>
+              <span> دلالة الرموز في الجدول:</span>
               <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✓ حاضر</span>
               <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">غ غائب</span>
               <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">م متأخر</span>
@@ -745,31 +745,31 @@ export const AttendanceModule = () => {
       {/* ────────────────────────────────────────────────────────────── */}
       {/* 1. INTERACTIVE MONTHLY GRID (السجل الشهري التفاعلي) */}
       {/* ────────────────────────────────────────────────────────────── */}
-      {activeSubTab === 'monthly_interactive' && (
-        <div id="printable-attendance-sheet" className="bg-white border border-slate-200 p-4 sm:p-6 rounded-3xl shadow-sm space-y-4">
+      {activeSubTab ==='monthly_interactive'&& (
+        <div id="printable-attendance-sheet"className="bg-white border border-slate-200 p-4 sm:p-6 rounded-3xl shadow-sm space-y-4">
           
           {/* Printable Official Header */}
           <div className="border-b-2 border-slate-800 pb-3 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {siteSettings?.schoolLogo ? (
-                <img src={siteSettings.schoolLogo} alt="Logo" className="w-12 h-12 object-contain" />
+                <img src={siteSettings.schoolLogo} alt="Logo"className="w-12 h-12 object-contain"/>
               ) : (
                 <div className="w-12 h-12 rounded-2xl bg-[#0284C7] text-white flex items-center justify-center font-black text-lg">
-                  🏫
+                  
                 </div>
               )}
               <div>
                 <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                  {siteSettings?.schoolName || 'مدرسة الدعم التعليمي'} - سجل الحضور والغياب الشهري الرسمي
+                  {siteSettings?.schoolName ||'مدرسة الدعم التعليمي'} - سجل الحضور والغياب الشهري الرسمي
                 </h2>
                 <div className="text-xs text-slate-600 font-bold flex flex-wrap items-center gap-2 mt-1">
                   <span>الصف: <strong className="text-slate-900">{selectedGrade}</strong></span>
                   <span>•</span>
-                  <span>الشعبة: <strong className="text-slate-900">{selectedSection === 'ALL' ? 'جميع الشُعب' : `(${selectedSection})`}</strong></span>
+                  <span>الشعبة: <strong className="text-slate-900">{selectedSection ==='ALL'?'جميع الشُعب':`(${selectedSection})`}</strong></span>
                   <span>•</span>
                   <span>الشهر: <strong className="text-slate-900">{monthsList.find(m => m.num === selectedMonth)?.name} {selectedYear}</strong></span>
                   <span>•</span>
-                  <span>العام الدراسي: <strong>{siteSettings?.academicYear || '2026/2027'}</strong></span>
+                  <span>العام الدراسي: <strong>{siteSettings?.academicYear ||'2026/2027'}</strong></span>
                 </div>
               </div>
             </div>
@@ -786,7 +786,7 @@ export const AttendanceModule = () => {
           {/* Interactive Batch Action Bar inside sheet (no-print) */}
           <div className="no-print bg-[#F8FAFC] border border-slate-200 p-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <Sparkles className="w-4 h-4 text-amber-500"/>
               <span className="font-black text-slate-700">
                 الجدول تفاعلي بالكامل: اضغط على أي خانة يوم لتعديل حالة الطالب مباشرة (حاضر / غائب / متأخر / بعذر)!
               </span>
@@ -798,8 +798,8 @@ export const AttendanceModule = () => {
                 onClick={handlePrintLandscape}
                 className="bg-[#0284C7] hover:bg-sky-700 text-white font-black px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span>معاينة وطباعة بالعرض (Landscape) 🖨️</span>
+                <Printer className="w-3.5 h-3.5"/>
+                <span>معاينة وطباعة بالعرض (Landscape) </span>
               </button>
             </div>
           </div>
@@ -824,15 +824,15 @@ export const AttendanceModule = () => {
                         className="p-1 border border-slate-300 text-center font-mono hover:bg-sky-100 transition-colors cursor-pointer group relative"
                         title={`اضغط لخيارات يوم ${dateStr}`}
                         onClick={() => {
-                          if (window.confirm(`هل تريد تحديد جميع طلاب الكشف كـ (حاضر 🟢) ليوم ${dateStr} (${dayShortName})؟`)) {
-                            handleBatchMarkDay(dateStr, 'حاضر');
+                          if (window.confirm(`هل تريد تحديد جميع طلاب الكشف كـ (حاضر) ليوم ${dateStr} (${dayShortName})؟`)) {
+                            handleBatchMarkDay(dateStr,'حاضر');
                           }
                         }}
                       >
                         <span className="block text-[8px] text-slate-500">{dayShortName}</span>
                         <span className="text-xs font-black">{dayNum}</span>
                         <span className="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded shadow z-20 whitespace-nowrap">
-                          تثبيت الكل حاضر 🟢
+                          تثبيت الكل حاضر 
                         </span>
                       </th>
                     );
@@ -869,16 +869,16 @@ export const AttendanceModule = () => {
                           {stu.name}
                         </td>
                         <td className="p-1 border border-slate-300 text-center font-bold text-slate-700">
-                          {getSectionLetter(stu.classRoom || stu.classroom) || 'أ'}
+                          {getSectionLetter(stu.classRoom || stu.classroom) ||'أ'}
                         </td>
 
                         {/* Month Days interactive cells */}
                         {currentMonthDays.map((dateStr) => {
                           const status = getStudentStatusForDate(stu.id, dateStr);
-                          if (status === 'حاضر') stuPresents++;
-                          else if (status === 'غائب') stuAbsents++;
-                          else if (status === 'متأخر') stuLates++;
-                          else if (status === 'بعذر') stuExcused++;
+                          if (status ==='حاضر') stuPresents++;
+                          else if (status ==='غائب') stuAbsents++;
+                          else if (status ==='متأخر') stuLates++;
+                          else if (status ==='بعذر') stuExcused++;
 
                           const isCellActive = activeCellMenu?.studentId === stu.id && activeCellMenu?.dateStr === dateStr;
 
@@ -886,22 +886,22 @@ export const AttendanceModule = () => {
                             <td 
                               key={dateStr} 
                               className={`p-0.5 border border-slate-300 text-center font-black relative transition-all cursor-pointer select-none ${
-                                status === 'حاضر' ? 'bg-emerald-50/40 hover:bg-emerald-100 text-emerald-700' :
-                                status === 'غائب' ? 'bg-red-100/70 hover:bg-red-200 text-red-700 font-black' :
-                                status === 'متأخر' ? 'bg-amber-100 hover:bg-amber-200 text-amber-700' :
+                                status ==='حاضر'?'bg-emerald-50/40 hover:bg-emerald-100 text-emerald-700':
+                                status ==='غائب'?'bg-red-100/70 hover:bg-red-200 text-red-700 font-black':
+                                status ==='متأخر'?'bg-amber-100 hover:bg-amber-200 text-amber-700':
                                 'bg-blue-100 hover:bg-blue-200 text-blue-700'
                               }`}
                               onClick={() => handleToggleCellStatus(stu, dateStr)}
                               onContextMenu={(e) => {
                                 e.preventDefault();
-                                setActiveCellMenu(isCellActive ? null : { studentId: stu.id, dateStr });
+                                setActiveCellMenu(isCellActive ? null : {studentId: stu.id, dateStr});
                               }}
                               title={`انقر للتبديل: ${stu.name} - ${dateStr} (${status})`}
                             >
                               <span className="text-xs">
-                                {status === 'حاضر' ? '✓' :
-                                 status === 'غائب' ? 'غ' :
-                                 status === 'متأخر' ? 'م' : 'ع'}
+                                {status ==='حاضر'?'✓':
+                                 status ==='غائب'?'غ':
+                                 status ==='متأخر'?'م':'ع'}
                               </span>
 
                               {/* Interactive Context Menu popup */}
@@ -912,28 +912,28 @@ export const AttendanceModule = () => {
                                 >
                                   <button
                                     type="button"
-                                    onClick={() => handleMarkStatus(stu, 'حاضر', dateStr)}
+                                    onClick={() => handleMarkStatus(stu,'حاضر', dateStr)}
                                     className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold text-[10px]"
                                   >
                                     ✓ حاضر
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleMarkStatus(stu, 'غائب', dateStr)}
+                                    onClick={() => handleMarkStatus(stu,'غائب', dateStr)}
                                     className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded font-bold text-[10px]"
                                   >
                                     غ غائب
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleMarkStatus(stu, 'متأخر', dateStr)}
+                                    onClick={() => handleMarkStatus(stu,'متأخر', dateStr)}
                                     className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-[10px]"
                                   >
                                     م متأخر
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleMarkStatus(stu, 'بعذر', dateStr)}
+                                    onClick={() => handleMarkStatus(stu,'بعذر', dateStr)}
                                     className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded font-bold text-[10px]"
                                   >
                                     ع بعذر
@@ -956,19 +956,19 @@ export const AttendanceModule = () => {
                         </td>
                         <td className="p-1 border border-slate-300 text-center font-black bg-sky-50/70 font-mono text-xs">
                           {currentMonthDays.length > 0 
-                            ? `${Math.round((stuPresents / currentMonthDays.length) * 100)}%` 
-                            : '100%'}
+                            ?`${Math.round((stuPresents / currentMonthDays.length) * 100)}%`
+                            :'100%'}
                         </td>
                         
                         {/* Quick action for student row (no-print) */}
                         <td className="p-1 border border-slate-300 text-center no-print">
                           <button
                             type="button"
-                            onClick={() => handleMarkStudentAllMonth(stu, 'حاضر')}
+                            onClick={() => handleMarkStudentAllMonth(stu,'حاضر')}
                             className="px-1.5 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[9px] font-black cursor-pointer transition-all"
                             title="تحديد كامل الشهر حاضر لهذا التلميذ"
                           >
-                            كل الشهر 🟢
+                            كل الشهر 
                           </button>
                         </td>
                       </tr>
@@ -981,37 +981,37 @@ export const AttendanceModule = () => {
               {filteredStudents.length > 0 && (
                 <tfoot>
                   <tr className="bg-slate-100 font-black border-t-2 border-slate-400">
-                    <td colSpan="3" className="p-1.5 border border-slate-300 text-right">
-                      مجموع الحاضرين يومياً 🟢
+                    <td colSpan="3"className="p-1.5 border border-slate-300 text-right">
+                      مجموع الحاضرين يومياً 
                     </td>
                     {currentMonthDays.map((dateStr) => {
-                      const dayPresents = filteredStudents.filter(s => getStudentStatusForDate(s.id, dateStr) === 'حاضر').length;
+                      const dayPresents = filteredStudents.filter(s => getStudentStatusForDate(s.id, dateStr) ==='حاضر').length;
                       return (
                         <td key={dateStr} className="p-1 border border-slate-300 text-center text-emerald-800 font-mono font-black text-[10px]">
                           {dayPresents}
                         </td>
                       );
                     })}
-                    <td colSpan="5" className="p-1 border border-slate-300 text-center text-[9px] text-slate-500 font-bold">
+                    <td colSpan="5"className="p-1 border border-slate-300 text-center text-[9px] text-slate-500 font-bold">
                       إجمالي الطلاب: {filteredStudents.length}
                     </td>
                   </tr>
 
                   <tr className="bg-slate-50 font-black">
-                    <td colSpan="3" className="p-1.5 border border-slate-300 text-right text-red-800">
-                      مجموع الغائبين يومياً 🔴
+                    <td colSpan="3"className="p-1.5 border border-slate-300 text-right text-red-800">
+                      مجموع الغائبين يومياً 
                     </td>
                     {currentMonthDays.map((dateStr) => {
-                      const dayAbsents = filteredStudents.filter(s => getStudentStatusForDate(s.id, dateStr) === 'غائب').length;
+                      const dayAbsents = filteredStudents.filter(s => getStudentStatusForDate(s.id, dateStr) ==='غائب').length;
                       return (
                         <td key={dateStr} className={`p-1 border border-slate-300 text-center font-mono font-black text-[10px] ${
-                          dayAbsents > 0 ? 'text-red-700 bg-red-100/50' : 'text-slate-400'
+                          dayAbsents > 0 ?'text-red-700 bg-red-100/50':'text-slate-400'
                         }`}>
                           {dayAbsents}
                         </td>
                       );
                     })}
-                    <td colSpan="5" className="p-1 border border-slate-300 text-center text-[9px] text-slate-500 font-bold">
+                    <td colSpan="5"className="p-1 border border-slate-300 text-center text-[9px] text-slate-500 font-bold">
                       دوام معتمد
                     </td>
                   </tr>
@@ -1041,7 +1041,7 @@ export const AttendanceModule = () => {
       {/* ────────────────────────────────────────────────────────────── */}
       {/* 2. DAILY ATTENDANCE (الكشف اليومي المباشر) */}
       {/* ────────────────────────────────────────────────────────────── */}
-      {activeSubTab === 'daily' && (
+      {activeSubTab ==='daily'&& (
         <div className="space-y-4">
           {/* Quick Stats Banner */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1050,7 +1050,7 @@ export const AttendanceModule = () => {
                 <span className="text-[10px] font-extrabold text-emerald-800 block">الحاضرون اليوم</span>
                 <span className="text-lg font-black text-emerald-700">{presentCount} طالب</span>
               </div>
-              <UserCheck className="w-6 h-6 text-emerald-600 opacity-80" />
+              <UserCheck className="w-6 h-6 text-emerald-600 opacity-80"/>
             </div>
 
             <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-center justify-between">
@@ -1058,7 +1058,7 @@ export const AttendanceModule = () => {
                 <span className="text-[10px] font-extrabold text-red-800 block">الغائبون اليوم</span>
                 <span className="text-lg font-black text-red-700">{absentCount} طالب</span>
               </div>
-              <UserX className="w-6 h-6 text-red-600 opacity-80" />
+              <UserX className="w-6 h-6 text-red-600 opacity-80"/>
             </div>
 
             <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl flex items-center justify-between">
@@ -1066,7 +1066,7 @@ export const AttendanceModule = () => {
                 <span className="text-[10px] font-extrabold text-amber-800 block">المتأخرون</span>
                 <span className="text-lg font-black text-amber-700">{lateCount} طالب</span>
               </div>
-              <Clock className="w-6 h-6 text-amber-600 opacity-80" />
+              <Clock className="w-6 h-6 text-amber-600 opacity-80"/>
             </div>
 
             <div className="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl flex items-center justify-between">
@@ -1074,7 +1074,7 @@ export const AttendanceModule = () => {
                 <span className="text-[10px] font-extrabold text-sky-800 block">نسبة الالتزام اليوم</span>
                 <span className="text-lg font-black text-[#0284C7]">{attendanceRate}%</span>
               </div>
-              <Users className="w-6 h-6 text-[#0284C7] opacity-80" />
+              <Users className="w-6 h-6 text-[#0284C7] opacity-80"/>
             </div>
           </div>
 
@@ -1083,20 +1083,20 @@ export const AttendanceModule = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => handleBatchMarkDay(selectedDate, 'حاضر')}
+                onClick={() => handleBatchMarkDay(selectedDate,'حاضر')}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>تثبيت الكل حاضر 🟢</span>
+                <CheckCircle2 className="w-4 h-4"/>
+                <span>تثبيت الكل حاضر </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleBatchMarkDay(selectedDate, 'غائب')}
+                onClick={() => handleBatchMarkDay(selectedDate,'غائب')}
                 className="bg-red-600 hover:bg-red-700 text-white font-black px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
               >
-                <UserX className="w-4 h-4" />
-                <span>تحديد الكل غائب 🔴</span>
+                <UserX className="w-4 h-4"/>
+                <span>تحديد الكل غائب </span>
               </button>
 
               <button
@@ -1104,8 +1104,8 @@ export const AttendanceModule = () => {
                 onClick={handleInvertDay}
                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>عكس التحديد 🔄</span>
+                <RefreshCw className="w-3.5 h-3.5"/>
+                <span>عكس التحديد </span>
               </button>
             </div>
 
@@ -1115,7 +1115,7 @@ export const AttendanceModule = () => {
                 type="button"
                 onClick={() => setDailyViewMode('cards')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  dailyViewMode === 'cards' ? 'bg-[#0284C7] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  dailyViewMode ==='cards'?'bg-[#0284C7] text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 بطاقات
@@ -1124,7 +1124,7 @@ export const AttendanceModule = () => {
                 type="button"
                 onClick={() => setDailyViewMode('table')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  dailyViewMode === 'table' ? 'bg-[#0284C7] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  dailyViewMode ==='table'?'bg-[#0284C7] text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 جدول كشف
@@ -1133,11 +1133,11 @@ export const AttendanceModule = () => {
           </div>
 
           {/* Cards View */}
-          {dailyViewMode === 'cards' && (
+          {dailyViewMode ==='cards'&& (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {filteredStudents.length === 0 ? (
                 <div className="col-span-full text-center py-12 bg-white rounded-3xl border border-slate-200 text-slate-400 font-bold">
-                  <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-30"/>
                   <p>لا يوجد طلاب مطابقون للتحديد الحالي.</p>
                 </div>
               ) : (
@@ -1148,38 +1148,38 @@ export const AttendanceModule = () => {
                     <div 
                       key={stu.id}
                       className={`bg-white border-2 p-4 rounded-3xl shadow-xs transition-all flex flex-col justify-between gap-3 ${
-                        status === 'حاضر' ? 'border-emerald-200 hover:border-emerald-400' :
-                        status === 'غائب' ? 'border-red-200 bg-red-50/20 hover:border-red-400' :
-                        status === 'متأخر' ? 'border-amber-200 bg-amber-50/20 hover:border-amber-400' :
+                        status ==='حاضر'?'border-emerald-200 hover:border-emerald-400':
+                        status ==='غائب'?'border-red-200 bg-red-50/20 hover:border-red-400':
+                        status ==='متأخر'?'border-amber-200 bg-amber-50/20 hover:border-amber-400':
                         'border-blue-200 bg-blue-50/20 hover:border-blue-400'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 ${
-                            status === 'حاضر' ? 'bg-emerald-600' :
-                            status === 'غائب' ? 'bg-red-600' :
-                            status === 'متأخر' ? 'bg-amber-600' : 'bg-blue-600'
+                            status ==='حاضر'?'bg-emerald-600':
+                            status ==='غائب'?'bg-red-600':
+                            status ==='متأخر'?'bg-amber-600':'bg-blue-600'
                           }`}>
-                            {(stu.name || 'ط')[0]}
+                            {(stu.name ||'ط')[0]}
                           </div>
                           <div className="truncate">
                             <h4 className="text-xs font-black text-[#0F172A] truncate">{stu.name}</h4>
                             <span className="text-[10px] font-mono text-slate-400 block">
-                              شعبة: ({getSectionLetter(stu.classRoom || stu.classroom) || 'أ'}) • ID: {stu.id}
+                              شعبة: ({getSectionLetter(stu.classRoom || stu.classroom) ||'أ'}) • ID: {stu.id}
                             </span>
                           </div>
                         </div>
 
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-black shrink-0 ${
-                          status === 'حاضر' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                          status === 'غائب' ? 'bg-red-100 text-red-800 border border-red-300' :
-                          status === 'متأخر' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                          status ==='حاضر'?'bg-emerald-100 text-emerald-800 border border-emerald-300':
+                          status ==='غائب'?'bg-red-100 text-red-800 border border-red-300':
+                          status ==='متأخر'?'bg-amber-100 text-amber-800 border border-amber-300':
                           'bg-blue-100 text-blue-800 border border-blue-300'
                         }`}>
-                          {status === 'حاضر' ? '🟢 حاضر' :
-                           status === 'غائب' ? '🔴 غائب' :
-                           status === 'متأخر' ? '🟡 متأخر' : '🔵 بعذر'}
+                          {status ==='حاضر'?'حاضر':
+                           status ==='غائب'?'غائب':
+                           status ==='متأخر'?'متأخر':'بعذر'}
                         </span>
                       </div>
 
@@ -1187,42 +1187,42 @@ export const AttendanceModule = () => {
                       <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100">
                         <button
                           type="button"
-                          onClick={() => handleMarkStatus(stu, 'حاضر')}
+                          onClick={() => handleMarkStatus(stu,'حاضر')}
                           className={`py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            status === 'حاضر' ? 'bg-emerald-600 text-white font-black shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                            status ==='حاضر'?'bg-emerald-600 text-white font-black shadow-xs':'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                           }`}
                         >
-                          حاضر 🟢
+                          حاضر 
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => handleMarkStatus(stu, 'غائب')}
+                          onClick={() => handleMarkStatus(stu,'غائب')}
                           className={`py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            status === 'غائب' ? 'bg-red-600 text-white font-black shadow-xs' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                            status ==='غائب'?'bg-red-600 text-white font-black shadow-xs':'bg-red-50 text-red-700 hover:bg-red-100'
                           }`}
                         >
-                          غائب 🔴
+                          غائب 
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => handleMarkStatus(stu, 'متأخر')}
+                          onClick={() => handleMarkStatus(stu,'متأخر')}
                           className={`py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            status === 'متأخر' ? 'bg-amber-500 text-white font-black shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                            status ==='متأخر'?'bg-amber-500 text-white font-black shadow-xs':'bg-amber-50 text-amber-700 hover:bg-amber-100'
                           }`}
                         >
-                          متأخر 🟡
+                          متأخر 
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => handleMarkStatus(stu, 'بعذر')}
+                          onClick={() => handleMarkStatus(stu,'بعذر')}
                           className={`py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            status === 'بعذر' ? 'bg-blue-600 text-white font-black shadow-xs' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                            status ==='بعذر'?'bg-blue-600 text-white font-black shadow-xs':'bg-blue-50 text-blue-700 hover:bg-blue-100'
                           }`}
                         >
-                          بعذر 🔵
+                          بعذر 
                         </button>
                       </div>
                     </div>
@@ -1233,7 +1233,7 @@ export const AttendanceModule = () => {
           )}
 
           {/* Table List View */}
-          {dailyViewMode === 'table' && (
+          {dailyViewMode ==='table'&& (
             <div className="bg-white border border-[#E2E8F0] rounded-3xl p-4 shadow-sm overflow-x-auto">
               <table className="w-full text-xs text-center border-collapse">
                 <thead>
@@ -1252,55 +1252,55 @@ export const AttendanceModule = () => {
                       <tr key={stu.id} className="hover:bg-slate-50">
                         <td className="p-2.5 text-right font-mono font-bold text-slate-400">{sIdx + 1}</td>
                         <td className="p-2.5 text-right font-black text-slate-900">{stu.name}</td>
-                        <td className="p-2.5 font-bold">{getSectionLetter(stu.classRoom || stu.classroom) || 'أ'}</td>
+                        <td className="p-2.5 font-bold">{getSectionLetter(stu.classRoom || stu.classroom) ||'أ'}</td>
                         <td className="p-2.5">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                            status === 'حاضر' ? 'bg-emerald-100 text-emerald-800' :
-                            status === 'غائب' ? 'bg-red-100 text-red-800' :
-                            status === 'متأخر' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                            status ==='حاضر'?'bg-emerald-100 text-emerald-800':
+                            status ==='غائب'?'bg-red-100 text-red-800':
+                            status ==='متأخر'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800'
                           }`}>
-                            {status === 'حاضر' ? '🟢 حاضر' :
-                             status === 'غائب' ? '🔴 غائب' :
-                             status === 'متأخر' ? '🟡 متأخر' : '🔵 بعذر'}
+                            {status ==='حاضر'?'حاضر':
+                             status ==='غائب'?'غائب':
+                             status ==='متأخر'?'متأخر':'بعذر'}
                           </span>
                         </td>
                         <td className="p-2.5">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => handleMarkStatus(stu, 'حاضر')}
+                              onClick={() => handleMarkStatus(stu,'حاضر')}
                               className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                status === 'حاضر' ? 'bg-emerald-600 text-white font-black' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                status ==='حاضر'?'bg-emerald-600 text-white font-black':'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                               }`}
                             >
-                              حاضر 🟢
+                              حاضر 
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleMarkStatus(stu, 'غائب')}
+                              onClick={() => handleMarkStatus(stu,'غائب')}
                               className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                status === 'غائب' ? 'bg-red-600 text-white font-black' : 'bg-red-50 text-red-800 hover:bg-red-100'
+                                status ==='غائب'?'bg-red-600 text-white font-black':'bg-red-50 text-red-800 hover:bg-red-100'
                               }`}
                             >
-                              غائب 🔴
+                              غائب 
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleMarkStatus(stu, 'متأخر')}
+                              onClick={() => handleMarkStatus(stu,'متأخر')}
                               className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                status === 'متأخر' ? 'bg-amber-500 text-white font-black' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                status ==='متأخر'?'bg-amber-500 text-white font-black':'bg-amber-50 text-amber-800 hover:bg-amber-100'
                               }`}
                             >
-                              متأخر 🟡
+                              متأخر 
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleMarkStatus(stu, 'بعذر')}
+                              onClick={() => handleMarkStatus(stu,'بعذر')}
                               className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                status === 'بعذر' ? 'bg-blue-600 text-white font-black' : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+                                status ==='بعذر'?'bg-blue-600 text-white font-black':'bg-blue-50 text-blue-800 hover:bg-blue-100'
                               }`}
                             >
-                              بعذر 🔵
+                              بعذر 
                             </button>
                           </div>
                         </td>
@@ -1317,20 +1317,20 @@ export const AttendanceModule = () => {
       {/* ────────────────────────────────────────────────────────────── */}
       {/* 3. YEARLY SUMMARY REPORT (التقرير السنوي التراكمي - Landscape) */}
       {/* ────────────────────────────────────────────────────────────── */}
-      {activeSubTab === 'yearly_summary' && (
-        <div id="printable-attendance-sheet" className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm space-y-4">
+      {activeSubTab ==='yearly_summary'&& (
+        <div id="printable-attendance-sheet"className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm space-y-4">
           {/* Header */}
           <div className="border-b-2 border-slate-800 pb-4 flex items-center justify-between">
             <div className="space-y-1">
               <h2 className="text-base font-black text-slate-900">
-                {siteSettings?.schoolName || 'مدرسة الدعم التعليمي'} - كشف الحضور والغياب الختامي لآخر السنة الدراسية
+                {siteSettings?.schoolName ||'مدرسة الدعم التعليمي'} - كشف الحضور والغياب الختامي لآخر السنة الدراسية
               </h2>
               <div className="text-xs text-slate-600 font-bold flex items-center gap-3">
                 <span>الصف: <strong>{selectedGrade}</strong></span>
                 <span>•</span>
-                <span>الشعبة: <strong>{selectedSection === 'ALL' ? 'جميع الشُعب' : selectedSection}</strong></span>
+                <span>الشعبة: <strong>{selectedSection ==='ALL'?'جميع الشُعب': selectedSection}</strong></span>
                 <span>•</span>
-                <span>العام الدراسي: <strong>{siteSettings?.academicYear || '2026/2027'}</strong></span>
+                <span>العام الدراسي: <strong>{siteSettings?.academicYear ||'2026/2027'}</strong></span>
               </div>
             </div>
             <div className="text-left font-mono text-[10px] text-slate-500">
@@ -1358,9 +1358,9 @@ export const AttendanceModule = () => {
               <tbody>
                 {filteredStudents.map((stu, sIdx) => {
                   const stuRecords = attendance.filter(a => a.studentId === stu.id);
-                  const totalAbsences = stuRecords.filter(a => a.status === 'غائب').length;
-                  const totalPresents = stuRecords.filter(a => a.status === 'حاضر').length;
-                  const totalLates = stuRecords.filter(a => a.status === 'متأخر').length;
+                  const totalAbsences = stuRecords.filter(a => a.status ==='غائب').length;
+                  const totalPresents = stuRecords.filter(a => a.status ==='حاضر').length;
+                  const totalLates = stuRecords.filter(a => a.status ==='متأخر').length;
                   const totalRecorded = totalAbsences + totalPresents + totalLates;
                   const rate = totalRecorded > 0 ? Math.round((totalPresents / totalRecorded) * 100) : 100;
 
@@ -1369,7 +1369,7 @@ export const AttendanceModule = () => {
                       <td className="p-2.5 border border-slate-300 font-mono text-center font-bold">{sIdx + 1}</td>
                       <td className="p-2.5 border border-slate-300 font-black">{stu.name}</td>
                       <td className="p-2.5 border border-slate-300 text-center font-bold text-slate-600">
-                        {stu.grade} ({getSectionLetter(stu.classRoom || stu.classroom) || 'أ'})
+                        {stu.grade} ({getSectionLetter(stu.classRoom || stu.classroom) ||'أ'})
                       </td>
                       <td className="p-2.5 border border-slate-300 text-center font-black text-emerald-700 bg-emerald-50 font-mono text-sm">
                         {totalPresents} يوم
@@ -1386,19 +1386,19 @@ export const AttendanceModule = () => {
                       <td className="p-2.5 border border-slate-300 text-center font-bold">
                         {rate >= 95 ? (
                           <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px] font-black">
-                            ملتزم ومثالي جداً 🌟
+                            ملتزم ومثالي جداً 
                           </span>
                         ) : rate >= 85 ? (
                           <span className="text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                            جيد جداً 👍
+                            جيد جداً 
                           </span>
                         ) : rate >= 75 ? (
                           <span className="text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                            متوسط الالتزام ⚠️
+                            متوسط الالتزام 
                           </span>
                         ) : (
                           <span className="text-red-700 bg-red-100 px-2 py-0.5 rounded-full text-[10px] font-black">
-                            إنذار غياب متكرر 🚨
+                            إنذار غياب متكرر 
                           </span>
                         )}
                       </td>

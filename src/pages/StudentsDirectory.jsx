@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useSchool } from '../context/SchoolContext';
+import React, {useState} from'react';
+import {useSchool} from'../context/SchoolContext';
 import {
   Users,
   Search,
@@ -13,7 +13,7 @@ import {
   CreditCard,
   Building2,
   Sparkles
-} from 'lucide-react';
+} from'lucide-react';
 
 export const StudentsDirectory = () => {
   const {
@@ -25,7 +25,7 @@ export const StudentsDirectory = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
-  const [viewMode, setViewMode] = useState('family'); // 'family' or 'table'
+  const [viewMode, setViewMode] = useState('family'); //'family'or'table'
 
   // Filter students
   const filteredStudents = students.filter(s => {
@@ -33,16 +33,16 @@ export const StudentsDirectory = () => {
       s.parentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.familyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGrade = selectedGrade === 'ALL' || s.grade === selectedGrade;
+    const matchesGrade = selectedGrade ==='ALL'|| s.grade === selectedGrade;
     return matchesSearch && matchesGrade;
   });
 
   // Group by Family for Unified Family Cards
   const familyGroups = filteredStudents.reduce((acc, student) => {
-    const famKey = student.familyId || student.familyName || student.parentName || 'عائلة عامة';
+    const famKey = student.familyId || student.familyName || student.parentName ||'عائلة عامة';
     if (!acc[famKey]) {
       acc[famKey] = {
-        familyName: student.familyName || `عائلة ${student.parentName || 'المدرسة'}`,
+        familyName: student.familyName ||`عائلة ${student.parentName ||'المدرسة'}`,
         parentName: student.parentName,
         parentPhone: student.parentPhone,
         children: []
@@ -54,11 +54,11 @@ export const StudentsDirectory = () => {
 
   // Export to CSV
   const handleExportCSV = () => {
-    const headers = ['رقم القيد', 'الاسم', 'العائلة', 'الصف', 'الشعبة', 'ولي الأمر', 'رقم الهاتف', 'القسط الإجمالي', 'الخصم', 'المسدد', 'المتبقي'];
+    const headers = ['رقم القيد','الاسم','العائلة','الصف','الشعبة','ولي الأمر','رقم الهاتف','القسط الإجمالي','الخصم','المسدد','المتبقي'];
     const rows = filteredStudents.map(s => [
       s.id,
       s.name,
-      s.familyName || '',
+      s.familyName ||'',
       s.grade,
       s.section,
       s.parentName,
@@ -69,13 +69,13 @@ export const StudentsDirectory = () => {
       s.remainingAmount
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' +
+    const csvContent ='data:text/csv;charset=utf-8,\uFEFF'+
       [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `دليل_طلاب_المدرسة_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download',`دليل_طلاب_المدرسة_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -92,7 +92,7 @@ export const StudentsDirectory = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm no-print">
         <div>
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-            <Users className="w-6 h-6 text-sky-600" />
+            <Users className="w-6 h-6 text-sky-600"/>
             دليل الطلاب وكروت العائلات الموحدة
           </h2>
           <p className="text-xs text-slate-500 mt-1">
@@ -105,7 +105,7 @@ export const StudentsDirectory = () => {
             onClick={() => setActiveTab('add-student')}
             className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4"/>
             <span>إضافة طالب جديد</span>
           </button>
 
@@ -113,7 +113,7 @@ export const StudentsDirectory = () => {
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4"/>
             <span>تصدير Excel / CSV</span>
           </button>
 
@@ -121,7 +121,7 @@ export const StudentsDirectory = () => {
             onClick={handlePrint}
             className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4"/>
             <span>طباعة الكشف</span>
           </button>
         </div>
@@ -130,7 +130,7 @@ export const StudentsDirectory = () => {
       {/* Filters and View Switcher */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 no-print">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute top-3 right-3" />
+          <Search className="w-4 h-4 text-slate-400 absolute top-3 right-3"/>
           <input
             type="text"
             placeholder="ابحث بالاسم، العائلة، ولي الأمر..."
@@ -156,13 +156,13 @@ export const StudentsDirectory = () => {
           <div className="flex items-center bg-slate-100 p-1 rounded-lg">
             <button
               onClick={() => setViewMode('family')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition ${viewMode === 'family' ? 'bg-white shadow text-sky-700' : 'text-slate-600'}`}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition ${viewMode ==='family'?'bg-white shadow text-sky-700':'text-slate-600'}`}
             >
               كروت العائلات
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition ${viewMode === 'table' ? 'bg-white shadow text-sky-700' : 'text-slate-600'}`}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition ${viewMode ==='table'?'bg-white shadow text-sky-700':'text-slate-600'}`}
             >
               جدول تفصيلي
             </button>
@@ -171,7 +171,7 @@ export const StudentsDirectory = () => {
       </div>
 
       {/* View 1: Unified Family Cards */}
-      {viewMode === 'family' && (
+      {viewMode ==='family'&& (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {Object.entries(familyGroups).map(([famKey, group]) => {
             const familyTotalTuition = group.children.reduce((s, c) => s + (Number(c.tuitionTotal) || 0) - (Number(c.discountAmount) || 0), 0);
@@ -186,7 +186,7 @@ export const StudentsDirectory = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-400/30 flex items-center justify-center font-bold text-sky-300">
-                        👨‍👩‍👧‍👦
+                        
                       </div>
                       <div>
                         <h3 className="font-black text-sm text-white">{group.familyName}</h3>
@@ -195,12 +195,12 @@ export const StudentsDirectory = () => {
                     </div>
                     <div className="text-left font-mono">
                       <a
-                        href={`https://wa.me/${group.parentPhone?.replace(/[^0-9]/g, '')}`}
+                        href={`https://wa.me/${group.parentPhone?.replace(/[^0-9]/g,'')}`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg transition"
                       >
-                        <Phone className="w-3 h-3" />
+                        <Phone className="w-3 h-3"/>
                         <span>واتساب</span>
                       </a>
                     </div>
@@ -232,7 +232,7 @@ export const StudentsDirectory = () => {
                           className="p-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 text-xs font-bold flex items-center gap-1"
                           title="عرض الشهادة الأكاديمية"
                         >
-                          <Award className="w-3.5 h-3.5" />
+                          <Award className="w-3.5 h-3.5"/>
                           <span className="hidden sm:inline">الشهادة</span>
                         </button>
                         <button
@@ -244,7 +244,7 @@ export const StudentsDirectory = () => {
                           className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
                           title="حذف الطالب"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5"/>
                         </button>
                       </div>
                     </div>
@@ -271,7 +271,7 @@ export const StudentsDirectory = () => {
       )}
 
       {/* View 2: Full Detailed Table */}
-      {viewMode === 'table' && (
+      {viewMode ==='table'&& (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right border-collapse text-xs">
@@ -291,7 +291,7 @@ export const StudentsDirectory = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredStudents.map((s, idx) => (
-                  <tr key={s.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                  <tr key={s.id} className={idx % 2 === 0 ?'bg-white':'bg-slate-50/50'}>
                     <td className="p-3 font-mono font-bold text-slate-500">{s.id}</td>
                     <td className="p-3 font-bold text-slate-900">{s.name}</td>
                     <td className="p-3 text-slate-600">{s.grade} - {s.section}</td>
@@ -299,7 +299,7 @@ export const StudentsDirectory = () => {
                     <td className="p-3 font-mono text-slate-600">{s.parentPhone}</td>
                     <td className="p-3 font-bold">${s.tuitionTotal}</td>
                     <td className="p-3 text-rose-600 font-bold">
-                      {s.discountAmount > 0 ? `-$${s.discountAmount}` : '$0'}
+                      {s.discountAmount > 0 ?`-$${s.discountAmount}`:'$0'}
                     </td>
                     <td className="p-3 text-emerald-600 font-bold">${s.paidAmount}</td>
                     <td className="p-3 font-black text-rose-600">${s.remainingAmount}</td>
@@ -310,7 +310,7 @@ export const StudentsDirectory = () => {
                           className="p-1 rounded hover:bg-amber-100 text-amber-700"
                           title="الشهادة الأكاديمية"
                         >
-                          <Award className="w-4 h-4" />
+                          <Award className="w-4 h-4"/>
                         </button>
                         <button
                           onClick={() => {
@@ -321,7 +321,7 @@ export const StudentsDirectory = () => {
                           className="p-1 rounded hover:bg-rose-100 text-rose-600"
                           title="حذف"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4"/>
                         </button>
                       </div>
                     </td>

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useApp } from '../context/AppContext';
-import { 
+import React, {useState} from'react';
+import {createPortal} from'react-dom';
+import {useApp} from'../context/AppContext';
+import {
   BookOpen, 
   Plus, 
   Trash2, 
@@ -21,10 +21,10 @@ import {
   Filter,
   Layers,
   Search
-} from 'lucide-react';
+} from'lucide-react';
 
 export const SubjectsModule = () => {
-  const { 
+  const {
     lang, 
     t, 
     currentRole, 
@@ -43,7 +43,7 @@ export const SubjectsModule = () => {
     setSelectedStudentId
   } = useApp();
 
-  const isAr = lang === 'ar';
+  const isAr = lang ==='ar';
   const safeSubjects = subjects || [];
   const safeStudents = students || [];
   const safeGrades = grades || [];
@@ -55,29 +55,29 @@ export const SubjectsModule = () => {
     s.id === currentUser?.studentId || 
     s.name === currentUser?.name || 
     s.username === currentUser?.username
-  ) || (currentUser?.role === 'student' ? currentUser : null) || safeStudents[0];
+  ) || (currentUser?.role ==='student'? currentUser : null) || safeStudents[0];
 
-  // Helper section letter extraction: handles "الشعبة (أ)", "أ", "شعبة ب", etc.
+  // Helper section letter extraction: handles"الشعبة (أ)","أ","شعبة ب", etc.
   const getSectionLetter = (str) => {
-    if (!str) return '';
-    const clean = String(str).replace(/[أإآ]/g, 'ا');
+    if (!str) return'';
+    const clean = String(str).replace(/[أإآ]/g,'ا');
     const m = clean.match(/[\(\s\-\_]([ابجدA-Z])[\)\s\-\_]?$/) || clean.match(/([ابجدA-Z])/g);
-    return m ? m[m.length - 1] : '';
+    return m ? m[m.length - 1] :'';
   };
 
   // Grade normalization helper
-  const normGradeStr = (str) => (str || '')
+  const normGradeStr = (str) => (str ||'')
     .trim()
     .toLowerCase()
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/[ة]/g, 'ه')
-    .replace(/[ى]/g, 'ي')
-    .replace('الابتدائي', '')
-    .replace('المتوسط', '')
-    .replace('الثانوي', '')
-    .replace('الصف', '')
-    .replace('الشعبة', '')
-    .replace(/[\(\)\-\_\s]/g, '');
+    .replace(/[أإآ]/g,'ا')
+    .replace(/[ة]/g,'ه')
+    .replace(/[ى]/g,'ي')
+    .replace('الابتدائي','')
+    .replace('المتوسط','')
+    .replace('الثانوي','')
+    .replace('الصف','')
+    .replace('الشعبة','')
+    .replace(/[\(\)\-\_\s]/g,'');
 
   const isGradeMatch = (g1, g2) => {
     if (!g1 || !g2) return true;
@@ -98,14 +98,14 @@ export const SubjectsModule = () => {
     return n1 === n2 || (Boolean(n1) && Boolean(n2) && (n1.includes(n2) || n2.includes(n1)));
   };
 
-  const normSubject = (str) => (str || '')
+  const normSubject = (str) => (str ||'')
     .trim()
     .toLowerCase()
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/[ة]/g, 'ه')
-    .replace(/[ى]/g, 'ي')
-    .replace(/^ال/, '')
-    .replace(/[\s\-_]/g, '');
+    .replace(/[أإآ]/g,'ا')
+    .replace(/[ة]/g,'ه')
+    .replace(/[ى]/g,'ي')
+    .replace(/^ال/,'')
+    .replace(/[\s\-_]/g,'');
 
   const isSubjectMatch = (s1, s2) => {
     if (!s1 || !s2) return false;
@@ -119,9 +119,9 @@ export const SubjectsModule = () => {
     t.id === currentUser?.id || 
     t.username === currentUser?.username || 
     t.name === currentUser?.name
-  ) || (currentRole === 'teacher' ? currentUser : null);
+  ) || (currentRole ==='teacher'? currentUser : null);
 
-  const teacherAssignedList = (currentRole === 'teacher')
+  const teacherAssignedList = (currentRole ==='teacher')
     ? (
         activeTeacher?.assignedClassrooms?.length > 0 
           ? activeTeacher.assignedClassrooms 
@@ -131,7 +131,7 @@ export const SubjectsModule = () => {
       )
     : [];
 
-  const teacherSubjectList = (currentRole === 'teacher')
+  const teacherSubjectList = (currentRole ==='teacher')
     ? (
         activeTeacher?.subjects?.length > 0 
           ? activeTeacher.subjects 
@@ -144,15 +144,15 @@ export const SubjectsModule = () => {
     : [];
 
   const isTeacherAssignedToSubject = (subjectName) => {
-    if (currentRole !== 'teacher') return true;
+    if (currentRole !=='teacher') return true;
     if (teacherSubjectList.length === 0) return true;
     return teacherSubjectList.some(s => isSubjectMatch(s, subjectName));
   };
 
-  const allSections = ['أ', 'ب', 'ج', 'د'];
+  const allSections = ['أ','ب','ج','د'];
   const getSectionsForGrade = (targetGradeName) => {
     return allSections.filter((secLetter) => {
-      if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
+      if (currentRole !=='teacher'|| teacherAssignedList.length === 0) return true;
       return teacherAssignedList.some((assignedStr) => {
         const gradeOk = isGradeMatch(targetGradeName, assignedStr);
         const secLetterAssigned = getSectionLetter(assignedStr);
@@ -174,66 +174,66 @@ export const SubjectsModule = () => {
   ])).filter(Boolean);
 
   const availableGradesForTeacher = allGradeNames.filter((gName) => {
-    if (currentRole !== 'teacher' || teacherAssignedList.length === 0) return true;
+    if (currentRole !=='teacher'|| teacherAssignedList.length === 0) return true;
     return teacherAssignedList.some((assignedStr) => isGradeMatch(gName, assignedStr));
   });
 
-  const defaultInitialGrade = (currentRole === 'teacher' && availableGradesForTeacher.length > 0)
+  const defaultInitialGrade = (currentRole ==='teacher'&& availableGradesForTeacher.length > 0)
     ? availableGradesForTeacher[0]
-    : (allGradeNames[0] || 'الصف الأول');
+    : (allGradeNames[0] ||'الصف الأول');
 
-  const defaultInitialSection = (currentRole === 'teacher')
-    ? (getSectionsForGrade(defaultInitialGrade)[0] || 'أ')
-    : 'أ';
+  const defaultInitialSection = (currentRole ==='teacher')
+    ? (getSectionsForGrade(defaultInitialGrade)[0] ||'أ')
+    :'أ';
 
   // Curated Educational Color Palettes
   const PRESET_SUBJECT_COLORS = [
-    { name: 'قرمزي ملكي', hex: '#E11D48', label: 'لغة عربية' },
-    { name: 'أزرق محيطي', hex: '#0284C7', label: 'رياضيات وحساب' },
-    { name: 'أخضر زمردي', hex: '#059669', label: 'علوم وبيئة' },
-    { name: 'بنفسجي ملكي', hex: '#7C3AED', label: 'لغة إنجليزية' },
-    { name: 'ذهبي كهرماني', hex: '#D97706', label: 'تربية إسلامية وقرآن' },
-    { name: 'برتقالي ناري', hex: '#EA580C', label: 'اجتماعيات وتاريخ' },
-    { name: 'تركواز بحري', hex: '#0891B2', label: 'تكنولوجيا وحاسوب' },
-    { name: 'وردي أنيق', hex: '#DB2777', label: 'فنون وموسيقى' },
-    { name: 'أخضر عشبي', hex: '#16A34A', label: 'تربية رياضية' },
-    { name: 'نيلي دافئ', hex: '#4F46E5', label: 'ثقافة عامة' },
-    { name: 'فحمي عصري', hex: '#334155', label: 'أنشطة ومشاريع' }
+    {name:'قرمزي ملكي', hex:'#E11D48', label:'لغة عربية'},
+    {name:'أزرق محيطي', hex:'#0284C7', label:'رياضيات وحساب'},
+    {name:'أخضر زمردي', hex:'#059669', label:'علوم وبيئة'},
+    {name:'بنفسجي ملكي', hex:'#7C3AED', label:'لغة إنجليزية'},
+    {name:'ذهبي كهرماني', hex:'#D97706', label:'تربية إسلامية وقرآن'},
+    {name:'برتقالي ناري', hex:'#EA580C', label:'اجتماعيات وتاريخ'},
+    {name:'تركواز بحري', hex:'#0891B2', label:'تكنولوجيا وحاسوب'},
+    {name:'وردي أنيق', hex:'#DB2777', label:'فنون وموسيقى'},
+    {name:'أخضر عشبي', hex:'#16A34A', label:'تربية رياضية'},
+    {name:'نيلي دافئ', hex:'#4F46E5', label:'ثقافة عامة'},
+    {name:'فحمي عصري', hex:'#334155', label:'أنشطة ومشاريع'}
   ];
 
-  const PRESET_ICONS = ['📖', '📐', '🧪', '🇬🇧', '🕌', '💻', '🎨', '⚽', '🏛️', '📚', '⭐', '🔬', '🌍', '📝', '🧠'];
+  const PRESET_ICONS = ['','','','🇬🇧','','','','','','','','','','',''];
 
   const hexToRgba = (hex, alpha = 0.15) => {
-    if (!hex || typeof hex !== 'string') return `rgba(2, 132, 199, ${alpha})`;
-    const cleanHex = hex.replace('#', '');
+    if (!hex || typeof hex !=='string') return`rgba(2, 132, 199, ${alpha})`;
+    const cleanHex = hex.replace('#','');
     const r = parseInt(cleanHex.slice(0, 2), 16) || 2;
     const g = parseInt(cleanHex.slice(2, 4), 16) || 132;
     const b = parseInt(cleanHex.slice(4, 6), 16) || 199;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    return`rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState('');
   const [nameEn, setNameEn] = useState('');
-  const [icon, setIcon] = useState('📚');
+  const [icon, setIcon] = useState('');
   const [color, setColor] = useState('#0284C7');
   const [subjectImage, setSubjectImage] = useState('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&auto=format&fit=crop&q=80');
 
   // Edit Subject Color & Appearance Modal State
   const [editingSubject, setEditingSubject] = useState(null);
   const [editColor, setEditColor] = useState('#0284C7');
-  const [editIcon, setEditIcon] = useState('📚');
+  const [editIcon, setEditIcon] = useState('');
   const [editName, setEditName] = useState('');
   const [editNameEn, setEditNameEn] = useState('');
   const [editImage, setEditImage] = useState('');
 
   const openEditSubjectModal = (sub) => {
     setEditingSubject(sub);
-    setEditColor(sub.color || '#0284C7');
-    setEditIcon(sub.icon || '📚');
-    setEditName(sub.name || '');
-    setEditNameEn(sub.nameEn || '');
-    setEditImage(sub.image || '');
+    setEditColor(sub.color ||'#0284C7');
+    setEditIcon(sub.icon ||'');
+    setEditName(sub.name ||'');
+    setEditNameEn(sub.nameEn ||'');
+    setEditImage(sub.image ||'');
   };
 
   const handleEditSubjectImageUpload = (e) => {
@@ -270,15 +270,15 @@ export const SubjectsModule = () => {
   const [newLessonSection, setNewLessonSection] = useState(defaultInitialSection);
   const [newLessonType, setNewLessonType] = useState('lesson');
   const [newLessonDate, setNewLessonDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [newLessonTeacher, setNewLessonTeacher] = useState(currentUser?.name || 'أ. معلم المادة');
+  const [newLessonTeacher, setNewLessonTeacher] = useState(currentUser?.name ||'أ. معلم المادة');
 
   // Filters for teachers/admins inside modal
   const [modalGradeFilter, setModalGradeFilter] = useState('all');
   const [modalSectionFilter, setModalSectionFilter] = useState('all');
 
-  const canManageLessons = currentRole === 'admin' || currentRole === 'vice_principal' || currentRole === 'teacher';
-  const canPostInCurrentSubject = currentRole === 'admin' || currentRole === 'vice_principal' || (currentRole === 'teacher' && isTeacherAssignedToSubject(selectedSubjectForLessons?.name));
-  const isStudentOrParent = currentRole === 'student' || currentRole === 'parent';
+  const canManageLessons = currentRole ==='admin'|| currentRole ==='vice_principal'|| currentRole ==='teacher';
+  const canPostInCurrentSubject = currentRole ==='admin'|| currentRole ==='vice_principal'|| (currentRole ==='teacher'&& isTeacherAssignedToSubject(selectedSubjectForLessons?.name));
+  const isStudentOrParent = currentRole ==='student'|| currentRole ==='parent';
 
   const handleSubjectImageUpload = (e) => {
     const file = e.target.files[0];
@@ -310,12 +310,12 @@ export const SubjectsModule = () => {
 
   const openSubjectModal = (sub) => {
     setSelectedSubjectForLessons(sub);
-    if (currentRole === 'teacher') {
-      const targetGrade = availableGradesForTeacher.length > 0 ? availableGradesForTeacher[0] : (allGradeNames[0] || 'الصف الأول');
+    if (currentRole ==='teacher') {
+      const targetGrade = availableGradesForTeacher.length > 0 ? availableGradesForTeacher[0] : (allGradeNames[0] ||'الصف الأول');
       setNewLessonGrade(targetGrade);
       const secs = getSectionsForGrade(targetGrade);
-      setNewLessonSection(secs[0] || 'أ');
-      setNewLessonTeacher(currentUser?.name || activeTeacher?.name || 'أ. معلم المادة');
+      setNewLessonSection(secs[0] ||'أ');
+      setNewLessonTeacher(currentUser?.name || activeTeacher?.name ||'أ. معلم المادة');
     }
   };
 
@@ -323,28 +323,28 @@ export const SubjectsModule = () => {
     e.preventDefault();
     if (!newLessonTitle || !selectedSubjectForLessons) return;
 
-    const sectionVal = getSectionLetter(newLessonSection) || newLessonSection || 'أ';
+    const sectionVal = getSectionLetter(newLessonSection) || newLessonSection ||'أ';
 
-    if (currentRole === 'teacher') {
+    if (currentRole ==='teacher') {
       if (!isTeacherAssignedToSubject(selectedSubjectForLessons.name)) {
         alert(isAr 
-          ? `عذراً، بصفتك معلماً لا يمكنك نشر دروس لمادة (${selectedSubjectForLessons.name}) لأنها غير مسندة لتخصصك التدريسي.` 
-          : 'You are not assigned to teach this subject.');
+          ?`عذراً، بصفتك معلماً لا يمكنك نشر دروس لمادة (${selectedSubjectForLessons.name}) لأنها غير مسندة لتخصصك التدريسي.`
+          :'You are not assigned to teach this subject.');
         return;
       }
       if (teacherAssignedList.length > 0) {
         const isGradeValid = teacherAssignedList.some(a => isGradeMatch(newLessonGrade, a));
         if (!isGradeValid) {
           alert(isAr 
-            ? `عذراً، الصف (${newLessonGrade}) غير موكل إليك.` 
-            : 'Grade not assigned to you.');
+            ?`عذراً، الصف (${newLessonGrade}) غير موكل إليك.`
+            :'Grade not assigned to you.');
           return;
         }
         const allowedSecs = getSectionsForGrade(newLessonGrade);
         if (allowedSecs.length > 0 && !allowedSecs.includes(sectionVal)) {
           alert(isAr 
-            ? `عذراً، الشعبة (${sectionVal}) غير مسندة إليك لهذا الصف.` 
-            : 'Section not assigned to you.');
+            ?`عذراً، الشعبة (${sectionVal}) غير مسندة إليك لهذا الصف.`
+            :'Section not assigned to you.');
           return;
         }
       }
@@ -357,16 +357,16 @@ export const SubjectsModule = () => {
       classRoom: sectionVal,
       section: sectionVal,
       date: newLessonDate || new Date().toISOString().split('T')[0],
-      homework: newLessonContent || 'شرح المادة ومتابعة التمارين.',
-      activityType: newLessonType || 'lesson',
-      teacherName: newLessonTeacher || currentUser?.name || 'أ. معلم المادة'
+      homework: newLessonContent ||'شرح المادة ومتابعة التمارين.',
+      activityType: newLessonType ||'lesson',
+      teacherName: newLessonTeacher || currentUser?.name ||'أ. معلم المادة'
     });
 
     setNewLessonTitle('');
     setNewLessonContent('');
     alert(isAr 
-      ? `تم بنجاح نشر الدرس لـ (${newLessonGrade} - الشعبة ${sectionVal})! 🟢` 
-      : 'Lesson published successfully for target grade and section!');
+      ?`تم بنجاح نشر الدرس لـ (${newLessonGrade} - الشعبة ${sectionVal})!`
+      :'Lesson published successfully for target grade and section!');
   };
 
   // Filter subjects: if student/parent, only show subjects that have lessons for student's specific grade and section
@@ -390,24 +390,24 @@ export const SubjectsModule = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm text-[#0F172A]">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
-            <Palette className="w-6 h-6" />
+            <Palette className="w-6 h-6"/>
           </div>
           <div>
             <h2 className="text-xl font-bold text-[#0284C7]">{t('navSubjects')}</h2>
             <p className="text-xs text-slate-500 mt-1">
               {isStudentOrParent
-                ? (isAr ? 'المواد الدراسية التي تحتوي على دروس وشروحات مخصصة لصفك وشعبتك.' : 'Enrolled subjects with active lessons for your class.')
-                : (isAr ? 'انقر على كرت أي مادة لإضافة واستعراض الدروس المخصصة لكل صف وشعبة.' : 'Click any subject card to post and manage grade/section lessons.')}
+                ? (isAr ?'المواد الدراسية التي تحتوي على دروس وشروحات مخصصة لصفك وشعبتك.':'Enrolled subjects with active lessons for your class.')
+                : (isAr ?'انقر على كرت أي مادة لإضافة واستعراض الدروس المخصصة لكل صف وشعبة.':'Click any subject card to post and manage grade/section lessons.')}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Parent Student Switcher in Top Banner */}
-          {currentRole === 'parent' && safeStudents.length > 1 && (
+          {currentRole ==='parent'&& safeStudents.length > 1 && (
             <div className="flex items-center gap-2 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-2xl">
-              <Users className="w-4 h-4 text-[#0284C7]" />
-              <span className="text-xs font-bold text-slate-700">{isAr ? 'الأبناء:' : 'Child:'}</span>
+              <Users className="w-4 h-4 text-[#0284C7]"/>
+              <span className="text-xs font-bold text-slate-700">{isAr ?'الأبناء:':'Child:'}</span>
               <select
                 value={activeStudent?.id}
                 onChange={(e) => {
@@ -417,51 +417,51 @@ export const SubjectsModule = () => {
               >
                 {safeStudents.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name} ({s.grade} - شعبة {s.classRoom || 'أ'})
+                    {s.name} ({s.grade} - شعبة {s.classRoom ||'أ'})
                   </option>
                 ))}
               </select>
             </div>
           )}
 
-          {currentRole === 'admin' && (
+          {currentRole ==='admin'&& (
             <button
               onClick={() => setShowAddModal(true)}
               className="btn-mustard flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold shadow cursor-pointer transition-all"
             >
-              <Plus className="w-4 h-4" />
-              <span>{isAr ? "إضافة مادة جديدة +" : "Add New Subject +"}</span>
+              <Plus className="w-4 h-4"/>
+              <span>{isAr ?"إضافة مادة جديدة +":"Add New Subject +"}</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Teacher Status & Subject Restrictions Banner */}
-      {currentRole === 'teacher' && (
+      {currentRole ==='teacher'&& (
         <div className="bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#0284C7] text-white flex items-center justify-center font-bold shadow text-lg">
-              👨‍🏫
+              
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-600">{isAr ? 'الأستاذ(ة):' : 'Teacher:'}</span>
+                <span className="text-xs font-bold text-slate-600">{isAr ?'الأستاذ(ة):':'Teacher:'}</span>
                 <span className="text-sm font-black text-[#0284C7]">{activeTeacher?.name || currentUser?.name}</span>
               </div>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className="text-[11px] font-bold bg-white text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
-                  {isAr ? `المواد المصرحة: ${teacherSubjectList.length > 0 ? teacherSubjectList.join('، ') : 'كل المواد'}` : `Subjects: ${teacherSubjectList.join(', ')}`}
+                  {isAr ?`المواد المصرحة: ${teacherSubjectList.length > 0 ? teacherSubjectList.join('،') :'كل المواد'}`:`Subjects: ${teacherSubjectList.join(',')}`}
                 </span>
                 <span className="text-[11px] font-bold bg-white text-[#0284C7] px-2.5 py-0.5 rounded-lg border border-sky-200">
-                  {isAr ? `الصفوف والشُعب الموكلة: ${teacherAssignedList.length > 0 ? teacherAssignedList.join('، ') : 'كل الصفوف'}` : `Classes: ${teacherAssignedList.join(', ')}`}
+                  {isAr ?`الصفوف والشُعب الموكلة: ${teacherAssignedList.length > 0 ? teacherAssignedList.join('،') :'كل الصفوف'}`:`Classes: ${teacherAssignedList.join(',')}`}
                 </span>
               </div>
             </div>
           </div>
 
           <span className="text-xs text-sky-800 font-bold bg-white/90 px-3 py-1.5 rounded-xl border border-sky-200 flex items-center gap-1.5 shadow-sm">
-            <span>🎯</span>
-            <span>{isAr ? 'يمكنك نشر الدروس حصراً لمادتك والصفوف والشُعب الموكلة إليك' : 'Publish restricted to your assigned subjects and sections'}</span>
+            <span></span>
+            <span>{isAr ?'يمكنك نشر الدروس حصراً لمادتك والصفوف والشُعب الموكلة إليك':'Publish restricted to your assigned subjects and sections'}</span>
           </span>
         </div>
       )}
@@ -471,27 +471,27 @@ export const SubjectsModule = () => {
         <div className="bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#0284C7] text-white flex items-center justify-center font-bold shadow">
-              <GraduationCap className="w-5 h-5" />
+              <GraduationCap className="w-5 h-5"/>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-600">{isAr ? 'عزيزي التلميذ(ة):' : 'Student:'}</span>
+                <span className="text-xs font-bold text-slate-600">{isAr ?'عزيزي التلميذ(ة):':'Student:'}</span>
                 <span className="text-sm font-black text-[#0284C7]">{activeStudent?.name}</span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[11px] font-bold bg-white text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
-                  {isAr ? `الصف: ${activeStudent?.grade || 'غير محدد'}` : `Grade: ${activeStudent?.grade}`}
+                  {isAr ?`الصف: ${activeStudent?.grade ||'غير محدد'}`:`Grade: ${activeStudent?.grade}`}
                 </span>
                 <span className="text-[11px] font-bold bg-white text-[#0284C7] px-2.5 py-0.5 rounded-lg border border-sky-200">
-                  {isAr ? `الشعبة: ${activeStudent?.classRoom ? `(${activeStudent.classRoom})` : '(أ)'}` : `Section: ${activeStudent?.classRoom || 'A'}`}
+                  {isAr ?`الشعبة: ${activeStudent?.classRoom ?`(${activeStudent.classRoom})`:'(أ)'}`:`Section: ${activeStudent?.classRoom ||'A'}`}
                 </span>
               </div>
             </div>
           </div>
 
           <span className="text-xs text-sky-700 font-semibold bg-white/80 px-3 py-1.5 rounded-xl border border-sky-100 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>{isAr ? 'تظهر لك فقط المواد التي نشرت لها دروس تناسب صفك وشعبتك' : 'Only subjects with lessons for your class are displayed'}</span>
+            <Sparkles className="w-4 h-4 text-amber-500"/>
+            <span>{isAr ?'تظهر لك فقط المواد التي نشرت لها دروس تناسب صفك وشعبتك':'Only subjects with lessons for your class are displayed'}</span>
           </span>
         </div>
       )}
@@ -499,14 +499,14 @@ export const SubjectsModule = () => {
       {/* Empty State for Student */}
       {displayedSubjects.length === 0 && (
         <div className="bg-white border border-[#E2E8F0] rounded-3xl p-12 text-center text-slate-500 shadow-sm">
-          <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3"/>
           <h3 className="text-base font-bold text-slate-700">
-            {isAr ? 'لا توجد مواد متاح بها دروس لصفك حالياً' : 'No subjects with lessons available yet'}
+            {isAr ?'لا توجد مواد متاح بها دروس لصفك حالياً':'No subjects with lessons available yet'}
           </h3>
           <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
             {isAr 
-              ? `لم يقم المعلمون بعد بنشر دروس أو واجبات لـ (${activeStudent?.grade || 'صفك'} - الشعبة ${activeStudent?.classRoom || 'أ'}). ستظهر المواد تلقائياً فور رفع الدروس.`
-              : 'Subjects will automatically appear here once teachers upload lessons matching your grade and section.'}
+              ?`لم يقم المعلمون بعد بنشر دروس أو واجبات لـ (${activeStudent?.grade ||'صفك'} - الشعبة ${activeStudent?.classRoom ||'أ'}). ستظهر المواد تلقائياً فور رفع الدروس.`
+              :'Subjects will automatically appear here once teachers upload lessons matching your grade and section.'}
           </p>
         </div>
       )}
@@ -514,7 +514,7 @@ export const SubjectsModule = () => {
       {/* Full-Color Subjects Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayedSubjects.map((sub) => {
-          const cardBg = sub.color || '#0284C7';
+          const cardBg = sub.color ||'#0284C7';
           
           // Filter subject lessons for this subject
           const subjectLessons = agenda.filter(a => {
@@ -534,7 +534,7 @@ export const SubjectsModule = () => {
               className="interactive-card rounded-3xl p-6 shadow-xl relative overflow-hidden text-white transition-all transform hover:scale-[1.02] flex flex-col justify-between min-h-[200px] cursor-pointer group border border-white/20"
               style={{
                 backgroundColor: cardBg,
-                backgroundImage: `linear-gradient(135deg, ${cardBg} 0%, rgba(15, 23, 42, 0.72) 100%)`
+                backgroundImage:`linear-gradient(135deg, ${cardBg} 0%, rgba(15, 23, 42, 0.72) 100%)`
               }}
             >
               {/* Header with Photo Image & Title */}
@@ -542,10 +542,10 @@ export const SubjectsModule = () => {
                 <div className="flex items-center gap-3.5">
                   <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-white/40 shadow-md bg-white/10 shrink-0">
                     {sub.image ? (
-                      <img src={sub.image} alt={sub.name} className="w-full h-full object-cover" />
+                      <img src={sub.image} alt={sub.name} className="w-full h-full object-cover"/>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-2xl">
-                        {sub.icon || '📚'}
+                        {sub.icon ||''}
                       </div>
                     )}
                   </div>
@@ -555,44 +555,44 @@ export const SubjectsModule = () => {
                       {isAr ? sub.name : sub.nameEn}
                     </h3>
                     <span className="text-[11px] text-white/80 font-bold block mt-1">
-                      {isAr ? `الدروس المرفوعة: ${subjectLessons.length} درس` : `Lessons: ${subjectLessons.length}`}
+                      {isAr ?`الدروس المرفوعة: ${subjectLessons.length} درس`:`Lessons: ${subjectLessons.length}`}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1.5"onClick={(e) => e.stopPropagation()}>
                   {/* Edit Subject Color & Details Button */}
-                  {(currentRole === 'admin' || currentRole === 'vice_principal') && (
+                  {(currentRole ==='admin'|| currentRole ==='vice_principal') && (
                     <button
                       type="button"
                       onClick={() => openEditSubjectModal(sub)}
                       className="p-2 bg-white/20 hover:bg-white text-white hover:text-slate-900 rounded-xl backdrop-blur-md transition-all cursor-pointer border border-white/25 shadow-xs"
-                      title={isAr ? 'تعديل لون ومظهر المادة 🎨' : 'Edit Subject Color & Appearance'}
+                      title={isAr ?'تعديل لون ومظهر المادة':'Edit Subject Color & Appearance'}
                     >
-                      <Palette className="w-4 h-4" />
+                      <Palette className="w-4 h-4"/>
                     </button>
                   )}
 
-                  {currentRole === 'teacher' && (
+                  {currentRole ==='teacher'&& (
                     <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black shadow-sm flex items-center gap-1 ${
                       isTeacherAssignedToSubject(sub.name) 
-                        ? 'bg-emerald-500 text-white' 
-                        : 'bg-white/20 text-white/90 backdrop-blur-sm'
+                        ?'bg-emerald-500 text-white'
+                        :'bg-white/20 text-white/90 backdrop-blur-sm'
                     }`}>
                       {isTeacherAssignedToSubject(sub.name) 
-                        ? (isAr ? 'مادتك المسندة 🎯' : 'Assigned') 
-                        : (isAr ? 'استعراض فقط 👁️' : 'View Only')}
+                        ? (isAr ?'مادتك المسندة':'Assigned') 
+                        : (isAr ?'استعراض فقط':'View Only')}
                     </span>
                   )}
 
-                  {currentRole === 'admin' && (
+                  {currentRole ==='admin'&& (
                     <button
                       type="button"
                       onClick={() => deleteSubject(sub.id)}
                       className="p-2 bg-white/20 hover:bg-red-600 text-white rounded-xl backdrop-blur-md transition-all cursor-pointer border border-white/20 shadow-xs"
                       title={t('delete')}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4"/>
                     </button>
                   )}
                 </div>
@@ -601,21 +601,21 @@ export const SubjectsModule = () => {
               {/* Bottom Footer Badge Tag */}
               <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between z-10">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl text-xs font-bold shadow-sm">
-                  <span>{sub.icon || '📚'}</span>
-                  <span>{isAr ? 'اضغط لاستعراض الدروس 📖' : 'Click to view lessons'}</span>
+                  <span>{sub.icon ||''}</span>
+                  <span>{isAr ?'اضغط لاستعراض الدروس':'Click to view lessons'}</span>
                 </span>
 
-                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                  {(currentRole === 'admin' || currentRole === 'vice_principal') ? (
+                <div className="flex items-center gap-1.5"onClick={(e) => e.stopPropagation()}>
+                  {(currentRole ==='admin'|| currentRole ==='vice_principal') ? (
                     <button
                       type="button"
                       onClick={() => openEditSubjectModal(sub)}
                       className="px-2.5 py-1 rounded-xl bg-black/40 hover:bg-black/60 text-white text-[11px] font-mono font-bold border border-white/25 flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
-                      title={isAr ? 'انقر لتعديل لون ومظهر المادة 🎨' : 'Click to edit subject color'}
+                      title={isAr ?'انقر لتعديل لون ومظهر المادة':'Click to edit subject color'}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full inline-block border border-white" style={{ backgroundColor: cardBg }} />
+                      <span className="w-2.5 h-2.5 rounded-full inline-block border border-white"style={{backgroundColor: cardBg}} />
                       <span>{cardBg}</span>
-                      <span className="text-xs">🎨</span>
+                      <span className="text-xs"></span>
                     </button>
                   ) : (
                     <span className="text-[10px] text-white/90 font-bold bg-black/30 px-2.5 py-1 rounded-lg">
@@ -625,7 +625,7 @@ export const SubjectsModule = () => {
                 </div>
               </div>
 
-              <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
+              <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none"/>
             </div>
           );
         })}
@@ -641,18 +641,18 @@ export const SubjectsModule = () => {
               <div className="flex items-center gap-3">
                 <div 
                   className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-md"
-                  style={{ backgroundColor: selectedSubjectForLessons.color || '#0284C7' }}
+                  style={{backgroundColor: selectedSubjectForLessons.color ||'#0284C7'}}
                 >
-                  {selectedSubjectForLessons.icon || '📚'}
+                  {selectedSubjectForLessons.icon ||''}
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-[#0284C7]">
-                    {isAr ? `دروس مادة: ${selectedSubjectForLessons.name}` : `Lessons: ${selectedSubjectForLessons.nameEn}`}
+                    {isAr ?`دروس مادة: ${selectedSubjectForLessons.name}`:`Lessons: ${selectedSubjectForLessons.nameEn}`}
                   </h3>
                   <p className="text-xs text-slate-500">
                     {isStudentOrParent 
-                      ? (isAr ? 'استعراض الدروس الخاصة بصفك وشعبتك بالتحديد' : 'Lessons tailored specifically to your class and section')
-                      : (isAr ? 'إضافة واستعراض الدروس المخصصة حسب الصف والشعبة' : 'Post and manage lessons by grade and section')}
+                      ? (isAr ?'استعراض الدروس الخاصة بصفك وشعبتك بالتحديد':'Lessons tailored specifically to your class and section')
+                      : (isAr ?'إضافة واستعراض الدروس المخصصة حسب الصف والشعبة':'Post and manage lessons by grade and section')}
                   </p>
                 </div>
               </div>
@@ -671,27 +671,27 @@ export const SubjectsModule = () => {
               <div className="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="p-1.5 bg-[#0284C7] text-white rounded-xl shadow-sm">
-                    <GraduationCap className="w-4 h-4" />
+                    <GraduationCap className="w-4 h-4"/>
                   </span>
                   <div>
                     <span className="font-bold text-slate-800">
-                      {isAr ? 'التلميذ(ة):' : 'Student:'}{' '}
+                      {isAr ?'التلميذ(ة):':'Student:'}{''}
                       <span className="text-[#0284C7] font-black">{activeStudent?.name}</span>
                     </span>
                     <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
                       <span className="bg-white px-2 py-0.5 rounded border border-slate-200 font-bold">
-                        {isAr ? `الصف: ${activeStudent?.grade || 'غير محدد'}` : `Grade: ${activeStudent?.grade}`}
+                        {isAr ?`الصف: ${activeStudent?.grade ||'غير محدد'}`:`Grade: ${activeStudent?.grade}`}
                       </span>
                       <span className="bg-white px-2 py-0.5 rounded border border-slate-200 font-bold text-[#0284C7]">
-                        {isAr ? `الشعبة: ${activeStudent?.classRoom ? `(${activeStudent.classRoom})` : '(أ)'}` : `Section: ${activeStudent?.classRoom || 'A'}`}
+                        {isAr ?`الشعبة: ${activeStudent?.classRoom ?`(${activeStudent.classRoom})`:'(أ)'}`:`Section: ${activeStudent?.classRoom ||'A'}`}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {currentRole === 'parent' && safeStudents.length > 1 && (
+                {currentRole ==='parent'&& safeStudents.length > 1 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-600">{isAr ? 'تبديل التلميذ:' : 'Switch:'}</span>
+                    <span className="text-[11px] font-bold text-slate-600">{isAr ?'تبديل التلميذ:':'Switch:'}</span>
                     <select
                       value={activeStudent?.id}
                       onChange={(e) => {
@@ -714,23 +714,23 @@ export const SubjectsModule = () => {
                 <form onSubmit={handlePostSubjectLesson} className="bg-[#F8FAFC] border-2 border-dashed border-[#0284C7]/40 p-4 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                     <h4 className="text-xs font-black text-[#0284C7] flex items-center gap-1.5">
-                      <Send className="w-4 h-4 text-[#0284C7]" />
-                      <span>{isAr ? `إضافة درس جديد لمادة (${selectedSubjectForLessons.name}):` : `Add new lesson for ${selectedSubjectForLessons.name}:`}</span>
+                      <Send className="w-4 h-4 text-[#0284C7]"/>
+                      <span>{isAr ?`إضافة درس جديد لمادة (${selectedSubjectForLessons.name}):`:`Add new lesson for ${selectedSubjectForLessons.name}:`}</span>
                     </h4>
                     <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-lg">
-                      {isAr ? 'حسب الصف والشعبة' : 'Targeted by Class'}
+                      {isAr ?'حسب الصف والشعبة':'Targeted by Class'}
                     </span>
                   </div>
 
                   {/* Teacher context banner inside form */}
-                  {currentRole === 'teacher' && (
+                  {currentRole ==='teacher'&& (
                     <div className="bg-sky-50 border border-sky-200 p-2.5 rounded-xl text-xs space-y-1">
                       <div className="flex items-center justify-between font-bold text-[#0284C7]">
-                        <span>👨‍🏫 الأستاذ: {activeTeacher?.name || currentUser?.name}</span>
+                        <span> الأستاذ: {activeTeacher?.name || currentUser?.name}</span>
                         <span className="bg-white px-2 py-0.5 rounded border border-sky-300 text-[10px]">محدد المادة والشعبة</span>
                       </div>
                       <div className="text-slate-600 text-[11px]">
-                        <strong>الصفوف والشُعب الموكلة:</strong> {teacherAssignedList.length > 0 ? teacherAssignedList.join('، ') : 'كل الصفوف'}
+                        <strong>الصفوف والشُعب الموكلة:</strong> {teacherAssignedList.length > 0 ? teacherAssignedList.join('،') :'كل الصفوف'}
                       </div>
                     </div>
                   )}
@@ -738,14 +738,14 @@ export const SubjectsModule = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        {isAr ? 'عنوان الدرس الشامل' : 'Lesson Title'} <span className="text-red-500">*</span>
+                        {isAr ?'عنوان الدرس الشامل':'Lesson Title'} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={newLessonTitle}
                         onChange={(e) => setNewLessonTitle(e.target.value)}
-                        placeholder={isAr ? 'مثال: جمع الكسور العشرية...' : 'e.g. Fractions addition...'}
+                        placeholder={isAr ?'مثال: جمع الكسور العشرية...':'e.g. Fractions addition...'}
                         className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
                       />
                     </div>
@@ -753,7 +753,7 @@ export const SubjectsModule = () => {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          {isAr ? 'الصف الدراسي' : 'Grade'}
+                          {isAr ?'الصف الدراسي':'Grade'}
                         </label>
                         <select
                           value={newLessonGrade}
@@ -767,7 +767,7 @@ export const SubjectsModule = () => {
                           }}
                           className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold cursor-pointer"
                         >
-                          {(currentRole === 'teacher' && availableGradesForTeacher.length > 0 ? availableGradesForTeacher : allGradeNames).map((gName, idx) => (
+                          {(currentRole ==='teacher'&& availableGradesForTeacher.length > 0 ? availableGradesForTeacher : allGradeNames).map((gName, idx) => (
                             <option key={idx} value={gName}>{gName}</option>
                           ))}
                         </select>
@@ -775,7 +775,7 @@ export const SubjectsModule = () => {
 
                       <div>
                         <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          {isAr ? 'الشعبة المستهدفة' : 'Section'} <span className="text-red-500">*</span>
+                          {isAr ?'الشعبة المستهدفة':'Section'} <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={newLessonSection}
@@ -783,14 +783,14 @@ export const SubjectsModule = () => {
                           className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2 py-2 text-xs font-bold cursor-pointer"
                         >
                           {getSectionsForGrade(newLessonGrade).map((secLetter) => (
-                            <option key={secLetter} value={secLetter}>{isAr ? `الشعبة (${secLetter})` : `Section ${secLetter}`}</option>
+                            <option key={secLetter} value={secLetter}>{isAr ?`الشعبة (${secLetter})`:`Section ${secLetter}`}</option>
                           ))}
                         </select>
                       </div>
                     </div>
 
                     <div className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-2 font-bold flex items-center gap-2">
-                      <span>📌</span>
+                      <span></span>
                       <span>تحديد الصف والشعبة إلزامي: نظراً لاختلاف الدروس بين الشُعب، يتم توجيه ونشر هذا الدرس حصراً للشعبة والصف المحددين.</span>
                     </div>
                   </div>
@@ -798,23 +798,23 @@ export const SubjectsModule = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        {isAr ? 'نوع النشاط' : 'Activity Type'}
+                        {isAr ?'نوع النشاط':'Activity Type'}
                       </label>
                       <select
                         value={newLessonType}
                         onChange={(e) => setNewLessonType(e.target.value)}
                         className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-2.5 py-2 text-xs font-bold cursor-pointer"
                       >
-                        <option value="lesson">{isAr ? 'درس وشرح كتابي 📖' : 'Lesson & Explanation'}</option>
-                        <option value="homework">{isAr ? 'واجب منزلي ✍️' : 'Homework Task'}</option>
-                        <option value="exam">{isAr ? 'اختبار ومراجعة 📝' : 'Review & Exam'}</option>
-                        <option value="competition">{isAr ? 'مسابقة وتحدي 🏆' : 'Challenge & Quiz'}</option>
+                        <option value="lesson">{isAr ?'درس وشرح كتابي':'Lesson & Explanation'}</option>
+                        <option value="homework">{isAr ?'واجب منزلي':'Homework Task'}</option>
+                        <option value="exam">{isAr ?'اختبار ومراجعة':'Review & Exam'}</option>
+                        <option value="competition">{isAr ?'مسابقة وتحدي':'Challenge & Quiz'}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        {isAr ? 'تاريخ النشر' : 'Date'}
+                        {isAr ?'تاريخ النشر':'Date'}
                       </label>
                       <input
                         type="date"
@@ -826,7 +826,7 @@ export const SubjectsModule = () => {
 
                     <div>
                       <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        {isAr ? 'اسم الأستاذ / المرسل' : 'Teacher Name'}
+                        {isAr ?'اسم الأستاذ / المرسل':'Teacher Name'}
                       </label>
                       <input
                         type="text"
@@ -840,13 +840,13 @@ export const SubjectsModule = () => {
 
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      {isAr ? 'تفاصيل الدرس والأنشطة والواجبات المطلوبة' : 'Lesson details and homework instructions'}
+                      {isAr ?'تفاصيل الدرس والأنشطة والواجبات المطلوبة':'Lesson details and homework instructions'}
                     </label>
                     <textarea
                       rows="3"
                       value={newLessonContent}
                       onChange={(e) => setNewLessonContent(e.target.value)}
-                      placeholder={isAr ? 'اكتب الشرح وأرقام الصفحات والأنشطة المطلوب إنجازها...' : 'Write lesson notes and homework exercises...'}
+                      placeholder={isAr ?'اكتب الشرح وأرقام الصفحات والأنشطة المطلوب إنجازها...':'Write lesson notes and homework exercises...'}
                       className="w-full bg-white border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#0284C7]"
                     />
                   </div>
@@ -856,18 +856,18 @@ export const SubjectsModule = () => {
                       type="submit"
                       className="btn-mustard px-5 py-2.5 rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto"
                     >
-                      <Plus className="w-4 h-4" />
-                      <span>{isAr ? 'نشر الدرس وإرساله للطلاب 🚀' : 'Publish Lesson to Students 🚀'}</span>
+                      <Plus className="w-4 h-4"/>
+                      <span>{isAr ?'نشر الدرس وإرساله للطلاب':'Publish Lesson to Students'}</span>
                     </button>
                   </div>
                 </form>
               ) : (
                 <div className="bg-amber-50 border border-amber-300 p-4 rounded-2xl flex items-start gap-3 text-xs text-amber-900 shadow-sm">
-                  <span className="text-xl">⚠️</span>
+                  <span className="text-xl"></span>
                   <div className="space-y-1">
                     <p className="font-bold text-sm text-amber-800">صلاحية النشر مقيدة للمعلم</p>
                     <p>مادة <strong>({selectedSubjectForLessons.name})</strong> غير مسندة لتخصصك التدريسي.</p>
-                    <p className="text-[11px] text-amber-700">المواد المصرحة لك حالياً: <strong>{teacherSubjectList.length > 0 ? teacherSubjectList.join('، ') : 'لا توجد مواد مسندة'}</strong>. يمكنك فقط استعراض الدروس المرفوعة أدناه دون صلاحية نشر دروس جديدة لهذه المادة.</p>
+                    <p className="text-[11px] text-amber-700">المواد المصرحة لك حالياً: <strong>{teacherSubjectList.length > 0 ? teacherSubjectList.join('،') :'لا توجد مواد مسندة'}</strong>. يمكنك فقط استعراض الدروس المرفوعة أدناه دون صلاحية نشر دروس جديدة لهذه المادة.</p>
                   </div>
                 </div>
               )
@@ -877,8 +877,8 @@ export const SubjectsModule = () => {
             {canManageLessons && (
               <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8FAFC] p-3 rounded-2xl border border-slate-200 text-xs">
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-slate-500" />
-                  <span className="font-bold text-slate-700">{isAr ? 'فلترة الدروس:' : 'Filter Lessons:'}</span>
+                  <Filter className="w-4 h-4 text-slate-500"/>
+                  <span className="font-bold text-slate-700">{isAr ?'فلترة الدروس:':'Filter Lessons:'}</span>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -887,8 +887,8 @@ export const SubjectsModule = () => {
                     onChange={(e) => setModalGradeFilter(e.target.value)}
                     className="bg-white border border-slate-200 text-slate-700 rounded-xl px-2.5 py-1 font-bold text-xs"
                   >
-                    <option value="all">{isAr ? 'جميع الصفوف' : 'All Grades'}</option>
-                    {(currentRole === 'teacher' && availableGradesForTeacher.length > 0 ? availableGradesForTeacher : allGradeNames).map((g, idx) => (
+                    <option value="all">{isAr ?'جميع الصفوف':'All Grades'}</option>
+                    {(currentRole ==='teacher'&& availableGradesForTeacher.length > 0 ? availableGradesForTeacher : allGradeNames).map((g, idx) => (
                       <option key={idx} value={g}>{g}</option>
                     ))}
                   </select>
@@ -898,7 +898,7 @@ export const SubjectsModule = () => {
                     onChange={(e) => setModalSectionFilter(e.target.value)}
                     className="bg-white border border-slate-200 text-slate-700 rounded-xl px-2.5 py-1 font-bold text-xs"
                   >
-                    <option value="all">{isAr ? 'جميع الشُعب' : 'All Sections'}</option>
+                    <option value="all">{isAr ?'جميع الشُعب':'All Sections'}</option>
                     <option value="أ">الشعبة (أ)</option>
                     <option value="ب">الشعبة (ب)</option>
                     <option value="ج">الشعبة (ج)</option>
@@ -912,11 +912,11 @@ export const SubjectsModule = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-black text-slate-700 flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-[#0284C7]" />
+                  <BookOpen className="w-4 h-4 text-[#0284C7]"/>
                   <span>
                     {isStudentOrParent
-                      ? (isAr ? 'قائمة الدروس المخصصة لصفك وشعبتك:' : 'Lessons for your class and section:')
-                      : (isAr ? 'قائمة الدروس المرفوعة لهذه المادة:' : 'Lessons posted for this subject:')}
+                      ? (isAr ?'قائمة الدروس المخصصة لصفك وشعبتك:':'Lessons for your class and section:')
+                      : (isAr ?'قائمة الدروس المرفوعة لهذه المادة:':'Lessons posted for this subject:')}
                   </span>
                 </h4>
               </div>
@@ -932,8 +932,8 @@ export const SubjectsModule = () => {
                   }
 
                   // Teacher/Admin filters
-                  const matchesGrade = modalGradeFilter === 'all' || isGradeMatch(a.grade, modalGradeFilter);
-                  const matchesSection = modalSectionFilter === 'all' || isSecMatch(a.classRoom, modalSectionFilter);
+                  const matchesGrade = modalGradeFilter ==='all'|| isGradeMatch(a.grade, modalGradeFilter);
+                  const matchesSection = modalSectionFilter ==='all'|| isSecMatch(a.classRoom, modalSectionFilter);
 
                   return matchesSubject && matchesGrade && matchesSection;
                 });
@@ -941,16 +941,16 @@ export const SubjectsModule = () => {
                 if (subjectLessons.length === 0) {
                   return (
                     <div className="p-8 text-center bg-[#F8FAFC] rounded-2xl border border-slate-200 text-slate-400 font-bold text-xs space-y-2">
-                      <BookOpen className="w-10 h-10 mx-auto opacity-30 text-[#0284C7]" />
+                      <BookOpen className="w-10 h-10 mx-auto opacity-30 text-[#0284C7]"/>
                       <p className="text-slate-600 font-extrabold text-sm">
                         {isStudentOrParent 
-                          ? (isAr ? `لا توجد دروس أو واجبات لـ (${activeStudent?.grade || 'صفك'} - الشعبة ${activeStudent?.classRoom || 'أ'}) حالياً.` : 'No lessons for your grade and section.')
-                          : (isAr ? 'لا توجد دروس مرفوعة تطابق الفلترة المحددة.' : 'No lessons matching selected filters.')}
+                          ? (isAr ?`لا توجد دروس أو واجبات لـ (${activeStudent?.grade ||'صفك'} - الشعبة ${activeStudent?.classRoom ||'أ'}) حالياً.`:'No lessons for your grade and section.')
+                          : (isAr ?'لا توجد دروس مرفوعة تطابق الفلترة المحددة.':'No lessons matching selected filters.')}
                       </p>
                       <p className="text-xs text-slate-400 font-medium">
                         {isStudentOrParent 
-                          ? (isAr ? 'سيتم إشعارك فور قيام الأستاذ برفع دروس جديدة.' : 'You will be notified once new lessons are posted.')
-                          : (isAr ? 'استخدم النموذج أعلاه لإضافة ونشر درس جديد.' : 'Use form above to post a new lesson.')}
+                          ? (isAr ?'سيتم إشعارك فور قيام الأستاذ برفع دروس جديدة.':'You will be notified once new lessons are posted.')
+                          : (isAr ?'استخدم النموذج أعلاه لإضافة ونشر درس جديد.':'Use form above to post a new lesson.')}
                       </p>
                     </div>
                   );
@@ -963,15 +963,15 @@ export const SubjectsModule = () => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h5 className="font-black text-[#0284C7] text-sm">{item.title}</h5>
                           <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                            {item.activityType === 'homework' ? '✍️ واجب منزلي' : item.activityType === 'exam' ? '📝 اختبار' : item.activityType === 'competition' ? '🏆 مسابقة' : '📖 شرح درس'}
+                            {item.activityType ==='homework'?'واجب منزلي': item.activityType ==='exam'?'اختبار': item.activityType ==='competition'?'مسابقة':'شرح درس'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold mt-1">
                           <span className="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md">
-                            {item.grade || 'صف عام'}
+                            {item.grade ||'صف عام'}
                           </span>
                           <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">
-                            {isAr ? `الشعبة: ${item.classRoom ? (item.classRoom === 'جميع الشُعب' ? 'جميع الشُعب' : `(${item.classRoom})`) : '(أ)'}` : `Section: ${item.classRoom || 'A'}`}
+                            {isAr ?`الشعبة: ${item.classRoom ? (item.classRoom ==='جميع الشُعب'?'جميع الشُعب':`(${item.classRoom})`) :'(أ)'}`:`Section: ${item.classRoom ||'A'}`}
                           </span>
                         </div>
                       </div>
@@ -979,29 +979,29 @@ export const SubjectsModule = () => {
                       {canManageLessons && (
                         <button
                           onClick={() => {
-                            if (window.confirm(isAr ? `هل أنت متأكد من حذف هذا الدرس (${item.title})؟` : `Delete lesson (${item.title})?`)) {
+                            if (window.confirm(isAr ?`هل أنت متأكد من حذف هذا الدرس (${item.title})؟`:`Delete lesson (${item.title})?`)) {
                               deleteAgendaItem(item.id);
                             }
                           }}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                          title={isAr ? 'حذف الدرس' : 'Delete Lesson'}
+                          title={isAr ?'حذف الدرس':'Delete Lesson'}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4"/>
                         </button>
                       )}
                     </div>
 
                     <p className="text-slate-700 leading-relaxed font-semibold bg-white p-3 rounded-xl border border-slate-100">
-                      {item.homework || item.description || (isAr ? 'شرح الدرس ومتابعة التطبيقات.' : 'Lesson explanation.')}
+                      {item.homework || item.description || (isAr ?'شرح الدرس ومتابعة التطبيقات.':'Lesson explanation.')}
                     </p>
 
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-1">
                       <span className="flex items-center gap-1 font-bold text-slate-500">
-                        <UserCheck className="w-3.5 h-3.5 text-[#0284C7]" />
-                        <span>{isAr ? `المرسل: ${item.teacherName || 'أ. معلم المادة'}` : `Teacher: ${item.teacherName}`}</span>
+                        <UserCheck className="w-3.5 h-3.5 text-[#0284C7]"/>
+                        <span>{isAr ?`المرسل: ${item.teacherName ||'أ. معلم المادة'}`:`Teacher: ${item.teacherName}`}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <Clock className="w-3.5 h-3.5 text-slate-400"/>
                         <span>{item.date || new Date().toISOString().split('T')[0]}</span>
                       </span>
                     </div>
@@ -1023,8 +1023,8 @@ export const SubjectsModule = () => {
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-[#0284C7]" />
-                <span>{isAr ? 'إضافة مادة جديدة بالكامل' : 'Add New Subject'}</span>
+                <BookOpen className="w-5 h-5 text-[#0284C7]"/>
+                <span>{isAr ?'إضافة مادة جديدة بالكامل':'Add New Subject'}</span>
               </h3>
               <button
                 type="button"
@@ -1037,13 +1037,13 @@ export const SubjectsModule = () => {
 
             <div className="space-y-2 bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-[#0284C7]" />
-                <span>{isAr ? 'رفع صورة المادة من جهازك:' : 'Upload subject image:'}</span>
+                <Camera className="w-4 h-4 text-[#0284C7]"/>
+                <span>{isAr ?'رفع صورة المادة من جهازك:':'Upload subject image:'}</span>
               </label>
 
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-[#0284C7] bg-slate-200 shrink-0">
-                  <img src={subjectImage} alt="Subject Preview" className="w-full h-full object-cover" />
+                  <img src={subjectImage} alt="Subject Preview"className="w-full h-full object-cover"/>
                 </div>
 
                 <div className="flex-1 space-y-1">
@@ -1053,14 +1053,14 @@ export const SubjectsModule = () => {
                     onChange={handleSubjectImageUpload}
                     className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#0284C7] file:text-white hover:file:bg-[#0369A1] cursor-pointer"
                   />
-                  <span className="text-[10px] text-slate-400 block">{isAr ? 'اختر أي صورة من الكمبيوتر أو الجوال' : 'Select any image file'}</span>
+                  <span className="text-[10px] text-slate-400 block">{isAr ?'اختر أي صورة من الكمبيوتر أو الجوال':'Select any image file'}</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">{isAr ? 'اسم المادة (عربي)' : 'Subject Name (Arabic)'} <span className="text-red-500">*</span></label>
+                <label className="text-xs font-semibold text-slate-700">{isAr ?'اسم المادة (عربي)':'Subject Name (Arabic)'} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
@@ -1072,7 +1072,7 @@ export const SubjectsModule = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">{isAr ? 'اسم المادة (English)' : 'Subject Name (English)'}</label>
+                <label className="text-xs font-semibold text-slate-700">{isAr ?'اسم المادة (English)':'Subject Name (English)'}</label>
                 <input
                   type="text"
                   value={nameEn}
@@ -1086,22 +1086,22 @@ export const SubjectsModule = () => {
             {/* Color Palette Selector for Add */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                <span>{isAr ? 'لون بطاقة المادة:' : 'Subject Card Color:'}</span>
+                <span>{isAr ?'لون بطاقة المادة:':'Subject Card Color:'}</span>
                 <span className="text-[11px] font-mono text-[#0284C7] font-bold">{color}</span>
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
                 {PRESET_SUBJECT_COLORS.slice(0, 8).map((preset) => {
-                  const isSel = (color || '').toLowerCase() === preset.hex.toLowerCase();
+                  const isSel = (color ||'').toLowerCase() === preset.hex.toLowerCase();
                   return (
                     <button
                       key={preset.hex}
                       type="button"
                       onClick={() => setColor(preset.hex)}
                       className={`p-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer text-right ${
-                        isSel ? 'border-[#0284C7] bg-sky-50 ring-1 ring-[#0284C7]' : 'border-slate-200 bg-white hover:bg-slate-50'
+                        isSel ?'border-[#0284C7] bg-sky-50 ring-1 ring-[#0284C7]':'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
-                      <span className="w-4 h-4 rounded-lg shrink-0" style={{ backgroundColor: preset.hex }} />
+                      <span className="w-4 h-4 rounded-lg shrink-0"style={{backgroundColor: preset.hex}} />
                       <span className="text-[10px] font-bold text-slate-700 truncate">{preset.name}</span>
                     </button>
                   );
@@ -1114,13 +1114,13 @@ export const SubjectsModule = () => {
                   onChange={(e) => setColor(e.target.value)}
                   className="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
                 />
-                <span className="text-[11px] text-slate-500">{isAr ? 'أو اختر أي لون مخصص' : 'Or choose custom'}</span>
+                <span className="text-[11px] text-slate-500">{isAr ?'أو اختر أي لون مخصص':'Or choose custom'}</span>
               </div>
             </div>
 
             {/* Icon Picker for Add */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 block">{isAr ? 'أيقونة المادة:' : 'Subject Icon:'}</label>
+              <label className="text-xs font-bold text-slate-700 block">{isAr ?'أيقونة المادة:':'Subject Icon:'}</label>
               <div className="flex items-center gap-1 flex-wrap">
                 {PRESET_ICONS.slice(0, 10).map((emoji) => (
                   <button
@@ -1128,7 +1128,7 @@ export const SubjectsModule = () => {
                     type="button"
                     onClick={() => setIcon(emoji)}
                     className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition-all cursor-pointer ${
-                      icon === emoji ? 'bg-[#0284C7] text-white shadow-xs scale-110' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      icon === emoji ?'bg-[#0284C7] text-white shadow-xs scale-110':'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
                     {emoji}
@@ -1167,15 +1167,15 @@ export const SubjectsModule = () => {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl text-white shadow-sm" style={{ backgroundColor: editColor }}>
-                  <Palette className="w-5 h-5" />
+                <div className="p-2.5 rounded-2xl text-white shadow-sm"style={{backgroundColor: editColor}}>
+                  <Palette className="w-5 h-5"/>
                 </div>
                 <div>
                   <h3 className="text-base font-black text-[#0F172A]">
-                    {isAr ? `تعديل لون ومظهر مادة: ${editingSubject.name}` : `Edit Subject Color: ${editingSubject.nameEn || editingSubject.name}`}
+                    {isAr ?`تعديل لون ومظهر مادة: ${editingSubject.name}`:`Edit Subject Color: ${editingSubject.nameEn || editingSubject.name}`}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {isAr ? 'اختر لوناً متناسقاً من الباليت الجاهزة أو حدد لوناً مخصصاً بالكامل' : 'Pick a color from curated palettes or customize via hex picker'}
+                    {isAr ?'اختر لوناً متناسقاً من الباليت الجاهزة أو حدد لوناً مخصصاً بالكامل':'Pick a color from curated palettes or customize via hex picker'}
                   </p>
                 </div>
               </div>
@@ -1191,22 +1191,22 @@ export const SubjectsModule = () => {
             {/* Live Preview Card */}
             <div className="space-y-1.5">
               <span className="text-xs font-black text-slate-700 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>{isAr ? 'معاينة حية لشكل الكرت باللون المختار:' : 'Live Card Preview:'}</span>
+                <Sparkles className="w-4 h-4 text-amber-500"/>
+                <span>{isAr ?'معاينة حية لشكل الكرت باللون المختار:':'Live Card Preview:'}</span>
               </span>
               <div
                 className="rounded-2xl p-4 text-white shadow-lg relative overflow-hidden transition-all duration-300 flex items-center justify-between border border-white/20"
                 style={{
                   backgroundColor: editColor,
-                  backgroundImage: `linear-gradient(135deg, ${editColor} 0%, rgba(15, 23, 42, 0.75) 100%)`
+                  backgroundImage:`linear-gradient(135deg, ${editColor} 0%, rgba(15, 23, 42, 0.75) 100%)`
                 }}
               >
                 <div className="flex items-center gap-3 z-10 min-w-0">
                   <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-white/50 bg-white/10 flex items-center justify-center text-2xl shadow-md shrink-0">
                     {editImage ? (
-                      <img src={editImage} alt="preview" className="w-full h-full object-cover" />
+                      <img src={editImage} alt="preview"className="w-full h-full object-cover"/>
                     ) : (
-                      <span>{editIcon || '📚'}</span>
+                      <span>{editIcon ||''}</span>
                     )}
                   </div>
                   <div className="truncate">
@@ -1214,7 +1214,7 @@ export const SubjectsModule = () => {
                       {editName || editingSubject.name}
                     </h4>
                     <span className="text-xs text-white/85 font-medium block">
-                      {editNameEn || editingSubject.nameEn || 'Subject Name'}
+                      {editNameEn || editingSubject.nameEn ||'Subject Name'}
                     </span>
                   </div>
                 </div>
@@ -1227,12 +1227,12 @@ export const SubjectsModule = () => {
             {/* Preset Curated Color Palette */}
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700 flex items-center justify-between">
-                <span>{isAr ? '🎨 باقة ألوان متناسقة ومعتمدة للمواد الدراسية:' : 'Recommended Subject Palettes:'}</span>
+                <span>{isAr ?'باقة ألوان متناسقة ومعتمدة للمواد الدراسية:':'Recommended Subject Palettes:'}</span>
                 <span className="text-[11px] font-mono text-[#0284C7] font-bold">{editColor}</span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {PRESET_SUBJECT_COLORS.map((preset) => {
-                  const isSelected = (editColor || '').toLowerCase() === preset.hex.toLowerCase();
+                  const isSelected = (editColor ||'').toLowerCase() === preset.hex.toLowerCase();
                   return (
                     <button
                       key={preset.hex}
@@ -1240,15 +1240,15 @@ export const SubjectsModule = () => {
                       onClick={() => setEditColor(preset.hex)}
                       className={`p-2 rounded-2xl border-2 flex items-center gap-2.5 transition-all cursor-pointer text-right ${
                         isSelected 
-                          ? 'border-[#0284C7] bg-sky-50 shadow-sm ring-2 ring-[#0284C7]/30' 
-                          : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'
+                          ?'border-[#0284C7] bg-sky-50 shadow-sm ring-2 ring-[#0284C7]/30'
+                          :'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <span
                         className="w-6 h-6 rounded-xl shrink-0 border border-white/80 shadow-xs flex items-center justify-center text-white text-[11px] font-black"
-                        style={{ backgroundColor: preset.hex }}
+                        style={{backgroundColor: preset.hex}}
                       >
-                        {isSelected && '✓'}
+                        {isSelected &&'✓'}
                       </span>
                       <div className="min-w-0">
                         <span className="text-xs font-black text-slate-800 block truncate leading-tight">
@@ -1272,11 +1272,11 @@ export const SubjectsModule = () => {
                   value={editColor}
                   onChange={(e) => setEditColor(e.target.value)}
                   className="w-10 h-10 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white"
-                  title={isAr ? 'انقر لاختيار لون مخصص دقيق' : 'Choose custom color'}
+                  title={isAr ?'انقر لاختيار لون مخصص دقيق':'Choose custom color'}
                 />
                 <div>
-                  <span className="text-xs font-black text-slate-800 block">{isAr ? 'أو حدد لوناً مخصصاً بالكامل:' : 'Custom Hex Color:'}</span>
-                  <span className="text-[10px] text-slate-500">{isAr ? 'انقر على المربع لاختيار أي درجة لون ترغب بها' : 'Click the square to choose any color'}</span>
+                  <span className="text-xs font-black text-slate-800 block">{isAr ?'أو حدد لوناً مخصصاً بالكامل:':'Custom Hex Color:'}</span>
+                  <span className="text-[10px] text-slate-500">{isAr ?'انقر على المربع لاختيار أي درجة لون ترغب بها':'Click the square to choose any color'}</span>
                 </div>
               </div>
               <input
@@ -1291,7 +1291,7 @@ export const SubjectsModule = () => {
             {/* Icon Emojis Picker */}
             <div className="space-y-1.5">
               <label className="text-xs font-black text-slate-700 block">
-                {isAr ? 'الأيقونة والرمز التعبيري للمادة:' : 'Subject Icon:'}
+                {isAr ?'الأيقونة والرمز التعبيري للمادة:':'Subject Icon:'}
               </label>
               <div className="flex items-center gap-1.5 flex-wrap bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
                 {PRESET_ICONS.map((emoji) => (
@@ -1301,8 +1301,8 @@ export const SubjectsModule = () => {
                     onClick={() => setEditIcon(emoji)}
                     className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all cursor-pointer ${
                       editIcon === emoji
-                        ? 'bg-[#0284C7] text-white shadow-sm scale-110'
-                        : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200'
+                        ?'bg-[#0284C7] text-white shadow-sm scale-110'
+                        :'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200'
                     }`}
                   >
                     {emoji}
@@ -1314,7 +1314,7 @@ export const SubjectsModule = () => {
             {/* Name and Image inputs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">{isAr ? 'اسم المادة (عربي):' : 'Subject Name (AR):'}</label>
+                <label className="text-xs font-bold text-slate-700">{isAr ?'اسم المادة (عربي):':'Subject Name (AR):'}</label>
                 <input
                   type="text"
                   required
@@ -1324,7 +1324,7 @@ export const SubjectsModule = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">{isAr ? 'اسم المادة (إنجليزي):' : 'Subject Name (EN):'}</label>
+                <label className="text-xs font-bold text-slate-700">{isAr ?'اسم المادة (إنجليزي):':'Subject Name (EN):'}</label>
                 <input
                   type="text"
                   value={editNameEn}
@@ -1337,13 +1337,13 @@ export const SubjectsModule = () => {
             {/* Image upload */}
             <div className="space-y-2 bg-[#F8FAFC] p-3.5 rounded-2xl border border-slate-200">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-[#0284C7]" />
-                <span>{isAr ? 'تغيير صورة المادة (اختياري):' : 'Subject Image (Optional):'}</span>
+                <Camera className="w-4 h-4 text-[#0284C7]"/>
+                <span>{isAr ?'تغيير صورة المادة (اختياري):':'Subject Image (Optional):'}</span>
               </label>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-300 bg-slate-200 shrink-0">
                   {editImage ? (
-                    <img src={editImage} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={editImage} alt="Preview"className="w-full h-full object-cover"/>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">لا صورة</div>
                   )}
@@ -1370,8 +1370,8 @@ export const SubjectsModule = () => {
                 type="submit"
                 className="btn-mustard px-5 py-2 rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-1.5"
               >
-                <span>💾</span>
-                <span>{isAr ? 'حفظ اللون والمظهر' : 'Save Changes'}</span>
+                <span></span>
+                <span>{isAr ?'حفظ اللون والمظهر':'Save Changes'}</span>
               </button>
             </div>
           </form>

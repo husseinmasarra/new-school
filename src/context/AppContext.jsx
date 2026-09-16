@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { translations } from '../translations';
-import { 
+import React, {createContext, useContext, useState, useEffect} from'react';
+import {translations} from'../translations';
+import {
   initialSubjects,
   initialGrades,
   initialClassrooms,
@@ -22,42 +22,42 @@ import {
   initialBehaviorRecords,
   initialNotificationsList,
   initialStudyResources
-} from '../initialData';
-import { initialSchoolSettings, dbLoadCollection, dbSaveCollection, dbInitOnce, syncFromCloud } from '../services/dbService';
-import { supabase } from '../services/supabaseClient';
+} from'../initialData';
+import {initialSchoolSettings, dbLoadCollection, dbSaveCollection, dbInitOnce, syncFromCloud} from'../services/dbService';
+import {supabase} from'../services/supabaseClient';
 
 // Run one-time seed on very first app launch (never runs again after that)
 dbInitOnce({
-  school_subjects:      initialSubjects,
-  school_grades:        initialGrades,
-  school_classrooms:    initialClassrooms,
-  school_students:      initialStudents,
-  school_teachers:      initialTeachers,
-  school_timetable:     initialMasterTimetable,
-  school_staff:         initialStaffEmployees,
-  school_exams:         initialExams,
-  school_expenses:      initialExpenses,
-  school_buses:         initialBuses,
-  school_messages:      initialMessages,
-  school_agenda:        initialAgenda,
-  school_tutoring:      initialTutoringCourses,
+  school_subjects: initialSubjects,
+  school_grades: initialGrades,
+  school_classrooms: initialClassrooms,
+  school_students: initialStudents,
+  school_teachers: initialTeachers,
+  school_timetable: initialMasterTimetable,
+  school_staff: initialStaffEmployees,
+  school_exams: initialExams,
+  school_expenses: initialExpenses,
+  school_buses: initialBuses,
+  school_messages: initialMessages,
+  school_agenda: initialAgenda,
+  school_tutoring: initialTutoringCourses,
   school_tutoring_payments: initialTutoringPayments,
-  school_push_notifs:   initialPushNotifications,
-  school_daily_marks:   initialDailyMarks,
-  school_attendance:    initialAttendanceRecords,
-  school_behavior:      initialBehaviorRecords,
+  school_push_notifs: initialPushNotifications,
+  school_daily_marks: initialDailyMarks,
+  school_attendance: initialAttendanceRecords,
+  school_behavior: initialBehaviorRecords,
   school_notifications: initialNotificationsList,
   school_study_resources: initialStudyResources,
-  school_system_users:  null // loaded separately
+  school_system_users: null // loaded separately
 });
 
 const AppContext = createContext();
 
 export const generateStrong8CharPassword = () => {
-  const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-  const lowers = 'abcdefghijkmnpqrstuvwxyz';
-  const numbers = '23456789';
-  const symbols = '!@#$%^&*';
+  const uppers ='ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lowers ='abcdefghijkmnpqrstuvwxyz';
+  const numbers ='23456789';
+  const symbols ='!@#$%^&*';
   
   const getRandomChar = (set) => set[Math.floor(Math.random() * set.length)];
 
@@ -85,78 +85,78 @@ export const defaultAvatars = [
 ];
 
 export const systemPermissionOptions = [
-  { id: 'manage_all', name: 'التحكم الكامل في إعدادات النظام', nameEn: 'Full System & Settings Control', category: 'admin' },
-  { id: 'manage_finance', name: 'إدارة المالية والأقساط ودفع الرواتب', nameEn: 'Financial & Payroll Access', category: 'admin' },
-  { id: 'manage_users', name: 'إدارة المستخدمين وإعطاء الصلاحيات', nameEn: 'User & Permission Management', category: 'admin' },
-  { id: 'add_student', name: 'إضافة وتسجيل تلميذ جديد', nameEn: 'Add & Register Student', category: 'vice_principal' },
-  { id: 'record_payment', name: 'إدخال وقبض الدفعات المالية (بدون تعديل)', nameEn: 'Record Payments (No Edit)', category: 'vice_principal' },
-  { id: 'send_reminders', name: 'إرسال رسائل وتذكيرات الأقساط بالواتساب', nameEn: 'Send Reminders', category: 'vice_principal' },
-  { id: 'send_lessons', name: 'إرسال الدروس والواجبات المنزلية', nameEn: 'Post Lessons & Homework', category: 'teacher' },
-  { id: 'manage_grades', name: 'رصد درجات وعلامات الطلاب', nameEn: 'Manage Student Grades', category: 'teacher' },
-  { id: 'send_messages', name: 'إرسال التنبيهات والرسائل المباشرة', nameEn: 'Send Notifications & Messages', category: 'teacher' },
-  { id: 'manage_bus', name: 'تتبع الحافلة وتحديث حالة ركوب الطلاب', nameEn: 'Track Bus & Update Ride Status', category: 'driver' },
-  { id: 'contact_parents', name: 'الاتصال والتواصل مع أولياء الأمور', nameEn: 'Direct Contact with Parents', category: 'driver' },
-  { id: 'print_cards', name: 'معاينة وطباعة بطاقات الهوية الرقمية', nameEn: 'View & Print Digital ID Cards', category: 'general' }
+  {id:'manage_all', name:'التحكم الكامل في إعدادات النظام', nameEn:'Full System & Settings Control', category:'admin'},
+  {id:'manage_finance', name:'إدارة المالية والأقساط ودفع الرواتب', nameEn:'Financial & Payroll Access', category:'admin'},
+  {id:'manage_users', name:'إدارة المستخدمين وإعطاء الصلاحيات', nameEn:'User & Permission Management', category:'admin'},
+  {id:'add_student', name:'إضافة وتسجيل تلميذ جديد', nameEn:'Add & Register Student', category:'vice_principal'},
+  {id:'record_payment', name:'إدخال وقبض الدفعات المالية (بدون تعديل)', nameEn:'Record Payments (No Edit)', category:'vice_principal'},
+  {id:'send_reminders', name:'إرسال رسائل وتذكيرات الأقساط بالواتساب', nameEn:'Send Reminders', category:'vice_principal'},
+  {id:'send_lessons', name:'إرسال الدروس والواجبات المنزلية', nameEn:'Post Lessons & Homework', category:'teacher'},
+  {id:'manage_grades', name:'رصد درجات وعلامات الطلاب', nameEn:'Manage Student Grades', category:'teacher'},
+  {id:'send_messages', name:'إرسال التنبيهات والرسائل المباشرة', nameEn:'Send Notifications & Messages', category:'teacher'},
+  {id:'manage_bus', name:'تتبع الحافلة وتحديث حالة ركوب الطلاب', nameEn:'Track Bus & Update Ride Status', category:'driver'},
+  {id:'contact_parents', name:'الاتصال والتواصل مع أولياء الأمور', nameEn:'Direct Contact with Parents', category:'driver'},
+  {id:'print_cards', name:'معاينة وطباعة بطاقات الهوية الرقمية', nameEn:'View & Print Digital ID Cards', category:'general'}
 ];
 
 export const initialSystemUsers = [
   {
-    id: "USR-01",
-    name: "إدارة المدرسة العامة",
-    nameEn: "General School Admin",
-    username: "admin",
-    password: "123123123",
-    role: "admin",
-    roleTitle: "مدير عام النظام",
-    phone: "+961 01 888 999",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    permissions: ['manage_all', 'manage_finance', 'manage_users', 'send_lessons', 'manage_bus', 'print_cards']
+    id:"USR-01",
+    name:"إدارة المدرسة العامة",
+    nameEn:"General School Admin",
+    username:"admin",
+    password:"123123123",
+    role:"admin",
+    roleTitle:"مدير عام النظام",
+    phone:"+961 01 888 999",
+    avatar:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    permissions: ['manage_all','manage_finance','manage_users','send_lessons','manage_bus','print_cards']
   },
   {
-    id: "USR-02",
-    name: "مساعد المدير",
-    nameEn: "Vice Principal",
-    username: "vice_principal",
-    password: "123123123",
-    role: "vice_principal",
-    roleTitle: "مساعد مدير",
-    phone: "+961 01 888 777",
-    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
-    permissions: ['add_student', 'record_payment', 'send_reminders', 'print_cards']
+    id:"USR-02",
+    name:"مساعد المدير",
+    nameEn:"Vice Principal",
+    username:"vice_principal",
+    password:"123123123",
+    role:"vice_principal",
+    roleTitle:"مساعد مدير",
+    phone:"+961 01 888 777",
+    avatar:"https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
+    permissions: ['add_student','record_payment','send_reminders','print_cards']
   }
 ];
 
-export const AppProvider = ({ children }) => {
-  const lang = 'ar';
-  const dir = 'rtl';
+export const AppProvider = ({children}) => {
+  const lang ='ar';
+  const dir ='rtl';
   const switchLang = () => {};
 
   useEffect(() => {
-    localStorage.setItem('school_lang', 'ar');
-    document.documentElement.dir = 'rtl';
-    document.documentElement.lang = 'ar';
+    localStorage.setItem('school_lang','ar');
+    document.documentElement.dir ='rtl';
+    document.documentElement.lang ='ar';
   }, []);
 
   const t = (key) => translations['ar']?.[key] || key;
 
-  const [activePillar, setActivePillar] = useState(() => localStorage.getItem('school_pillar') || 'academic');
+  const [activePillar, setActivePillar] = useState(() => localStorage.getItem('school_pillar') ||'academic');
 
   // General School Site Settings
   const [siteSettings, setSiteSettings] = useState(() => {
     const saved = localStorage.getItem('school_settings');
     const parsed = saved ? JSON.parse(saved) : initialSchoolSettings;
-    const cleanSettings = { 
-      recessStartTime: "09:10",
-      recessEndTime: "09:30",
-      recessLabel: "استراحة ووجبة فطور",
+    const cleanSettings = {
+      recessStartTime:"09:10",
+      recessEndTime:"09:30",
+      recessLabel:"استراحة ووجبة فطور",
       ...parsed, 
       schoolLogo: parsed?.schoolLogo && parsed.schoolLogo.startsWith('data:') ? parsed.schoolLogo : null,
-      schoolName: "مركز الدعم التعليمي", 
-      schoolNameEn: "Educational Support Center", 
-      academicYear: "2026/2027",
-      schoolStartTime: "07:30",
-      schoolEndTime: "12:00",
-      workingHoursStr: "من 07:30 صباحاً حتى 12:00 ظهراً"
+      schoolName:"مركز الدعم التعليمي", 
+      schoolNameEn:"Educational Support Center", 
+      academicYear:"2026/2027",
+      schoolStartTime:"07:30",
+      schoolEndTime:"12:00",
+      workingHoursStr:"من 07:30 صباحاً حتى 12:00 ظهراً"
     };
     localStorage.setItem('school_settings', JSON.stringify(cleanSettings));
     return cleanSettings;
@@ -164,27 +164,27 @@ export const AppProvider = ({ children }) => {
 
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      if (localStorage.getItem('school_logged_out') === 'true') {
+      if (localStorage.getItem('school_logged_out') ==='true') {
         return null;
       }
       const saved = localStorage.getItem('school_logged_user');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
+        if (parsed && typeof parsed ==='object') {
           return parsed;
         }
       }
       // Default to master admin user so fresh visits and direct links open seamlessly
       const defaultAdmin = {
-        id: "USR-01",
-        name: "إدارة المدرسة العامة",
-        nameEn: "General School Admin",
-        username: "admin",
-        password: "123123123",
-        role: "admin",
-        roleTitle: "مدير عام النظام",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        permissions: ['manage_all', 'manage_finance', 'manage_users', 'send_lessons', 'manage_bus', 'print_cards']
+        id:"USR-01",
+        name:"إدارة المدرسة العامة",
+        nameEn:"General School Admin",
+        username:"admin",
+        password:"123123123",
+        role:"admin",
+        roleTitle:"مدير عام النظام",
+        avatar:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        permissions: ['manage_all','manage_finance','manage_users','send_lessons','manage_bus','print_cards']
       };
       localStorage.setItem('school_logged_user', JSON.stringify(defaultAdmin));
       return defaultAdmin;
@@ -194,12 +194,12 @@ export const AppProvider = ({ children }) => {
     return null;
   });
 
-  const currentRole = currentUser?.role || 'admin';
+  const currentRole = currentUser?.role ||'admin';
 
   const [selectedStudentId, setSelectedStudentId] = useState(() => {
-    return currentUser?.role === 'parent' || currentUser?.role === 'student'
+    return currentUser?.role ==='parent'|| currentUser?.role ==='student'
       ? currentUser.id
-      : 'STU-101';
+      :'STU-101';
   });
 
   // ─── All collections use dbLoadCollection ────────────────────────────────
@@ -223,22 +223,22 @@ export const AppProvider = ({ children }) => {
     return s;
   };
 
-  const [subjects,       setSubjects]       = useState(() => dbLoadCollection('school_subjects',    initialSubjects));
-  const [grades,         setGrades]         = useState(() => dbLoadCollection('school_grades',       initialGrades));
-  const [classrooms,     setClassrooms]     = useState(() => dbLoadCollection('school_classrooms',   initialClassrooms));
-  const [students,       setStudents]       = useState(() => {
+  const [subjects, setSubjects] = useState(() => dbLoadCollection('school_subjects', initialSubjects));
+  const [grades, setGrades] = useState(() => dbLoadCollection('school_grades', initialGrades));
+  const [classrooms, setClassrooms] = useState(() => dbLoadCollection('school_classrooms', initialClassrooms));
+  const [students, setStudents] = useState(() => {
     const loaded = dbLoadCollection('school_students', initialStudents);
     return Array.isArray(loaded) ? loaded.map(s => s?.isSpecialCase ? sanitizeSpecialCaseStudent(s) : s) : loaded;
   });
-  const [teachers,       setTeachers]       = useState(() => dbLoadCollection('school_teachers',     initialTeachers));
-  const [staffEmployees, setStaffEmployees] = useState(() => dbLoadCollection('school_staff',        initialStaffEmployees));
-  const [exams,          setExams]          = useState(() => dbLoadCollection('school_exams',        initialExams));
-  const [expenses,       setExpenses]       = useState(() => dbLoadCollection('school_expenses',     initialExpenses));
-  const [pushNotifs,     setPushNotifs]     = useState(() => dbLoadCollection('school_push_notifs',  initialPushNotifications));
-  const [buses,          setBuses]          = useState(() => dbLoadCollection('school_buses',        initialBuses));
-  const [messages,       setMessages]       = useState(() => dbLoadCollection('school_messages',     initialMessages));
+  const [teachers, setTeachers] = useState(() => dbLoadCollection('school_teachers', initialTeachers));
+  const [staffEmployees, setStaffEmployees] = useState(() => dbLoadCollection('school_staff', initialStaffEmployees));
+  const [exams, setExams] = useState(() => dbLoadCollection('school_exams', initialExams));
+  const [expenses, setExpenses] = useState(() => dbLoadCollection('school_expenses', initialExpenses));
+  const [pushNotifs, setPushNotifs] = useState(() => dbLoadCollection('school_push_notifs', initialPushNotifications));
+  const [buses, setBuses] = useState(() => dbLoadCollection('school_buses', initialBuses));
+  const [messages, setMessages] = useState(() => dbLoadCollection('school_messages', initialMessages));
   const [agenda, setAgenda] = useState(() => dbLoadCollection('school_agenda', initialAgenda));
-  const [tutoringCourses, setTutoringCourses] = useState(() => dbLoadCollection('school_tutoring',  initialTutoringCourses));
+  const [tutoringCourses, setTutoringCourses] = useState(() => dbLoadCollection('school_tutoring', initialTutoringCourses));
   const [tutoringPayments, setTutoringPayments] = useState(() => dbLoadCollection('school_tutoring_payments', initialTutoringPayments));
 
   // Enforce zero balance for all special case students on mount
@@ -266,7 +266,7 @@ export const AppProvider = ({ children }) => {
 
   const addTimetableSlot = (slot) => {
     const newSlot = {
-      id: `SCH-${Date.now().toString().slice(-4)}`,
+      id:`SCH-${Date.now().toString().slice(-4)}`,
       ...slot
     };
     setMasterTimetable((prev) => {
@@ -286,7 +286,7 @@ export const AppProvider = ({ children }) => {
 
   const updateTimetableSlot = (slotId, updatedFields) => {
     setMasterTimetable((prev) => {
-      const updated = prev.map((s) => (s.id === slotId ? { ...s, ...updatedFields } : s));
+      const updated = prev.map((s) => (s.id === slotId ? {...s, ...updatedFields} : s));
       dbSaveCollection('school_timetable', updated);
       return updated;
     });
@@ -299,11 +299,11 @@ export const AppProvider = ({ children }) => {
   const [submittedTasks, setSubmittedTasks] = useState(() => dbLoadCollection('school_homework_submissions', {}));
 
   const addHomeworkSubmission = (submissionRecord) => {
-    const subKey = submissionRecord.id || `${submissionRecord.taskId}_${submissionRecord.studentId}`;
+    const subKey = submissionRecord.id ||`${submissionRecord.taskId}_${submissionRecord.studentId}`;
     const newRecord = {
       id: subKey,
-      status: 'submitted',
-      submittedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) + ' - ' + new Date().toISOString().split('T')[0],
+      status:'submitted',
+      submittedAt: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) +'-'+ new Date().toISOString().split('T')[0],
       ...submissionRecord
     };
 
@@ -323,9 +323,9 @@ export const AppProvider = ({ children }) => {
       const existing = prev[subKey] || prev[taskId] || {};
       const updatedRecord = {
         ...existing,
-        status: 'graded',
-        gradeScore: gradeScore || 'ممتاز (20/20)',
-        teacherNote: teacherNote || 'إجابة ممتازة وواضحة 👏'
+        status:'graded',
+        gradeScore: gradeScore ||'ممتاز (20/20)',
+        teacherNote: teacherNote ||'إجابة ممتازة وواضحة'
       };
       const updated = {
         ...prev,
@@ -338,14 +338,14 @@ export const AppProvider = ({ children }) => {
 
     setNotifications((prev) => {
       const newNotif = {
-        id: `NOT-${Date.now().toString().slice(-4)}`,
-        title: `🌟 تم تصحيح وتقييم إجابتك من المعلم!`,
-        message: `النتيجة: ${gradeScore || '20/20'} | ملاحظات المعلم: ${teacherNote || 'إجابة ممتازة 👏'}`,
-        type: 'grade',
-        time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+        id:`NOT-${Date.now().toString().slice(-4)}`,
+        title:`تم تصحيح وتقييم إجابتك من المعلم!`,
+        message:`النتيجة: ${gradeScore ||'20/20'} | ملاحظات المعلم: ${teacherNote ||'إجابة ممتازة'}`,
+        type:'grade',
+        time: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}),
         date: new Date().toISOString().split('T')[0],
         read: false,
-        targetRole: 'student'
+        targetRole:'student'
       };
       const updatedNotifs = [newNotif, ...prev];
       dbSaveCollection('school_notifications', updatedNotifs);
@@ -358,7 +358,7 @@ export const AppProvider = ({ children }) => {
 
   const addAttendanceRecord = (record) => {
     const newRecord = {
-      id: `ATT-${Date.now().toString().slice(-4)}`,
+      id:`ATT-${Date.now().toString().slice(-4)}`,
       date: record.date || new Date().toISOString().split('T')[0],
       ...record
     };
@@ -384,9 +384,9 @@ export const AppProvider = ({ children }) => {
       const newMap = new Map();
       records.forEach((r, idx) => {
         const dateStr = r.date || new Date().toISOString().split('T')[0];
-        const key = `${r.studentId}_${dateStr}`;
+        const key =`${r.studentId}_${dateStr}`;
         newMap.set(key, {
-          id: r.id || `ATT-${Date.now()}-${idx}`,
+          id: r.id ||`ATT-${Date.now()}-${idx}`,
           date: dateStr,
           ...r
         });
@@ -403,7 +403,7 @@ export const AppProvider = ({ children }) => {
 
   const addBehaviorRecord = (record) => {
     const newRecord = {
-      id: `BEH-${Date.now().toString().slice(-4)}`,
+      id:`BEH-${Date.now().toString().slice(-4)}`,
       date: new Date().toISOString().split('T')[0],
       ...record
     };
@@ -427,8 +427,8 @@ export const AppProvider = ({ children }) => {
 
   const addNotification = (notif) => {
     const newNotif = {
-      id: `NOTIF-${Date.now().toString().slice(-4)}`,
-      timestamp: "الآن",
+      id:`NOTIF-${Date.now().toString().slice(-4)}`,
+      timestamp:"الآن",
       isRead: false,
       ...notif
     };
@@ -441,7 +441,7 @@ export const AppProvider = ({ children }) => {
 
   const markAllNotificationsRead = () => {
     setNotifications((prev) => {
-      const updated = prev.map(n => ({ ...n, isRead: true }));
+      const updated = prev.map(n => ({...n, isRead: true}));
       dbSaveCollection('school_notifications', updated);
       return updated;
     });
@@ -457,7 +457,7 @@ export const AppProvider = ({ children }) => {
 
   const addStudyResource = (res) => {
     const newRes = {
-      id: `RES-${Date.now().toString().slice(-4)}`,
+      id:`RES-${Date.now().toString().slice(-4)}`,
       date: new Date().toISOString().split('T')[0],
       ...res
     };
@@ -492,7 +492,7 @@ export const AppProvider = ({ children }) => {
 
   const addDailyMark = (markData) => {
     const newMark = {
-      id: `DM-${Date.now().toString().slice(-4)}`,
+      id:`DM-${Date.now().toString().slice(-4)}`,
       date: new Date().toISOString().split('T')[0],
       ...markData
     };
@@ -505,7 +505,7 @@ export const AppProvider = ({ children }) => {
 
   const updateDailyMark = (markId, updatedFields) => {
     setDailyMarks((prev) => {
-      const updated = prev.map((m) => m.id === markId ? { ...m, ...updatedFields } : m);
+      const updated = prev.map((m) => m.id === markId ? {...m, ...updatedFields} : m);
       dbSaveCollection('school_daily_marks', updated);
       return updated;
     });
@@ -537,7 +537,7 @@ export const AppProvider = ({ children }) => {
         midterm: 0,
         final: 0,
         total: 0,
-        grade: 'غير مرصود'
+        grade:'غير مرصود'
       };
     });
 
@@ -545,7 +545,7 @@ export const AppProvider = ({ children }) => {
     (exams || []).forEach((ex) => {
       const res = (ex.results || []).find(r => String(r.studentId) === String(studentId));
       if (res && res.score !== undefined && res.score !== null) {
-        const subName = ex.subject || ex.title || 'الرياضيات';
+        const subName = ex.subject || ex.title ||'الرياضيات';
         let coreSubName = subName;
         if (subName.includes('(') && subName.includes(')')) {
           const match = subName.match(/\(([^)]+)\)/);
@@ -559,10 +559,10 @@ export const AppProvider = ({ children }) => {
         if (!targetKey) {
           targetKey = coreSubName;
           subjectMap[targetKey] = {
-            id: `SUB-${Date.now().toString().slice(-4)}`,
+            id:`SUB-${Date.now().toString().slice(-4)}`,
             name: targetKey,
             nameEn: targetKey,
-            hw: 0, quiz: 0, midterm: 0, final: 0, total: 0, grade: 'غير مرصود'
+            hw: 0, quiz: 0, midterm: 0, final: 0, total: 0, grade:'غير مرصود'
           };
         }
 
@@ -595,22 +595,22 @@ export const AppProvider = ({ children }) => {
       if (!targetSubjectKey) {
         targetSubjectKey = coreSubName;
         subjectMap[targetSubjectKey] = {
-          id: `SUB-${Date.now().toString().slice(-4)}`,
+          id:`SUB-${Date.now().toString().slice(-4)}`,
           name: targetSubjectKey,
           nameEn: targetSubjectKey,
-          hw: 0, quiz: 0, midterm: 0, final: 0, total: 0, grade: 'غير مرصود'
+          hw: 0, quiz: 0, midterm: 0, final: 0, total: 0, grade:'غير مرصود'
         };
       }
 
       const scoreNum = Number(m.score || 0);
 
-      if (m.type === 'أعمال السنة' || m.type === 'daily_work' || m.type === 'homework') {
+      if (m.type ==='أعمال السنة'|| m.type ==='daily_work'|| m.type ==='homework') {
         subjectMap[targetSubjectKey].hw = Math.min(20, (subjectMap[targetSubjectKey].hw || 0) + scoreNum);
-      } else if (m.type === 'اختبار قصير' || m.type === 'quiz') {
+      } else if (m.type ==='اختبار قصير'|| m.type ==='quiz') {
         subjectMap[targetSubjectKey].quiz = Math.min(20, (subjectMap[targetSubjectKey].quiz || 0) + scoreNum);
-      } else if (m.type === 'منتصف الفصل' || m.type === 'midterm') {
+      } else if (m.type ==='منتصف الفصل'|| m.type ==='midterm') {
         subjectMap[targetSubjectKey].midterm = Math.min(20, (subjectMap[targetSubjectKey].midterm || 0) + scoreNum);
-      } else if (m.type === 'النهائي' || m.type === 'final') {
+      } else if (m.type ==='النهائي'|| m.type ==='final') {
         subjectMap[targetSubjectKey].final = Math.min(40, (subjectMap[targetSubjectKey].final || 0) + scoreNum);
       } else {
         subjectMap[targetSubjectKey].hw = Math.min(20, (subjectMap[targetSubjectKey].hw || 0) + scoreNum);
@@ -628,13 +628,13 @@ export const AppProvider = ({ children }) => {
         total = sub.directTotal;
       }
 
-      let grade = 'ناجح - ممتاز (A+)';
-      if (total >= 90) grade = 'ناجح - ممتاز (A+)';
-      else if (total >= 80) grade = 'ناجح - جيد جداً (A)';
-      else if (total >= 65) grade = 'ناجح - جيد (B)';
-      else if (total >= 40) grade = 'ناجح - مقبول (C)';
-      else if (total > 0) grade = 'راسب 🔴 (F)';
-      else grade = 'غير مرصود';
+      let grade ='ناجح - ممتاز (A+)';
+      if (total >= 90) grade ='ناجح - ممتاز (A+)';
+      else if (total >= 80) grade ='ناجح - جيد جداً (A)';
+      else if (total >= 65) grade ='ناجح - جيد (B)';
+      else if (total >= 40) grade ='ناجح - مقبول (C)';
+      else if (total > 0) grade ='راسب (F)';
+      else grade ='غير مرصود';
 
       return {
         ...sub,
@@ -685,7 +685,7 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('school_lang', lang);
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = lang ==='ar'?'rtl':'ltr';
     document.documentElement.lang = lang;
   }, [lang]);
 
@@ -698,17 +698,17 @@ export const AppProvider = ({ children }) => {
     if (!grades || grades.length === 0) return;
 
     const standardSections = [
-      { letter: 'أ', ar: 'الشعبة (أ)', en: 'Section A', suffix: '1' },
-      { letter: 'ب', ar: 'الشعبة (ب)', en: 'Section B', suffix: '2' },
-      { letter: 'ج', ar: 'الشعبة (ج)', en: 'Section C', suffix: '3' },
-      { letter: 'د', ar: 'الشعبة (د)', en: 'Section D', suffix: '4' },
-      { letter: 'هـ', ar: 'الشعبة (هـ)', en: 'Section E', suffix: '5' }
+      {letter:'أ', ar:'الشعبة (أ)', en:'Section A', suffix:'1'},
+      {letter:'ب', ar:'الشعبة (ب)', en:'Section B', suffix:'2'},
+      {letter:'ج', ar:'الشعبة (ج)', en:'Section C', suffix:'3'},
+      {letter:'د', ar:'الشعبة (د)', en:'Section D', suffix:'4'},
+      {letter:'هـ', ar:'الشعبة (هـ)', en:'Section E', suffix:'5'}
     ];
 
-    const normSec = (s) => (s || '')
-      .replace(/الشعبة|\(|\)|[\s\-_]/g, '')
-      .replace(/[أإآ]/g, 'ا')
-      .replace(/[هة]/g, 'ه')
+    const normSec = (s) => (s ||'')
+      .replace(/الشعبة|\(|\)|[\s\-_]/g,'')
+      .replace(/[أإآ]/g,'ا')
+      .replace(/[هة]/g,'ه')
       .trim();
 
     setClassrooms((prev) => {
@@ -722,7 +722,7 @@ export const AppProvider = ({ children }) => {
       existing.forEach((cls) => {
         const gKey = cls.gradeId || cls.gradeName;
         const sKey = normSec(cls.sectionName);
-        const comboKey = `${gKey}_${sKey}`;
+        const comboKey =`${gKey}_${sKey}`;
         if (!seen.has(comboKey)) {
           seen.add(comboKey);
           deduped.push(cls);
@@ -735,16 +735,16 @@ export const AppProvider = ({ children }) => {
       if (deduped.length === 0) {
         grades.forEach((grd, gIdx) => {
           standardSections.forEach((sec, sIdx) => {
-            const numG = grd.id ? grd.id.replace(/[^0-9]/g, '') || (gIdx + 1) : (gIdx + 1);
+            const numG = grd.id ? grd.id.replace(/[^0-9]/g,'') || (gIdx + 1) : (gIdx + 1);
             deduped.push({
-              id: `CLS-${numG}-${sec.suffix}`,
+              id:`CLS-${numG}-${sec.suffix}`,
               gradeId: grd.id,
               gradeName: grd.name,
               sectionName: sec.ar,
               sectionNameEn: sec.en,
               capacity: 30,
-              supervisor: sIdx === 0 ? 'أ. طارق خوري' : (sIdx === 1 ? 'أ. مريم صالح' : (sIdx === 2 ? 'أ. سامر العلي' : 'إشراف القسم')),
-              roomNumber: `${numG}0${sec.suffix}`
+              supervisor: sIdx === 0 ?'أ. طارق خوري': (sIdx === 1 ?'أ. مريم صالح': (sIdx === 2 ?'أ. سامر العلي':'إشراف القسم')),
+              roomNumber:`${numG}0${sec.suffix}`
             });
           });
         });
@@ -762,21 +762,21 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     // Ensure at least one admin user exists (non-destructive)
-    const adminUser = (systemUsers || []).find(u => u.role === 'admin');
+    const adminUser = (systemUsers || []).find(u => u.role ==='admin');
     if (!adminUser) {
       const freshAdmin = {
-        id: "USR-01",
-        name: "إدارة المدرسة العامة",
-        nameEn: "General School Admin",
-        username: "admin",
-        password: "123123123",
-        role: "admin",
-        roleTitle: "مدير عام النظام",
-        phone: "+961 01 888 999",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        permissions: ['manage_all', 'manage_finance', 'manage_users', 'send_lessons', 'manage_bus', 'print_cards']
+        id:"USR-01",
+        name:"إدارة المدرسة العامة",
+        nameEn:"General School Admin",
+        username:"admin",
+        password:"123123123",
+        role:"admin",
+        roleTitle:"مدير عام النظام",
+        phone:"+961 01 888 999",
+        avatar:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        permissions: ['manage_all','manage_finance','manage_users','send_lessons','manage_bus','print_cards']
       };
-      setSystemUsers(prev => [freshAdmin, ...prev.filter(u => u.role !== 'admin')]);
+      setSystemUsers(prev => [freshAdmin, ...prev.filter(u => u.role !=='admin')]);
       localStorage.setItem('school_system_users', JSON.stringify([freshAdmin]));
     }
   }, []);
@@ -847,32 +847,32 @@ export const AppProvider = ({ children }) => {
       try {
         channel = supabase
           .channel('public:app_storage')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'app_storage' }, (payload) => {
+          .on('postgres_changes', {event:'*', schema:'public', table:'app_storage'}, (payload) => {
             const row = payload.new;
             if (!row || !row.key) return;
             const k = row.key;
             const v = row.value;
             localStorage.setItem(k, JSON.stringify(v));
 
-            if (k === 'school_students') setStudents(v);
-            else if (k === 'school_subjects') setSubjects(v);
-            else if (k === 'school_grades') setGrades(v);
-            else if (k === 'school_classrooms') setClassrooms(v);
-            else if (k === 'school_teachers') setTeachers(v);
-            else if (k === 'school_staff') setStaffEmployees(v);
-            else if (k === 'school_exams') setExams(v);
-            else if (k === 'school_expenses') setExpenses(v);
-            else if (k === 'school_buses') setBuses(v);
-            else if (k === 'school_messages') setMessages(v);
-            else if (k === 'school_agenda') setAgenda(v);
-            else if (k === 'school_tutoring') setTutoringCourses(v);
-            else if (k === 'school_tutoring_payments') setTutoringPayments(v);
-            else if (k === 'school_push_notifs') setPushNotifs(v);
-            else if (k === 'school_system_users') setSystemUsers(v);
-            else if (k === 'school_settings') setSiteSettings(v);
-            else if (k === 'school_daily_marks') setDailyMarks(v);
-            else if (k === 'school_attendance') setAttendance(v);
-            else if (k === 'school_behavior') setBehaviorRecords(v);
+            if (k ==='school_students') setStudents(v);
+            else if (k ==='school_subjects') setSubjects(v);
+            else if (k ==='school_grades') setGrades(v);
+            else if (k ==='school_classrooms') setClassrooms(v);
+            else if (k ==='school_teachers') setTeachers(v);
+            else if (k ==='school_staff') setStaffEmployees(v);
+            else if (k ==='school_exams') setExams(v);
+            else if (k ==='school_expenses') setExpenses(v);
+            else if (k ==='school_buses') setBuses(v);
+            else if (k ==='school_messages') setMessages(v);
+            else if (k ==='school_agenda') setAgenda(v);
+            else if (k ==='school_tutoring') setTutoringCourses(v);
+            else if (k ==='school_tutoring_payments') setTutoringPayments(v);
+            else if (k ==='school_push_notifs') setPushNotifs(v);
+            else if (k ==='school_system_users') setSystemUsers(v);
+            else if (k ==='school_settings') setSiteSettings(v);
+            else if (k ==='school_daily_marks') setDailyMarks(v);
+            else if (k ==='school_attendance') setAttendance(v);
+            else if (k ==='school_behavior') setBehaviorRecords(v);
           })
           .subscribe();
       } catch (err) {
@@ -947,100 +947,100 @@ export const AppProvider = ({ children }) => {
   // Login logic
 
   const login = (usernameInput, passwordInput) => {
-    const cleanUser = (usernameInput || '').trim().toLowerCase();
+    const cleanUser = (usernameInput ||'').trim().toLowerCase();
     localStorage.removeItem('school_logged_out');
 
     // Master admin credentials fallback override (login only — does NOT wipe data)
-    if (cleanUser === 'admin' && passwordInput === '123123123') {
+    if (cleanUser ==='admin'&& passwordInput ==='123123123') {
       const masterAdmin = {
-        id: "USR-01",
-        name: "إدارة المدرسة العامة",
-        nameEn: "General School Admin",
-        username: "admin",
-        password: "123123123",
-        role: "admin",
-        roleTitle: "مدير عام النظام",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        permissions: ['manage_all', 'manage_finance', 'manage_users', 'send_lessons', 'manage_bus', 'print_cards']
+        id:"USR-01",
+        name:"إدارة المدرسة العامة",
+        nameEn:"General School Admin",
+        username:"admin",
+        password:"123123123",
+        role:"admin",
+        roleTitle:"مدير عام النظام",
+        avatar:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        permissions: ['manage_all','manage_finance','manage_users','send_lessons','manage_bus','print_cards']
       };
 
       // Ensure admin exists in system users without wiping other data
       setSystemUsers(prev => {
-        const withoutOldAdmin = prev.filter(u => u.id !== 'USR-01');
+        const withoutOldAdmin = prev.filter(u => u.id !=='USR-01');
         return [masterAdmin, ...withoutOldAdmin];
       });
 
       setCurrentUser(masterAdmin);
       localStorage.setItem('school_logged_user', JSON.stringify(masterAdmin));
-      return { success: true, user: masterAdmin };
+      return {success: true, user: masterAdmin};
     }
 
     // 1. Search system users (admin, staff, drivers)
     const foundSystem = (systemUsers || []).find(
-      (u) => (u.username || '').toLowerCase() === cleanUser && u.password === passwordInput
+      (u) => (u.username ||'').toLowerCase() === cleanUser && u.password === passwordInput
     );
     if (foundSystem) {
       setCurrentUser(foundSystem);
-      if (foundSystem.role === 'student' || foundSystem.role === 'parent') {
+      if (foundSystem.role ==='student'|| foundSystem.role ==='parent') {
         setSelectedStudentId(foundSystem.studentId || foundSystem.id);
       }
-      return { success: true, user: foundSystem };
+      return {success: true, user: foundSystem};
     }
 
     // 2. Search teachers collection & teacher role fallback
     const foundTeacher = (teachers || []).find((t) => {
-      const matchId = (t.id || '').toLowerCase() === cleanUser;
-      const matchUsername = (t.username || '').toLowerCase() === cleanUser;
-      const matchName = (t.name || '').toLowerCase() === cleanUser;
-      const matchPass = t.password ? t.password === passwordInput : (passwordInput === '123456' || passwordInput === 'teacher123' || passwordInput === t.id);
+      const matchId = (t.id ||'').toLowerCase() === cleanUser;
+      const matchUsername = (t.username ||'').toLowerCase() === cleanUser;
+      const matchName = (t.name ||'').toLowerCase() === cleanUser;
+      const matchPass = t.password ? t.password === passwordInput : (passwordInput ==='123456'|| passwordInput ==='teacher123'|| passwordInput === t.id);
       return (matchId || matchUsername || matchName) && matchPass;
     });
 
-    if (foundTeacher || cleanUser === 'teacher' || cleanUser === 'meryem') {
+    if (foundTeacher || cleanUser ==='teacher'|| cleanUser ==='meryem') {
       const teacherObj = foundTeacher || (teachers && teachers[0]) || {
-        id: "TCH-101",
-        name: "أ. معلم المادة",
-        nameEn: "Prof. Subject Teacher",
-        username: "teacher",
-        role: "teacher",
-        subject: "العلوم والفيزياء",
+        id:"TCH-101",
+        name:"أ. معلم المادة",
+        nameEn:"Prof. Subject Teacher",
+        username:"teacher",
+        role:"teacher",
+        subject:"العلوم والفيزياء",
         assignedClassrooms: ["الصف السادس الابتدائي (أ)"],
-        avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
+        avatar:"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
       };
       const teacherUser = {
         ...teacherObj,
-        role: 'teacher',
-        roleTitle: `معلم - ${teacherObj.subject || 'المحتوى التعليمي'}`
+        role:'teacher',
+        roleTitle:`معلم - ${teacherObj.subject ||'المحتوى التعليمي'}`
       };
       setCurrentUser(teacherUser);
-      return { success: true, user: teacherUser };
+      return {success: true, user: teacherUser};
     }
 
     // 3. Search students collection (students roster)
     const foundStudent = (students || []).find((s) => {
-      const matchId = (s.id || '').toLowerCase() === cleanUser;
-      const matchUsername = (s.username || '').toLowerCase() === cleanUser;
-      const matchName = (s.name || '').toLowerCase() === cleanUser;
-      const matchPass = s.password ? s.password === passwordInput : (passwordInput === '123456' || passwordInput === 'student123' || passwordInput === s.id);
+      const matchId = (s.id ||'').toLowerCase() === cleanUser;
+      const matchUsername = (s.username ||'').toLowerCase() === cleanUser;
+      const matchName = (s.name ||'').toLowerCase() === cleanUser;
+      const matchPass = s.password ? s.password === passwordInput : (passwordInput ==='123456'|| passwordInput ==='student123'|| passwordInput === s.id);
       return (matchId || matchUsername || matchName) && matchPass;
     });
 
     if (foundStudent && foundStudent.frozen) {
       return {
         success: false,
-        message: lang === 'ar'
-          ? '❌ تم تجميد حساب هذا الطالب مؤقتاً! يرجى مراجعة إدارة المدرسة.'
-          : '❌ This student account has been frozen. Please contact school administration.'
+        message: lang ==='ar'
+          ?'تم تجميد حساب هذا الطالب مؤقتاً! يرجى مراجعة إدارة المدرسة.'
+          :'This student account has been frozen. Please contact school administration.'
       };
     }
 
-    if (foundStudent || cleanUser === 'student' || cleanUser.startsWith('stu')) {
+    if (foundStudent || cleanUser ==='student'|| cleanUser.startsWith('stu')) {
       const stuObj = foundStudent || (students && students[0]) || {
-        id: "STU-101",
-        name: "محمد خالد مسرة",
-        nameEn: "Mohammad Khaled",
-        grade: "الصف السادس الابتدائي",
-        classRoom: "أ"
+        id:"STU-101",
+        name:"محمد خالد مسرة",
+        nameEn:"Mohammad Khaled",
+        grade:"الصف السادس الابتدائي",
+        classRoom:"أ"
       };
       const studentUser = {
         id: stuObj.id,
@@ -1048,44 +1048,44 @@ export const AppProvider = ({ children }) => {
         name: stuObj.name,
         nameEn: stuObj.nameEn || stuObj.name,
         username: stuObj.username || stuObj.id,
-        role: 'student',
-        roleTitle: `طالب (${stuObj.grade || 'مدرسة الدعم'})`,
-        avatar: stuObj.avatar || "https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80",
+        role:'student',
+        roleTitle:`طالب (${stuObj.grade ||'مدرسة الدعم'})`,
+        avatar: stuObj.avatar ||"https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80",
         grade: stuObj.grade,
         classRoom: stuObj.classRoom
       };
       setCurrentUser(studentUser);
       setSelectedStudentId(stuObj.id);
-      return { success: true, user: studentUser };
+      return {success: true, user: studentUser};
     }
 
     // 4. Admin fallback
-    if (cleanUser === 'admin') {
+    if (cleanUser ==='admin') {
       const adminUser = (systemUsers || [])[0] || {
-        id: "ADM-01",
-        username: "admin",
-        password: "admin123",
-        name: "إدارة المدرسة العامة",
-        role: "admin"
+        id:"ADM-01",
+        username:"admin",
+        password:"admin123",
+        name:"إدارة المدرسة العامة",
+        role:"admin"
       };
       setCurrentUser(adminUser);
-      return { success: true, user: adminUser };
+      return {success: true, user: adminUser};
     }
 
-    return { success: false, message: lang === 'ar' ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'Invalid username or password' };
+    return {success: false, message: lang ==='ar'?'اسم المستخدم أو كلمة المرور غير صحيحة':'Invalid username or password'};
   };
 
   const logout = () => {
-    localStorage.setItem('school_logged_out', 'true');
+    localStorage.setItem('school_logged_out','true');
     setCurrentUser(null);
     localStorage.removeItem('school_logged_user');
     localStorage.removeItem('school_active_tab');
-    window.location.hash = '#/dashboard';
+    window.location.hash ='#/dashboard';
   };
 
   const updateSiteSettings = (newSettings) => {
     setSiteSettings((prev) => {
-      const updated = { ...prev, ...newSettings };
+      const updated = {...prev, ...newSettings};
       localStorage.setItem('school_settings', JSON.stringify(updated));
       dbSaveCollection('school_settings', updated);
       return updated;
@@ -1094,7 +1094,7 @@ export const AppProvider = ({ children }) => {
 
   const updateUserAvatar = (newAvatarUrl) => {
     if (currentUser) {
-      const updated = { ...currentUser, avatar: newAvatarUrl };
+      const updated = {...currentUser, avatar: newAvatarUrl};
       setCurrentUser(updated);
       setSystemUsers((prev) =>
         prev.map((u) => (u.id === currentUser.id ? updated : u))
@@ -1104,7 +1104,7 @@ export const AppProvider = ({ children }) => {
 
   const addSubject = (newSub) => {
     const created = {
-      id: `SUB-${Math.floor(10 + Math.random() * 90)}`,
+      id:`SUB-${Math.floor(10 + Math.random() * 90)}`,
       ...newSub
     };
     setSubjects((prev) => {
@@ -1117,7 +1117,7 @@ export const AppProvider = ({ children }) => {
 
   const updateSubject = (id, updatedFields) => {
     setSubjects((prev) => {
-      const updated = prev.map((s) => (s.id === id ? { ...s, ...updatedFields } : s));
+      const updated = prev.map((s) => (s.id === id ? {...s, ...updatedFields} : s));
       localStorage.setItem('school_subjects', JSON.stringify(updated));
       dbSaveCollection('school_subjects', updated);
       return updated;
@@ -1135,7 +1135,7 @@ export const AppProvider = ({ children }) => {
 
   const addGrade = (gradeObj) => {
     const newGrade = {
-      id: `GRD-${Math.floor(10 + Math.random() * 90)}`,
+      id:`GRD-${Math.floor(10 + Math.random() * 90)}`,
       ...gradeObj
     };
     setGrades((prev) => {
@@ -1149,7 +1149,7 @@ export const AppProvider = ({ children }) => {
   const updateGrade = (id, updatedFields) => {
     setGrades((prev) => {
       const target = prev.find((g) => g.id === id);
-      const updated = prev.map((g) => (g.id === id ? { ...g, ...updatedFields } : g));
+      const updated = prev.map((g) => (g.id === id ? {...g, ...updatedFields} : g));
       localStorage.setItem('school_grades', JSON.stringify(updated));
       dbSaveCollection('school_grades', updated);
 
@@ -1157,7 +1157,7 @@ export const AppProvider = ({ children }) => {
       if (target && updatedFields.name && updatedFields.name !== target.name) {
         setClassrooms((clsPrev) => {
           const clsUpdated = clsPrev.map((c) =>
-            (c.gradeId === id || c.gradeName === target.name) ? { ...c, gradeName: updatedFields.name } : c
+            (c.gradeId === id || c.gradeName === target.name) ? {...c, gradeName: updatedFields.name} : c
           );
           localStorage.setItem('school_classrooms', JSON.stringify(clsUpdated));
           dbSaveCollection('school_classrooms', clsUpdated);
@@ -1166,7 +1166,7 @@ export const AppProvider = ({ children }) => {
 
         setStudents((stuPrev) => {
           const stuUpdated = stuPrev.map((s) =>
-            s.grade === target.name ? { ...s, grade: updatedFields.name } : s
+            s.grade === target.name ? {...s, grade: updatedFields.name} : s
           );
           localStorage.setItem('school_students', JSON.stringify(stuUpdated));
           dbSaveCollection('school_students', stuUpdated);
@@ -1187,10 +1187,10 @@ export const AppProvider = ({ children }) => {
   };
 
   const addClassroom = (classObj) => {
-    const normSec = (s) => (s || '')
-      .replace(/الشعبة|\(|\)|[\s\-_]/g, '')
-      .replace(/[أإآ]/g, 'ا')
-      .replace(/[هة]/g, 'ه')
+    const normSec = (s) => (s ||'')
+      .replace(/الشعبة|\(|\)|[\s\-_]/g,'')
+      .replace(/[أإآ]/g,'ا')
+      .replace(/[هة]/g,'ه')
       .trim();
 
     let added = false;
@@ -1207,7 +1207,7 @@ export const AppProvider = ({ children }) => {
 
       added = true;
       const newClass = {
-        id: `CLS-${Date.now()}-${Math.floor(10 + Math.random() * 90)}`,
+        id:`CLS-${Date.now()}-${Math.floor(10 + Math.random() * 90)}`,
         ...classObj
       };
       const updated = [...prev, newClass];
@@ -1221,7 +1221,7 @@ export const AppProvider = ({ children }) => {
   const updateClassroom = (id, updatedFields) => {
     setClassrooms((prev) => {
       const target = prev.find((c) => c.id === id);
-      const updated = prev.map((c) => (c.id === id ? { ...c, ...updatedFields } : c));
+      const updated = prev.map((c) => (c.id === id ? {...c, ...updatedFields} : c));
       localStorage.setItem('school_classrooms', JSON.stringify(updated));
       dbSaveCollection('school_classrooms', updated);
 
@@ -1231,7 +1231,7 @@ export const AppProvider = ({ children }) => {
           const stuUpdated = stuPrev.map((s) => {
             const isMatch = (s.grade === target.gradeName) && 
               (s.classRoom === target.sectionName || s.classroom === target.sectionName);
-            return isMatch ? { ...s, classRoom: updatedFields.sectionName, classroom: updatedFields.sectionName } : s;
+            return isMatch ? {...s, classRoom: updatedFields.sectionName, classroom: updatedFields.sectionName} : s;
           });
           localStorage.setItem('school_students', JSON.stringify(stuUpdated));
           dbSaveCollection('school_students', stuUpdated);
@@ -1253,7 +1253,7 @@ export const AppProvider = ({ children }) => {
 
   const addStaffEmployee = (emp) => {
     const newEmp = {
-      id: `STF-${Math.floor(100 + Math.random() * 900)}`,
+      id:`STF-${Math.floor(100 + Math.random() * 900)}`,
       ...emp
     };
     setStaffEmployees((prev) => [newEmp, ...prev]);
@@ -1261,7 +1261,7 @@ export const AppProvider = ({ children }) => {
 
   const updateStaffEmployee = (id, updatedObj) => {
     setStaffEmployees((prev) =>
-      prev.map((emp) => (emp.id === id ? { ...emp, ...updatedObj } : emp))
+      prev.map((emp) => (emp.id === id ? {...emp, ...updatedObj} : emp))
     );
   };
 
@@ -1307,7 +1307,7 @@ export const AppProvider = ({ children }) => {
 
   const addExam = (exam) => {
     const newExam = {
-      id: `EXM-${Math.floor(100 + Math.random() * 900)}`,
+      id:`EXM-${Math.floor(100 + Math.random() * 900)}`,
       results: [],
       ...exam
     };
@@ -1320,16 +1320,16 @@ export const AppProvider = ({ children }) => {
   };
 
   const gradeExamResult = (examId, studentId, score, evaluation) => {
-    let examSubject = 'الرياضيات';
+    let examSubject ='الرياضيات';
 
     setExams((prev) => {
       const updated = prev.map((ex) => {
         if (ex.id === examId) {
-          examSubject = ex.subject || ex.title || 'الرياضيات';
+          examSubject = ex.subject || ex.title ||'الرياضيات';
           const existingResults = ex.results || [];
           const updatedResults = existingResults.filter((r) => String(r.studentId) !== String(studentId));
-          updatedResults.push({ studentId, score: Number(score), evaluation });
-          return { ...ex, results: updatedResults };
+          updatedResults.push({studentId, score: Number(score), evaluation});
+          return {...ex, results: updatedResults};
         }
         return ex;
       });
@@ -1337,7 +1337,7 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
 
-    // Extract core subject name if title is like "اختبار الرياضيات التقييمي - الشهر الأول (الرياضيات)"
+    // Extract core subject name if title is like"اختبار الرياضيات التقييمي - الشهر الأول (الرياضيات)"
     let coreSubName = examSubject;
     if (examSubject.includes('(') && examSubject.includes(')')) {
       const match = examSubject.match(/\(([^)]+)\)/);
@@ -1348,15 +1348,15 @@ export const AppProvider = ({ children }) => {
     setDailyMarks((prev) => {
       const existingIdx = prev.findIndex(m => String(m.studentId) === String(studentId) && (m.examId === examId || m.subjectName === coreSubName));
       const markEntry = {
-        id: existingIdx >= 0 ? prev[existingIdx].id : `DM-${Date.now().toString().slice(-4)}`,
+        id: existingIdx >= 0 ? prev[existingIdx].id :`DM-${Date.now().toString().slice(-4)}`,
         studentId,
         subjectName: coreSubName,
         subject: coreSubName,
         examId,
         score: Number(score),
         maxScore: 100,
-        type: 'اختبار قصير',
-        notes: evaluation || 'اختبار تقييمي',
+        type:'اختبار قصير',
+        notes: evaluation ||'اختبار تقييمي',
         date: new Date().toISOString().split('T')[0]
       };
       let updated;
@@ -1374,21 +1374,21 @@ export const AppProvider = ({ children }) => {
   const batchGradeExamResults = (examId, resultsArray) => {
     if (!examId || !Array.isArray(resultsArray) || resultsArray.length === 0) return;
 
-    let examSubject = 'الرياضيات';
+    let examSubject ='الرياضيات';
 
     setExams((prev) => {
       const updated = prev.map((ex) => {
         if (ex.id === examId) {
-          examSubject = ex.subject || ex.title || 'الرياضيات';
+          examSubject = ex.subject || ex.title ||'الرياضيات';
           const existingResults = (ex.results || []).filter(
             (r) => !resultsArray.some((nr) => String(nr.studentId) === String(r.studentId))
           );
           const newEntries = resultsArray.map((nr) => ({
             studentId: nr.studentId,
             score: Number(nr.score),
-            evaluation: nr.evaluation || 'أداء جيد'
+            evaluation: nr.evaluation ||'أداء جيد'
           }));
-          return { ...ex, results: [...existingResults, ...newEntries] };
+          return {...ex, results: [...existingResults, ...newEntries]};
         }
         return ex;
       });
@@ -1409,15 +1409,15 @@ export const AppProvider = ({ children }) => {
           (m) => String(m.studentId) === String(nr.studentId) && (m.examId === examId || m.subjectName === coreSubName)
         );
         const markEntry = {
-          id: existingIdx >= 0 ? updated[existingIdx].id : `DM-${Date.now().toString().slice(-4)}-${nr.studentId}`,
+          id: existingIdx >= 0 ? updated[existingIdx].id :`DM-${Date.now().toString().slice(-4)}-${nr.studentId}`,
           studentId: nr.studentId,
           subjectName: coreSubName,
           subject: coreSubName,
           examId,
           score: Number(nr.score),
           maxScore: 100,
-          type: 'اختبار تقييمي',
-          notes: nr.evaluation || 'اختبار تقييمي',
+          type:'اختبار تقييمي',
+          notes: nr.evaluation ||'اختبار تقييمي',
           date: new Date().toISOString().split('T')[0]
         };
         if (existingIdx >= 0) {
@@ -1433,7 +1433,7 @@ export const AppProvider = ({ children }) => {
 
   const addExpense = (exp) => {
     const newExp = {
-      id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
+      id:`EXP-${Math.floor(100 + Math.random() * 900)}`,
       date: new Date().toISOString().split('T')[0],
       ...exp
     };
@@ -1454,7 +1454,7 @@ export const AppProvider = ({ children }) => {
 
   const addBus = (bus) => {
     const newBus = {
-      id: `BUS-${Math.floor(10 + Math.random() * 90)}`,
+      id:`BUS-${Math.floor(10 + Math.random() * 90)}`,
       ...bus
     };
     setBuses((prev) => {
@@ -1474,7 +1474,7 @@ export const AppProvider = ({ children }) => {
 
   const assignStudentToBus = (studentId, busId) => {
     setStudents((prev) => {
-      const updated = prev.map((s) => (s.id === studentId ? { ...s, busId } : s));
+      const updated = prev.map((s) => (s.id === studentId ? {...s, busId} : s));
       dbSaveCollection('school_students', updated);
       return updated;
     });
@@ -1482,7 +1482,7 @@ export const AppProvider = ({ children }) => {
 
   const sendPushNotification = (notif) => {
     const newNotif = {
-      id: `PNOT-${Date.now().toString().slice(-5)}`,
+      id:`PNOT-${Date.now().toString().slice(-5)}`,
       timestamp: new Date().toISOString(),
       ...notif
     };
@@ -1494,7 +1494,7 @@ export const AppProvider = ({ children }) => {
       prev.map((s) => {
         if (s.id === studentId) {
           const docs = s.documents || [];
-          return { ...s, documents: [...docs, { id: `DOC-${Date.now().toString().slice(-4)}`, ...docObj }] };
+          return {...s, documents: [...docs, {id:`DOC-${Date.now().toString().slice(-4)}`, ...docObj}]};
         }
         return s;
       })
@@ -1503,7 +1503,7 @@ export const AppProvider = ({ children }) => {
 
   const addMessage = (msg) => {
     const newMsg = {
-      id: `MSG-${Math.floor(100 + Math.random() * 900)}`,
+      id:`MSG-${Math.floor(100 + Math.random() * 900)}`,
       date: new Date().toISOString().split('T')[0],
       ...msg
     };
@@ -1515,15 +1515,15 @@ export const AppProvider = ({ children }) => {
 
     setNotifications((prev) => {
       const newNotif = {
-        id: `NOT-${Date.now().toString().slice(-4)}`,
-        title: `💬 رسالة موجهة من المعلم: ${msg.title || 'رسالة جديدة'}`,
-        message: msg.content || 'تم إرسال رسالة جديدة لك في البوابة المدرسية.',
-        type: 'message',
-        time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+        id:`NOT-${Date.now().toString().slice(-4)}`,
+        title:`رسالة موجهة من المعلم: ${msg.title ||'رسالة جديدة'}`,
+        message: msg.content ||'تم إرسال رسالة جديدة لك في البوابة المدرسية.',
+        type:'message',
+        time: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}),
         date: new Date().toISOString().split('T')[0],
         read: false,
         targetGrade: msg.targetGrade,
-        targetRole: 'student'
+        targetRole:'student'
       };
       const updatedNotifs = [newNotif, ...prev];
       dbSaveCollection('school_notifications', updatedNotifs);
@@ -1540,9 +1540,9 @@ export const AppProvider = ({ children }) => {
   };
 
   const addAgendaItem = (item) => {
-    const targetSec = item.classRoom || item.section || 'أ';
+    const targetSec = item.classRoom || item.section ||'أ';
     const newItem = {
-      id: `AGN-${Math.floor(100 + Math.random() * 900)}`,
+      id:`AGN-${Math.floor(100 + Math.random() * 900)}`,
       date: new Date().toISOString().split('T')[0],
       ...item,
       classRoom: targetSec,
@@ -1556,16 +1556,16 @@ export const AppProvider = ({ children }) => {
 
     setNotifications((prev) => {
       const newNotif = {
-        id: `NOT-${Date.now().toString().slice(-4)}`,
-        title: `📚 درس/واجب جديد: ${item.subject || 'مادة دراسية'}`,
-        message: `${item.title || ''} - (${item.grade || ''} - الشعبة ${targetSec})`,
-        type: 'agenda',
-        time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+        id:`NOT-${Date.now().toString().slice(-4)}`,
+        title:`درس/واجب جديد: ${item.subject ||'مادة دراسية'}`,
+        message:`${item.title ||''} - (${item.grade ||''} - الشعبة ${targetSec})`,
+        type:'agenda',
+        time: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}),
         date: new Date().toISOString().split('T')[0],
         read: false,
         targetGrade: item.grade,
         targetSection: targetSec,
-        targetRole: 'student'
+        targetRole:'student'
       };
       const updatedNotifs = [newNotif, ...prev];
       dbSaveCollection('school_notifications', updatedNotifs);
@@ -1577,8 +1577,8 @@ export const AppProvider = ({ children }) => {
     setAgenda((prev) => {
       const updated = prev.map((a) => {
         if (a.id === itemId) {
-          const targetSec = updatedFields.classRoom || updatedFields.section || a.classRoom || a.section || 'أ';
-          return { ...a, ...updatedFields, classRoom: targetSec, section: targetSec };
+          const targetSec = updatedFields.classRoom || updatedFields.section || a.classRoom || a.section ||'أ';
+          return {...a, ...updatedFields, classRoom: targetSec, section: targetSec};
         }
         return a;
       });
@@ -1601,7 +1601,7 @@ export const AppProvider = ({ children }) => {
         if (s.id === studentId || s.name === studentId || String(s.id) === String(studentId)) {
           const currentPaid = Number(s.tuitionPaid || 0);
           const newPaid = currentPaid + Number(amountUSD || 0);
-          return { ...s, tuitionPaid: newPaid };
+          return {...s, tuitionPaid: newPaid};
         }
         return s;
       });
@@ -1617,7 +1617,7 @@ export const AppProvider = ({ children }) => {
         const alloc = Number(allocationsMap[s.id] || allocationsMap[String(s.id)] || 0);
         if (alloc > 0) {
           const currentPaid = Number(s.tuitionPaid || 0);
-          return { ...s, tuitionPaid: currentPaid + alloc };
+          return {...s, tuitionPaid: currentPaid + alloc};
         }
         return s;
       });
@@ -1635,13 +1635,13 @@ export const AppProvider = ({ children }) => {
           const feesMap = c.studentFeesMap || {};
           if (!enrolled.includes(studentId)) {
             const nextEnrolled = [...enrolled, studentId];
-            if (customFee !== null && customFee !== undefined && customFee !== '') {
+            if (customFee !== null && customFee !== undefined && customFee !=='') {
               feesMap[studentId] = Number(customFee);
             }
-            return { ...c, enrolledStudentIds: nextEnrolled, studentFeesMap: { ...feesMap } };
-          } else if (customFee !== null && customFee !== undefined && customFee !== '') {
+            return {...c, enrolledStudentIds: nextEnrolled, studentFeesMap: {...feesMap}};
+          } else if (customFee !== null && customFee !== undefined && customFee !=='') {
             feesMap[studentId] = Number(customFee);
-            return { ...c, studentFeesMap: { ...feesMap } };
+            return {...c, studentFeesMap: {...feesMap}};
           }
         }
         return c;
@@ -1656,9 +1656,9 @@ export const AppProvider = ({ children }) => {
       const updated = prev.map((c) => {
         if (c.id === courseId) {
           const nextEnrolled = (c.enrolledStudentIds || []).filter(id => id !== studentId);
-          const feesMap = { ...(c.studentFeesMap || {}) };
+          const feesMap = {...(c.studentFeesMap || {})};
           delete feesMap[studentId];
-          return { ...c, enrolledStudentIds: nextEnrolled, studentFeesMap: feesMap };
+          return {...c, enrolledStudentIds: nextEnrolled, studentFeesMap: feesMap};
         }
         return c;
       });
@@ -1671,13 +1671,13 @@ export const AppProvider = ({ children }) => {
     setTutoringCourses((prev) => {
       const updated = prev.map((c) => {
         if (c.id === courseId) {
-          const feesMap = { ...(c.studentFeesMap || {}) };
-          if (customFee !== null && customFee !== undefined && customFee !== '') {
+          const feesMap = {...(c.studentFeesMap || {})};
+          if (customFee !== null && customFee !== undefined && customFee !=='') {
             feesMap[studentId] = Number(customFee);
           } else {
             delete feesMap[studentId];
           }
-          return { ...c, studentFeesMap: feesMap };
+          return {...c, studentFeesMap: feesMap};
         }
         return c;
       });
@@ -1688,14 +1688,14 @@ export const AppProvider = ({ children }) => {
 
   const addTutoringCourse = (courseData) => {
     const newCourse = {
-      id: `TUT-${Date.now().toString().slice(-4)}`,
-      title: courseData.title || 'دورة تقوية جديدة',
-      titleEn: courseData.titleEn || 'New Tutoring Course',
-      subject: courseData.subject || 'عام',
+      id:`TUT-${Date.now().toString().slice(-4)}`,
+      title: courseData.title ||'دورة تقوية جديدة',
+      titleEn: courseData.titleEn ||'New Tutoring Course',
+      subject: courseData.subject ||'عام',
       fee: Number(courseData.fee) || 0,
-      description: courseData.description || '',
-      days: courseData.days || 'يحدد لاحقاً',
-      instructor: courseData.instructor || 'أ. مدرس الدورة',
+      description: courseData.description ||'',
+      days: courseData.days ||'يحدد لاحقاً',
+      instructor: courseData.instructor ||'أ. مدرس الدورة',
       maxSeats: Number(courseData.maxSeats) || 20,
       enrolledStudentIds: [],
       studentFeesMap: {}
@@ -1718,18 +1718,18 @@ export const AppProvider = ({ children }) => {
 
   const addTutoringPayment = (paymentData) => {
     const newPayment = {
-      id: `TPAY-${Date.now()}`,
-      receiptNo: paymentData.receiptNo || `REC-TUT-${Date.now().toString().slice(-4)}`,
+      id:`TPAY-${Date.now()}`,
+      receiptNo: paymentData.receiptNo ||`REC-TUT-${Date.now().toString().slice(-4)}`,
       date: paymentData.date || new Date().toISOString().split('T')[0],
       studentId: paymentData.studentId,
       studentName: paymentData.studentName,
       courseId: paymentData.courseId,
       courseTitle: paymentData.courseTitle,
       amount: Number(paymentData.amount) || 0,
-      currency: paymentData.currency || 'USD',
-      method: paymentData.method || 'نقدي (Cash)',
-      notes: paymentData.notes || '',
-      recordedBy: paymentData.recordedBy || 'المسؤول المالي لمعهد التقوية'
+      currency: paymentData.currency ||'USD',
+      method: paymentData.method ||'نقدي (Cash)',
+      notes: paymentData.notes ||'',
+      recordedBy: paymentData.recordedBy ||'المسؤول المالي لمعهد التقوية'
     };
     setTutoringPayments((prev) => {
       const updated = [newPayment, ...prev];
@@ -1749,7 +1749,7 @@ export const AppProvider = ({ children }) => {
 
   const updateBusStatus = (studentId, newStatus) => {
     setStudents((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, busStatus: newStatus } : s))
+      prev.map((s) => (s.id === studentId ? {...s, busStatus: newStatus} : s))
     );
   };
 
@@ -1766,14 +1766,14 @@ export const AppProvider = ({ children }) => {
     }
 
     // 2. Fallback only if both lack familyId and share legitimate custom non-generic phone and parent
-    const phoneA = (a.parentPhone || a.phone || '').replace(/[^0-9]/g, '');
-    const phoneB = (b.parentPhone || b.phone || '').replace(/[^0-9]/g, '');
-    const isGenericPhoneA = !phoneA || phoneA === '96103123456' || phoneA === '123456' || phoneA.length < 8;
-    const isGenericPhoneB = !phoneB || phoneB === '96103123456' || phoneB === '123456' || phoneB.length < 8;
+    const phoneA = (a.parentPhone || a.phone ||'').replace(/[^0-9]/g,'');
+    const phoneB = (b.parentPhone || b.phone ||'').replace(/[^0-9]/g,'');
+    const isGenericPhoneA = !phoneA || phoneA ==='96103123456'|| phoneA ==='123456'|| phoneA.length < 8;
+    const isGenericPhoneB = !phoneB || phoneB ==='96103123456'|| phoneB ==='123456'|| phoneB.length < 8;
     if (isGenericPhoneA || isGenericPhoneB) return false;
 
-    const parentA = (a.parentName || '').trim().toLowerCase();
-    const parentB = (b.parentName || '').trim().toLowerCase();
+    const parentA = (a.parentName ||'').trim().toLowerCase();
+    const parentB = (b.parentName ||'').trim().toLowerCase();
     const isGenericParentA = !parentA || parentA.startsWith('والد الطالب') || parentA.startsWith('parent of');
     const isGenericParentB = !parentB || parentB.startsWith('والد الطالب') || parentB.startsWith('parent of');
     if (isGenericParentA || isGenericParentB) return false;
@@ -1784,7 +1784,7 @@ export const AppProvider = ({ children }) => {
 
   const addStudent = (stuObj) => {
     const newStu = {
-      id: `STU-${Math.floor(100 + Math.random() * 900)}`,
+      id:`STU-${Math.floor(100 + Math.random() * 900)}`,
       ...stuObj
     };
 
@@ -1832,9 +1832,9 @@ export const AppProvider = ({ children }) => {
         nameEn: stuObj.nameEn || stuObj.name,
         username: stuObj.username,
         password: stuObj.password,
-        role: 'student',
-        roleTitle: `طالب - ${stuObj.grade || 'المرحلة الدراسية'}`,
-        phone: stuObj.phone || '+961 03 123 456',
+        role:'student',
+        roleTitle:`طالب - ${stuObj.grade ||'المرحلة الدراسية'}`,
+        phone: stuObj.phone ||'+961 03 123 456',
         avatar: stuObj.avatar || defaultAvatars[0],
         permissions: ['print_cards']
       };
@@ -1950,7 +1950,7 @@ export const AppProvider = ({ children }) => {
               nameEn: updatedFields.nameEn || u.nameEn || updatedFields.name || u.name,
               username: updatedFields.username || u.username,
               password: updatedFields.password || u.password,
-              roleTitle: updatedFields.grade ? `طالب - ${updatedFields.grade}` : u.roleTitle
+              roleTitle: updatedFields.grade ?`طالب - ${updatedFields.grade}`: u.roleTitle
             };
           }
           return u;
@@ -1964,7 +1964,7 @@ export const AppProvider = ({ children }) => {
 
   const addTeacher = (tchObj) => {
     const newTch = {
-      id: `TCH-${Math.floor(100 + Math.random() * 900)}`,
+      id:`TCH-${Math.floor(100 + Math.random() * 900)}`,
       ...tchObj
     };
 
@@ -1981,11 +1981,11 @@ export const AppProvider = ({ children }) => {
         nameEn: tchObj.nameEn || tchObj.name,
         username: tchObj.username,
         password: tchObj.password,
-        role: 'teacher',
-        roleTitle: `مدرس - ${tchObj.subject || 'المادة الدراسية'}`,
-        phone: tchObj.phone || '+961 03 444 555',
+        role:'teacher',
+        roleTitle:`مدرس - ${tchObj.subject ||'المادة الدراسية'}`,
+        phone: tchObj.phone ||'+961 03 444 555',
         avatar: tchObj.avatar || defaultAvatars[1],
-        permissions: ['send_lessons', 'manage_grades', 'send_messages', 'print_cards']
+        permissions: ['send_lessons','manage_grades','send_messages','print_cards']
       };
 
       setSystemUsers((prev) => {
@@ -2015,7 +2015,7 @@ export const AppProvider = ({ children }) => {
 
   const addSystemUser = (user) => {
     const newUser = {
-      id: `USR-${Date.now().toString().slice(-4)}`,
+      id:`USR-${Date.now().toString().slice(-4)}`,
       ...user
     };
     setSystemUsers((prev) => {
@@ -2028,7 +2028,7 @@ export const AppProvider = ({ children }) => {
 
   const updateSystemUserPermissions = (userId, newPermissions) => {
     setSystemUsers((prev) => {
-      const updated = prev.map((u) => (u.id === userId ? { ...u, permissions: newPermissions } : u));
+      const updated = prev.map((u) => (u.id === userId ? {...u, permissions: newPermissions} : u));
       localStorage.setItem('school_system_users', JSON.stringify(updated));
       dbSaveCollection('school_system_users', updated);
       return updated;
@@ -2042,7 +2042,7 @@ export const AppProvider = ({ children }) => {
   const updateTeacherSalary = (teacherId, newSalary) => {
     const numericSalary = Number(newSalary) || 0;
     setTeachers((prev) => {
-      const updated = prev.map((t) => (t.id === teacherId ? { ...t, monthlySalary: numericSalary, baseSalary: numericSalary } : t));
+      const updated = prev.map((t) => (t.id === teacherId ? {...t, monthlySalary: numericSalary, baseSalary: numericSalary} : t));
       dbSaveCollection('school_teachers', updated);
       return updated;
     });
@@ -2050,7 +2050,7 @@ export const AppProvider = ({ children }) => {
 
   const resetFinancialAccounts = () => {
     setStudents((prev) => {
-      const updated = prev.map((s) => ({ ...s, tuitionPaid: 0 }));
+      const updated = prev.map((s) => ({...s, tuitionPaid: 0}));
       dbSaveCollection('school_students', updated);
       return updated;
     });
@@ -2059,13 +2059,13 @@ export const AppProvider = ({ children }) => {
     dbSaveCollection('school_expenses', []);
 
     setStaffEmployees((prev) => {
-      const updated = prev.map((e) => ({ ...e, salaryStatus: 'unpaid', salaryPaid: false, paidDate: null }));
+      const updated = prev.map((e) => ({...e, salaryStatus:'unpaid', salaryPaid: false, paidDate: null}));
       dbSaveCollection('school_staff', updated);
       return updated;
     });
 
     setTeachers((prev) => {
-      const updated = prev.map((t) => ({ ...t, salaryStatus: 'unpaid', salaryPaid: false, paidDate: null }));
+      const updated = prev.map((t) => ({...t, salaryStatus:'unpaid', salaryPaid: false, paidDate: null}));
       dbSaveCollection('school_teachers', updated);
       return updated;
     });
@@ -2074,9 +2074,9 @@ export const AppProvider = ({ children }) => {
     localStorage.removeItem('school_employee_advances');
 
     addNotification({
-      title: 'تم تصفير وبدء السجلات المالية والأقساط 🧹',
-      message: 'تم تصفير الأقساط المدفوعة وسجلات الصرفيات والرواتب بنجاح وبدء سجل مالي جديد.',
-      type: 'system'
+      title:'تم تصفير وبدء السجلات المالية والأقساط',
+      message:'تم تصفير الأقساط المدفوعة وسجلات الصرفيات والرواتب بنجاح وبدء سجل مالي جديد.',
+      type:'system'
     });
   };
 
@@ -2107,7 +2107,7 @@ export const AppProvider = ({ children }) => {
     dbSaveCollection('school_notifications', []);
 
     setTutoringCourses(prev => {
-      const resetCourses = prev.map(c => ({ ...c, enrolledStudentIds: [], studentFeesMap: {} }));
+      const resetCourses = prev.map(c => ({...c, enrolledStudentIds: [], studentFeesMap: {}}));
       dbSaveCollection('school_tutoring', resetCourses);
       return resetCourses;
     });
@@ -2116,16 +2116,16 @@ export const AppProvider = ({ children }) => {
     dbSaveCollection('school_tutoring_payments', []);
 
     addNotification({
-      title: 'تم تفريغ البيانات التجريبية 🧹',
-      message: 'تم تنظيف المنظومة وتفريغ كافة البيانات التجريبية بنجاح.',
-      type: 'system'
+      title:'تم تفريغ البيانات التجريبية',
+      message:'تم تنظيف المنظومة وتفريغ كافة البيانات التجريبية بنجاح.',
+      type:'system'
     });
   };
 
   const startNewAcademicYear = (newYearName) => {
     const archiveItem = {
-      id: `AY-${Date.now()}`,
-      yearName: siteSettings.academicYear || '2025/2026',
+      id:`AY-${Date.now()}`,
+      yearName: siteSettings.academicYear ||'2025/2026',
       archivedAt: new Date().toISOString(),
       studentsSnapshot: [...students],
       attendanceSnapshot: [...attendance],
@@ -2139,7 +2139,7 @@ export const AppProvider = ({ children }) => {
     dbSaveCollection('school_academic_years_archive', updatedArchives);
 
     // Update site settings
-    updateSiteSettings({ academicYear: newYearName });
+    updateSiteSettings({academicYear: newYearName});
 
     // Reset tuition paid for new academic year
     const resetStudents = students.map(s => ({
@@ -2161,9 +2161,9 @@ export const AppProvider = ({ children }) => {
     dbSaveCollection('school_agenda', []);
 
     addNotification({
-      title: `بدء العام الدراسي الجديد: ${newYearName} 🎓`,
-      message: `تم أرشفة العام الدراسي السابق وحفظ سجلاته في الأرشيف وتجهيز المنظومة للعام الجديد.`,
-      type: 'system'
+      title:`بدء العام الدراسي الجديد: ${newYearName}`,
+      message:`تم أرشفة العام الدراسي السابق وحفظ سجلاته في الأرشيف وتجهيز المنظومة للعام الجديد.`,
+      type:'system'
     });
 
     return true;
@@ -2177,14 +2177,14 @@ export const AppProvider = ({ children }) => {
     if (!inputPassword) return false;
     const cleanPass = String(inputPassword).trim();
     // 1. Check master hardcoded admin fallback
-    if (cleanPass === '123123123') return true;
+    if (cleanPass ==='123123123') return true;
 
     // 2. Check active admin account in system users
-    const adminUser = (systemUsers || []).find(u => u.role === 'admin' && u.password);
+    const adminUser = (systemUsers || []).find(u => u.role ==='admin'&& u.password);
     if (adminUser && String(adminUser.password).trim() === cleanPass) return true;
 
     // 3. Current user is admin and password matches
-    if (currentUser?.role === 'admin' && String(currentUser.password).trim() === cleanPass) return true;
+    if (currentUser?.role ==='admin'&& String(currentUser.password).trim() === cleanPass) return true;
 
     return false;
   };

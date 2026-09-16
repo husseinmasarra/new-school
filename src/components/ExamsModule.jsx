@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { useApp } from '../context/AppContext';
-import { 
+import React, {useState, useEffect, useRef} from'react';
+import {createPortal} from'react-dom';
+import {useApp} from'../context/AppContext';
+import {
   FileSpreadsheet, 
   Award, 
   Plus, 
@@ -17,10 +17,10 @@ import {
   ArrowUp,
   BarChart2,
   CheckSquare
-} from 'lucide-react';
+} from'lucide-react';
 
 export const ExamsModule = () => {
-  const { 
+  const {
     lang, 
     t, 
     currentRole, 
@@ -34,14 +34,14 @@ export const ExamsModule = () => {
     batchGradeExamResults 
   } = useApp();
 
-  const isAr = lang === 'ar';
+  const isAr = lang ==='ar';
   const safeExams = exams || [];
   const safeSubjects = subjects || [];
   const safeStudents = students || [];
 
   // For Student or Parent: Show ONLY their own exam results
-  if (currentRole === 'student' || currentRole === 'parent') {
-    const studentUser = safeStudents.find(s => s.id === currentUser?.id || s.name === currentUser?.name) || safeStudents[0] || { id: 'STU-101', name: currentUser?.name || 'طالب متميز' };
+  if (currentRole ==='student'|| currentRole ==='parent') {
+    const studentUser = safeStudents.find(s => s.id === currentUser?.id || s.name === currentUser?.name) || safeStudents[0] || {id:'STU-101', name: currentUser?.name ||'طالب متميز'};
     const myExams = safeExams.filter(ex => ex.results && ex.results.some(r => r.studentId === studentUser.id));
 
     return (
@@ -50,12 +50,12 @@ export const ExamsModule = () => {
         <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-              <Trophy className="w-6 h-6" />
+              <Trophy className="w-6 h-6"/>
             </div>
             <div>
               <h2 className="text-xl font-bold text-indigo-600">لوحة التقييم والنتائج الدراسية</h2>
               <p className="text-xs text-slate-500 mt-1">
-                {isAr ? `النتائج والعلامات الرسمية للتلميذ: ${studentUser.name}` : `Academic exam grades for: ${studentUser.name}`}
+                {isAr ?`النتائج والعلامات الرسمية للتلميذ: ${studentUser.name}`:`Academic exam grades for: ${studentUser.name}`}
               </p>
             </div>
           </div>
@@ -77,7 +77,7 @@ export const ExamsModule = () => {
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                 {myExams.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="p-6 text-slate-400 font-bold">لم تصدر أي نتائج امتحانات رسمية بعد. 📅</td>
+                    <td colSpan="4"className="p-6 text-slate-400 font-bold">لم تصدر أي نتائج امتحانات رسمية بعد. </td>
                   </tr>
                 ) : (
                   myExams.map((ex) => {
@@ -88,13 +88,13 @@ export const ExamsModule = () => {
                         <td className="p-3 font-bold text-slate-500">{ex.subject}</td>
                         <td className="p-3">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
-                            myResult.score >= 90 ? 'bg-emerald-100 text-emerald-800' :
-                            myResult.score >= 60 ? 'bg-indigo-100 text-indigo-800' : 'bg-red-100 text-red-800'
+                            myResult.score >= 90 ?'bg-emerald-100 text-emerald-800':
+                            myResult.score >= 60 ?'bg-indigo-100 text-indigo-800':'bg-red-100 text-red-800'
                           }`}>
                             {myResult.score} / 100
                           </span>
                         </td>
-                        <td className="p-3 text-left text-slate-500 font-bold">{myResult.evaluation || '—'}</td>
+                        <td className="p-3 text-left text-slate-500 font-bold">{myResult.evaluation ||'—'}</td>
                       </tr>
                     );
                   })
@@ -108,8 +108,8 @@ export const ExamsModule = () => {
   }
 
   // 1. Linked Subjects & Active Selection
-  const [selectedSubjectId, setSelectedSubjectId] = useState(() => safeSubjects[0]?.id || 'SUB-01');
-  const activeSubject = safeSubjects.find((s) => s.id === selectedSubjectId) || safeSubjects[0] || { id: 'SUB-01', name: 'الرياضيات', nameEn: 'Math' };
+  const [selectedSubjectId, setSelectedSubjectId] = useState(() => safeSubjects[0]?.id ||'SUB-01');
+  const activeSubject = safeSubjects.find((s) => s.id === selectedSubjectId) || safeSubjects[0] || {id:'SUB-01', name:'الرياضيات', nameEn:'Math'};
 
   // 2. Assessment Types List
   const standardAssessments = [
@@ -146,13 +146,13 @@ export const ExamsModule = () => {
 
   // Auto evaluation helper
   const getAutoEvaluation = (score) => {
-    if (score === '' || score === undefined || isNaN(score)) return '';
+    if (score ===''|| score === undefined || isNaN(score)) return'';
     const n = Number(score);
-    if (n >= 90) return 'أداء متميز وجيد جداً 🌟';
-    if (n >= 80) return 'جيد جداً ومتقدم 👍';
-    if (n >= 70) return 'جيد ومثابر 🟢';
-    if (n >= 60) return 'مقبول 🟡';
-    return 'يحتاج متابعة واهتمام ⚠️';
+    if (n >= 90) return'أداء متميز وجيد جداً';
+    if (n >= 80) return'جيد جداً ومتقدم';
+    if (n >= 70) return'جيد ومثابر';
+    if (n >= 60) return'مقبول';
+    return'يحتاج متابعة واهتمام';
   };
 
   // Find active exam for this subject
@@ -173,10 +173,10 @@ export const ExamsModule = () => {
 
   // Filtered students for grading table
   const filteredStudents = safeStudents.filter((stu) => {
-    const matchesGrade = selectedGrade === 'all' || stu.grade === selectedGrade;
-    const matchesSection = selectedSection === 'all' || (stu.classRoom || 'أ') === selectedSection;
+    const matchesGrade = selectedGrade ==='all'|| stu.grade === selectedGrade;
+    const matchesSection = selectedSection ==='all'|| (stu.classRoom ||'أ') === selectedSection;
     const q = searchQuery.toLowerCase().trim();
-    const matchesSearch = !q || (stu.name || '').toLowerCase().includes(q) || (stu.nameEn || '').toLowerCase().includes(q);
+    const matchesSearch = !q || (stu.name ||'').toLowerCase().includes(q) || (stu.nameEn ||'').toLowerCase().includes(q);
     return matchesGrade && matchesSection && matchesSearch;
   });
 
@@ -196,26 +196,26 @@ export const ExamsModule = () => {
 
   // Handle Mark Change with Auto-Evaluation
   const handleMarkChange = (studentId, value) => {
-    const cleanVal = value === '' ? '' : Math.max(0, Math.min(100, Number(value)));
-    setGradingMarks((prev) => ({ ...prev, [studentId]: cleanVal }));
+    const cleanVal = value ===''?'': Math.max(0, Math.min(100, Number(value)));
+    setGradingMarks((prev) => ({...prev, [studentId]: cleanVal}));
 
     // Auto compute evaluation if not manually customized
-    if (cleanVal !== '') {
+    if (cleanVal !=='') {
       const autoEval = getAutoEvaluation(cleanVal);
-      setGradingEvals((prev) => ({ ...prev, [studentId]: autoEval }));
+      setGradingEvals((prev) => ({...prev, [studentId]: autoEval}));
     }
   };
 
   // Keyboard navigation handler: Enter or ArrowDown focuses next student, ArrowUp focuses previous
   const handleKeyDown = (e, index) => {
-    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+    if (e.key ==='Enter'|| e.key ==='ArrowDown') {
       e.preventDefault();
       const nextIdx = index + 1;
       if (inputRefs.current[nextIdx]) {
         inputRefs.current[nextIdx].focus();
         inputRefs.current[nextIdx].select();
       }
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key ==='ArrowUp') {
       e.preventDefault();
       const prevIdx = index - 1;
       if (inputRefs.current[prevIdx]) {
@@ -229,12 +229,12 @@ export const ExamsModule = () => {
   const ensureExamRecord = () => {
     if (currentExam) return currentExam;
     const newEx = addExam({
-      title: `${assessmentType} - (${activeSubject.name})`,
-      titleEn: `${assessmentType} - ${activeSubject.nameEn || activeSubject.name}`,
+      title:`${assessmentType} - (${activeSubject.name})`,
+      titleEn:`${assessmentType} - ${activeSubject.nameEn || activeSubject.name}`,
       subjectId: activeSubject.id,
       subject: activeSubject.name,
-      grade: selectedGrade !== 'all' ? selectedGrade : 'جميع الصفوف',
-      classRoom: selectedSection !== 'all' ? selectedSection : 'أ'
+      grade: selectedGrade !=='all'? selectedGrade :'جميع الصفوف',
+      classRoom: selectedSection !=='all'? selectedSection :'أ'
     });
     return newEx;
   };
@@ -246,7 +246,7 @@ export const ExamsModule = () => {
 
     filteredStudents.forEach((stu) => {
       const val = gradingMarks[stu.id];
-      if (val !== undefined && val !== '') {
+      if (val !== undefined && val !=='') {
         const evalTxt = gradingEvals[stu.id] || getAutoEvaluation(val);
         recordsToSave.push({
           studentId: stu.id,
@@ -257,7 +257,7 @@ export const ExamsModule = () => {
     });
 
     if (recordsToSave.length === 0) {
-      alert(isAr ? 'يرجى إدخال علامة لطالب واحد على الأقل قبل الحفظ!' : 'Please enter at least one mark to save!');
+      alert(isAr ?'يرجى إدخال علامة لطالب واحد على الأقل قبل الحفظ!':'Please enter at least one mark to save!');
       return;
     }
 
@@ -269,14 +269,14 @@ export const ExamsModule = () => {
       });
     }
 
-    setSavedToast(isAr ? `✅ تم حفظ واعتماد درجات (${recordsToSave.length}) طالب لمادة (${activeSubject.name}) بنجاح!` : `Marks saved successfully!`);
+    setSavedToast(isAr ?`تم حفظ واعتماد درجات (${recordsToSave.length}) طالب لمادة (${activeSubject.name}) بنجاح!`:`Marks saved successfully!`);
     setTimeout(() => setSavedToast(''), 3500);
   };
 
   // 2. Individual Single Row Save
   const handleSaveSingle = (studentId) => {
     const val = gradingMarks[studentId];
-    if (val === undefined || val === '') return;
+    if (val === undefined || val ==='') return;
 
     const examToUse = ensureExamRecord();
     const evalTxt = gradingEvals[studentId] || getAutoEvaluation(val);
@@ -285,14 +285,14 @@ export const ExamsModule = () => {
     setSavedStudentId(studentId);
     setTimeout(() => setSavedStudentId(null), 2500);
 
-    setSavedToast(isAr ? `✅ تم حفظ درجة الطالب وتحديث الترتيب!` : `Student mark saved!`);
+    setSavedToast(isAr ?`تم حفظ درجة الطالب وتحديث الترتيب!`:`Student mark saved!`);
     setTimeout(() => setSavedToast(''), 3000);
   };
 
   // Quick fill uniform score for all filtered students
   const handleQuickFill = (uniformScore) => {
-    const updatedMarks = { ...gradingMarks };
-    const updatedEvals = { ...gradingEvals };
+    const updatedMarks = {...gradingMarks};
+    const updatedEvals = {...gradingEvals};
     filteredStudents.forEach((stu) => {
       updatedMarks[stu.id] = uniformScore;
       updatedEvals[stu.id] = getAutoEvaluation(uniformScore);
@@ -312,8 +312,8 @@ export const ExamsModule = () => {
       titleEn: examTitleEn || examTitle,
       subjectId: chosenSub.id,
       subject: chosenSub.name,
-      grade: selectedGrade !== 'all' ? selectedGrade : 'الصف السادس',
-      classRoom: selectedSection !== 'all' ? selectedSection : 'أ'
+      grade: selectedGrade !=='all'? selectedGrade :'الصف السادس',
+      classRoom: selectedSection !=='all'? selectedSection :'أ'
     });
 
     if (newEx?.id) {
@@ -324,15 +324,15 @@ export const ExamsModule = () => {
     setExamTitle('');
     setExamTitleEn('');
     setShowAddModal(false);
-    setSavedToast(isAr ? 'تم إنشاء الاختبار بنجاح! يمكنك الآن رصد الدرجات.' : 'Exam created successfully!');
+    setSavedToast(isAr ?'تم إنشاء الاختبار بنجاح! يمكنك الآن رصد الدرجات.':'Exam created successfully!');
     setTimeout(() => setSavedToast(''), 3500);
   };
 
   // Calculate live stats for current list
-  const gradedCount = filteredStudents.filter((s) => gradingMarks[s.id] !== undefined && gradingMarks[s.id] !== '').length;
+  const gradedCount = filteredStudents.filter((s) => gradingMarks[s.id] !== undefined && gradingMarks[s.id] !=='').length;
   const gradedScores = filteredStudents
     .map((s) => gradingMarks[s.id])
-    .filter((v) => v !== undefined && v !== '' && !isNaN(v))
+    .filter((v) => v !== undefined && v !==''&& !isNaN(v))
     .map(Number);
   const avgScore = gradedScores.length > 0 ? Math.round(gradedScores.reduce((a, b) => a + b, 0) / gradedScores.length) : 0;
   const passCount = gradedScores.filter((s) => s >= 60).length;
@@ -348,19 +348,19 @@ export const ExamsModule = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm text-[#0F172A]">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-[#0284C7]/10 text-[#0284C7] rounded-2xl">
-            <Award className="w-6 h-6" />
+            <Award className="w-6 h-6"/>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-[#0284C7]">{isAr ? 'نظام رصد الاختبارات والتقييمات الأكاديمية' : 'Academic Exams & Grading System'}</h2>
+              <h2 className="text-xl font-bold text-[#0284C7]">{isAr ?'نظام رصد الاختبارات والتقييمات الأكاديمية':'Academic Exams & Grading System'}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                {isAr ? 'مرتبط بجميع المواد 📚' : 'All Subjects Linked'}
+                {isAr ?'مرتبط بجميع المواد':'All Subjects Linked'}
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1">
               {isAr 
-                ? 'رصد درجات الطلاب لجميع المواد، إدخال فائق السهولة بالأسهم و Enter، حفظ جماعي، وتحديث فوري للترتيب والشهادات.'
-                : 'Record student test marks across all subjects, rapid keyboard navigation, batch saving, and real-time GPA update.'}
+                ?'رصد درجات الطلاب لجميع المواد، إدخال فائق السهولة بالأسهم و Enter، حفظ جماعي، وتحديث فوري للترتيب والشهادات.'
+                :'Record student test marks across all subjects, rapid keyboard navigation, batch saving, and real-time GPA update.'}
             </p>
           </div>
         </div>
@@ -370,13 +370,13 @@ export const ExamsModule = () => {
           <button
             onClick={handleSaveAllMarks}
             className="btn-mustard flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer"
-            title={isAr ? 'حفظ واعتماد جميع العلامات المرصودة لجميع الطلاب' : 'Save all marks for all students'}
+            title={isAr ?'حفظ واعتماد جميع العلامات المرصودة لجميع الطلاب':'Save all marks for all students'}
           >
-            <Save className="w-4 h-4" />
-            <span>{isAr ? 'حفظ واعتماد جميع العلامات 💾' : 'Save All Marks 💾'}</span>
+            <Save className="w-4 h-4"/>
+            <span>{isAr ?'حفظ واعتماد جميع العلامات':'Save All Marks'}</span>
           </button>
 
-          {(currentRole === 'admin' || currentRole === 'teacher') && (
+          {(currentRole ==='admin'|| currentRole ==='teacher') && (
             <button
               onClick={() => {
                 setModalSubjectId(activeSubject.id);
@@ -384,8 +384,8 @@ export const ExamsModule = () => {
               }}
               className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
-              <Plus className="w-4 h-4" />
-              <span>{isAr ? 'إضافة اختبار جديد' : 'New Exam +'}</span>
+              <Plus className="w-4 h-4"/>
+              <span>{isAr ?'إضافة اختبار جديد':'New Exam +'}</span>
             </button>
           )}
         </div>
@@ -394,7 +394,7 @@ export const ExamsModule = () => {
       {/* Toast Alert */}
       {savedToast && (
         <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-4 rounded-2xl flex items-center gap-3 text-xs font-bold animate-fade-in shadow-lg">
-          <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+          <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0"/>
           <span>{savedToast}</span>
         </div>
       )}
@@ -404,8 +404,8 @@ export const ExamsModule = () => {
         <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl space-y-4 shadow-sm text-[#0F172A]">
           <h3 className="text-base font-bold text-[#0284C7] border-b border-slate-100 pb-3 flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
-              <span>{isAr ? 'لوحة شرف الأوائل المتفوقين (Top Ranked Roster)' : 'Top Academic Honor Roll'}</span>
+              <Trophy className="w-5 h-5 text-amber-500"/>
+              <span>{isAr ?'لوحة شرف الأوائل المتفوقين (Top Ranked Roster)':'Top Academic Honor Roll'}</span>
             </span>
           </h3>
 
@@ -413,7 +413,7 @@ export const ExamsModule = () => {
             {topStudentsRoster.slice(0, 3).map((stu, index) => (
               <div key={stu.id} className="interactive-card bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0] flex items-center gap-3 shadow-sm hover:border-[#0284C7]/50">
                 <div className="relative">
-                  <img src={stu.avatar} alt={stu.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#0284C7]" />
+                  <img src={stu.avatar} alt={stu.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#0284C7]"/>
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#EF4444] text-white font-bold text-[10px] rounded-full flex items-center justify-center border border-white">
                     #{index + 1}
                   </span>
@@ -421,7 +421,7 @@ export const ExamsModule = () => {
 
                 <div>
                   <h4 className="text-xs font-bold text-[#0F172A]">{isAr ? stu.name : stu.nameEn}</h4>
-                  <p className="text-[11px] text-[#0284C7] font-semibold">{isAr ? stu.grade : stu.gradeEn} ({stu.classRoom || 'أ'})</p>
+                  <p className="text-[11px] text-[#0284C7] font-semibold">{isAr ? stu.grade : stu.gradeEn} ({stu.classRoom ||'أ'})</p>
                   <span className="text-[10px] font-mono font-bold text-slate-500">GPA: {stu.gpa || 95}%</span>
                 </div>
               </div>
@@ -434,13 +434,13 @@ export const ExamsModule = () => {
       <div className="bg-white border border-[#E2E8F0] p-5 rounded-3xl space-y-3 shadow-sm text-[#0F172A]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[#0284C7]" />
+            <BookOpen className="w-4 h-4 text-[#0284C7]"/>
             <h3 className="text-xs font-black text-slate-700">
-              {isAr ? 'المواد الدراسية (اختر المادة لرصد وتعديل علاماتها فوراً):' : 'School Subjects (Select Subject to Grade):'}
+              {isAr ?'المواد الدراسية (اختر المادة لرصد وتعديل علاماتها فوراً):':'School Subjects (Select Subject to Grade):'}
             </h3>
           </div>
           <span className="text-[11px] font-bold text-[#0284C7] font-mono">
-            {isAr ? `المادة النشطة: ${activeSubject.name}` : `Active: ${activeSubject.nameEn || activeSubject.name}`}
+            {isAr ?`المادة النشطة: ${activeSubject.name}`:`Active: ${activeSubject.nameEn || activeSubject.name}`}
           </span>
         </div>
 
@@ -459,15 +459,15 @@ export const ExamsModule = () => {
                 onClick={() => setSelectedSubjectId(sub.id)}
                 className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 border ${
                   isSelected
-                    ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02] ring-2 ring-[#0284C7]/30'
-                    : 'bg-[#F8FAFC] text-slate-700 border-[#E2E8F0] hover:border-[#0284C7] hover:bg-sky-50'
+                    ?'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02] ring-2 ring-[#0284C7]/30'
+                    :'bg-[#F8FAFC] text-slate-700 border-[#E2E8F0] hover:border-[#0284C7] hover:bg-sky-50'
                 }`}
               >
-                <span className="text-sm">{sub.icon || '📚'}</span>
+                <span className="text-sm">{sub.icon ||''}</span>
                 <span>{isAr ? sub.name : (sub.nameEn || sub.name)}</span>
                 {totalGradesInSub > 0 && (
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                    isSelected ?'bg-white/20 text-white':'bg-slate-200 text-slate-700'
                   }`}>
                     {totalGradesInSub}
                   </span>
@@ -485,7 +485,7 @@ export const ExamsModule = () => {
           {/* Assessment / Exam Selector */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 block mb-1">
-              {isAr ? 'نوع الاختبار / التقييم' : 'Assessment / Exam Type'}
+              {isAr ?'نوع الاختبار / التقييم':'Assessment / Exam Type'}
             </label>
             <select
               value={assessmentType}
@@ -506,14 +506,14 @@ export const ExamsModule = () => {
           {/* Grade / Class Filter */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 block mb-1">
-              {isAr ? 'تصفية حسب الصف الدراسي' : 'Filter by Grade'}
+              {isAr ?'تصفية حسب الصف الدراسي':'Filter by Grade'}
             </label>
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value)}
               className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs font-bold text-[#0F172A] focus:outline-none focus:border-[#0284C7] cursor-pointer"
             >
-              <option value="all">{isAr ? 'جميع الصفوف الدراسية (الكل)' : 'All Grades'}</option>
+              <option value="all">{isAr ?'جميع الصفوف الدراسية (الكل)':'All Grades'}</option>
               {availableGrades.map((g, i) => (
                 <option key={i} value={g}>{g}</option>
               ))}
@@ -523,14 +523,14 @@ export const ExamsModule = () => {
           {/* Section Filter */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 block mb-1">
-              {isAr ? 'الشعبة' : 'Section'}
+              {isAr ?'الشعبة':'Section'}
             </label>
             <select
               value={selectedSection}
               onChange={(e) => setSelectedSection(e.target.value)}
               className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs font-bold text-[#0F172A] focus:outline-none focus:border-[#0284C7] cursor-pointer"
             >
-              <option value="all">{isAr ? 'جميع الشعب' : 'All Sections'}</option>
+              <option value="all">{isAr ?'جميع الشعب':'All Sections'}</option>
               <option value="أ">الشعبة (أ)</option>
               <option value="ب">الشعبة (ب)</option>
               <option value="ج">الشعبة (ج)</option>
@@ -540,15 +540,15 @@ export const ExamsModule = () => {
           {/* Student Search */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 block mb-1">
-              {isAr ? 'بحث سريع عن تلميذ' : 'Search Student'}
+              {isAr ?'بحث سريع عن تلميذ':'Search Student'}
             </label>
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute top-2.5 right-3 rtl:right-3 ltr:left-3 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute top-2.5 right-3 rtl:right-3 ltr:left-3 text-slate-400"/>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={isAr ? 'اسم التلميذ...' : 'Student name...'}
+                placeholder={isAr ?'اسم التلميذ...':'Student name...'}
                 className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-8 py-2 text-xs font-bold text-[#0F172A] focus:outline-none focus:border-[#0284C7]"
               />
               {searchQuery && (
@@ -569,18 +569,18 @@ export const ExamsModule = () => {
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-4 flex-wrap">
             <span className="font-bold text-slate-500">
-              {isAr ? 'الطلاب المعروضين:' : 'Students:'} <b className="text-[#0F172A] font-mono">{filteredStudents.length}</b>
+              {isAr ?'الطلاب المعروضين:':'Students:'} <b className="text-[#0F172A] font-mono">{filteredStudents.length}</b>
             </span>
             <span className="font-bold text-slate-500">
-              {isAr ? 'تم رصد درجات:' : 'Graded:'} <b className="text-emerald-600 font-mono">{gradedCount} / {filteredStudents.length}</b>
+              {isAr ?'تم رصد درجات:':'Graded:'} <b className="text-emerald-600 font-mono">{gradedCount} / {filteredStudents.length}</b>
             </span>
             {gradedCount > 0 && (
               <>
                 <span className="font-bold text-slate-500">
-                  {isAr ? 'متوسط الدرجات:' : 'Class Avg:'} <b className="text-[#0284C7] font-mono">{avgScore} / 100</b>
+                  {isAr ?'متوسط الدرجات:':'Class Avg:'} <b className="text-[#0284C7] font-mono">{avgScore} / 100</b>
                 </span>
                 <span className="font-bold text-slate-500">
-                  {isAr ? 'نسبة النجاح:' : 'Pass Rate:'} <b className="text-purple-600 font-mono">{passRate}%</b>
+                  {isAr ?'نسبة النجاح:':'Pass Rate:'} <b className="text-purple-600 font-mono">{passRate}%</b>
                 </span>
               </>
             )}
@@ -588,14 +588,14 @@ export const ExamsModule = () => {
 
           {/* Quick Fill Buttons */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-bold">{isAr ? 'تعبئة سريعة:' : 'Quick Fill:'}</span>
+            <span className="text-[11px] text-slate-400 font-bold">{isAr ?'تعبئة سريعة:':'Quick Fill:'}</span>
             {[100, 90, 80, 70].map((score) => (
               <button
                 key={score}
                 type="button"
                 onClick={() => handleQuickFill(score)}
                 className="px-2 py-0.5 bg-slate-100 hover:bg-[#0284C7] hover:text-white text-slate-700 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer"
-                title={isAr ? `تعبئة علامة ${score} لجميع الطلاب المعروضين` : `Fill ${score} for all`}
+                title={isAr ?`تعبئة علامة ${score} لجميع الطلاب المعروضين`:`Fill ${score} for all`}
               >
                 {score}
               </button>
@@ -607,9 +607,9 @@ export const ExamsModule = () => {
                 setGradingEvals({});
               }}
               className="px-2 py-0.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
-              title={isAr ? 'تفريغ الخانات الحالية' : 'Clear current marks'}
+              title={isAr ?'تفريغ الخانات الحالية':'Clear current marks'}
             >
-              {isAr ? 'تفريغ' : 'Clear'}
+              {isAr ?'تفريغ':'Clear'}
             </button>
           </div>
         </div>
@@ -619,13 +619,13 @@ export const ExamsModule = () => {
       <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl space-y-4 shadow-sm text-[#0F172A]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
-            <FileSpreadsheet className="w-5 h-5 text-[#0284C7]" />
+            <FileSpreadsheet className="w-5 h-5 text-[#0284C7]"/>
             <div>
               <h3 className="text-base font-bold text-[#0284C7]">
-                {isAr ? `دفتر رصد درجات: ${activeSubject.name}` : `Grading Sheet: ${activeSubject.name}`}
+                {isAr ?`دفتر رصد درجات: ${activeSubject.name}`:`Grading Sheet: ${activeSubject.name}`}
               </h3>
               <p className="text-xs text-slate-400">
-                {isAr ? 'اضغط Enter أو السهم للأسفل ⬇️ للانتقال الفوري إلى التلميذ التالي بسرعة فائقة.' : 'Press Enter or Down Arrow to quickly jump to next student.'}
+                {isAr ?'اضغط Enter أو السهم للأسفل للانتقال الفوري إلى التلميذ التالي بسرعة فائقة.':'Press Enter or Down Arrow to quickly jump to next student.'}
               </p>
             </div>
           </div>
@@ -634,16 +634,16 @@ export const ExamsModule = () => {
             onClick={handleSaveAllMarks}
             className="btn-mustard flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
           >
-            <Save className="w-4 h-4" />
-            <span>{isAr ? `حفظ واعتماد جميع علامات (${activeSubject.name}) 💾` : 'Save All Marks 💾'}</span>
+            <Save className="w-4 h-4"/>
+            <span>{isAr ?`حفظ واعتماد جميع علامات (${activeSubject.name})`:'Save All Marks'}</span>
           </button>
         </div>
 
         {filteredStudents.length === 0 ? (
           <div className="text-center py-12 text-slate-400 space-y-2">
-            <FileSpreadsheet className="w-12 h-12 mx-auto text-slate-300" />
+            <FileSpreadsheet className="w-12 h-12 mx-auto text-slate-300"/>
             <p className="text-sm font-bold">
-              {isAr ? 'لا يوجد طلاب مطابقون لمعايير التصفية والبحث الحالية.' : 'No students found matching current filters.'}
+              {isAr ?'لا يوجد طلاب مطابقون لمعايير التصفية والبحث الحالية.':'No students found matching current filters.'}
             </p>
             <button
               type="button"
@@ -654,7 +654,7 @@ export const ExamsModule = () => {
               }}
               className="text-xs font-bold text-[#0284C7] hover:underline cursor-pointer"
             >
-              {isAr ? 'إعادة ضبط الفلاتر وعرض جميع الطلاب' : 'Reset filters'}
+              {isAr ?'إعادة ضبط الفلاتر وعرض جميع الطلاب':'Reset filters'}
             </button>
           </div>
         ) : (
@@ -673,8 +673,8 @@ export const ExamsModule = () => {
               <tbody className="divide-y divide-slate-100">
                 {filteredStudents.map((stu, idx) => {
                   const existingRes = (currentExam?.results || []).find((r) => String(r.studentId) === String(stu.id));
-                  const currentMark = gradingMarks[stu.id] !== undefined ? gradingMarks[stu.id] : (existingRes ? existingRes.score : '');
-                  const currentEval = gradingEvals[stu.id] !== undefined ? gradingEvals[stu.id] : (existingRes ? existingRes.evaluation : '');
+                  const currentMark = gradingMarks[stu.id] !== undefined ? gradingMarks[stu.id] : (existingRes ? existingRes.score :'');
+                  const currentEval = gradingEvals[stu.id] !== undefined ? gradingEvals[stu.id] : (existingRes ? existingRes.evaluation :'');
                   const isRowSaved = savedStudentId === stu.id;
 
                   return (
@@ -690,7 +690,7 @@ export const ExamsModule = () => {
                           <img 
                             src={stu.avatar} 
                             alt={stu.name} 
-                            className="w-9 h-9 rounded-full object-cover border-2 border-[#0284C7] shadow-sm" 
+                            className="w-9 h-9 rounded-full object-cover border-2 border-[#0284C7] shadow-sm"
                           />
                           <div>
                             <span className="block font-black text-[#0F172A]">{isAr ? stu.name : stu.nameEn}</span>
@@ -702,7 +702,7 @@ export const ExamsModule = () => {
                       {/* Grade & Section */}
                       <td className="p-3 text-slate-600 font-semibold">
                         <span className="px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[11px]">
-                          {isAr ? stu.grade : stu.gradeEn} ({stu.classRoom || 'أ'})
+                          {isAr ? stu.grade : stu.gradeEn} ({stu.classRoom ||'أ'})
                         </span>
                       </td>
 
@@ -720,9 +720,9 @@ export const ExamsModule = () => {
                             placeholder="مثال: 95"
                             className="w-28 bg-[#F8FAFC] border-2 border-[#E2E8F0] focus:border-[#0284C7] text-[#0F172A] rounded-xl px-3 py-2 text-sm font-black text-center focus:outline-none transition-all shadow-inner"
                           />
-                          {currentMark !== '' && !isNaN(currentMark) && (
+                          {currentMark !==''&& !isNaN(currentMark) && (
                             <span className="text-[10px] text-slate-400 font-bold block mt-0.5 text-center">
-                              {Number(currentMark) >= 60 ? '🟢 ناجح' : '🔴 راسب'}
+                              {Number(currentMark) >= 60 ?'ناجح':'راسب'}
                             </span>
                           )}
                         </div>
@@ -733,8 +733,8 @@ export const ExamsModule = () => {
                         <input
                           type="text"
                           value={currentEval}
-                          onChange={(e) => setGradingEvals((prev) => ({ ...prev, [stu.id]: e.target.value }))}
-                          placeholder={isAr ? 'أداء متميز وجيد جداً...' : 'Evaluation note...'}
+                          onChange={(e) => setGradingEvals((prev) => ({...prev, [stu.id]: e.target.value}))}
+                          placeholder={isAr ?'أداء متميز وجيد جداً...':'Evaluation note...'}
                           className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7] font-semibold"
                         />
                       </td>
@@ -746,19 +746,19 @@ export const ExamsModule = () => {
                           onClick={() => handleSaveSingle(stu.id)}
                           className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1 mx-auto ${
                             isRowSaved
-                              ? 'bg-emerald-600 text-white'
-                              : 'btn-mustard'
+                              ?'bg-emerald-600 text-white'
+                              :'btn-mustard'
                           }`}
-                          title={isAr ? 'حفظ رصد هذا الطالب' : 'Save single student mark'}
+                          title={isAr ?'حفظ رصد هذا الطالب':'Save single student mark'}
                         >
                           {isRowSaved ? (
                             <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>{isAr ? 'تم ✅' : 'Saved'}</span>
+                              <Check className="w-3.5 h-3.5"/>
+                              <span>{isAr ?'تم':'Saved'}</span>
                             </>
                           ) : (
                             <>
-                              <Save className="w-3.5 h-3.5" />
+                              <Save className="w-3.5 h-3.5"/>
                               <span>{t('save')}</span>
                             </>
                           )}
@@ -776,15 +776,15 @@ export const ExamsModule = () => {
         {filteredStudents.length > 0 && (
           <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-slate-500 font-semibold">
-              {isAr ? `إجمالي الدرجات الجاهزة للاعتماد: ${gradedCount} من أصل ${filteredStudents.length} طالب.` : `${gradedCount} of ${filteredStudents.length} grades ready to save.`}
+              {isAr ?`إجمالي الدرجات الجاهزة للاعتماد: ${gradedCount} من أصل ${filteredStudents.length} طالب.`:`${gradedCount} of ${filteredStudents.length} grades ready to save.`}
             </p>
 
             <button
               onClick={handleSaveAllMarks}
               className="btn-mustard flex items-center gap-2 px-6 py-2.5 rounded-2xl text-xs font-black shadow-lg hover:shadow-xl transition-all cursor-pointer w-full sm:w-auto justify-center"
             >
-              <Save className="w-4 h-4" />
-              <span>{isAr ? `اعتماد وحفظ جميع علامات (${activeSubject.name}) بنقرة واحدة 💾` : 'Save All Marks Now 💾'}</span>
+              <Save className="w-4 h-4"/>
+              <span>{isAr ?`اعتماد وحفظ جميع علامات (${activeSubject.name}) بنقرة واحدة`:'Save All Marks Now'}</span>
             </button>
           </div>
         )}
@@ -799,11 +799,11 @@ export const ExamsModule = () => {
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
-                <Award className="w-5 h-5 text-[#0284C7]" />
-                <span>{isAr ? 'إضافة اختبار مخصص جديد 📝' : 'Add Custom Exam'}</span>
+                <Award className="w-5 h-5 text-[#0284C7]"/>
+                <span>{isAr ?'إضافة اختبار مخصص جديد':'Add Custom Exam'}</span>
               </h3>
               <button 
-                type="button" 
+                type="button"
                 onClick={() => setShowAddModal(false)} 
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
               >
@@ -813,7 +813,7 @@ export const ExamsModule = () => {
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700">
-                {isAr ? 'المادة الدراسية' : 'Subject'}
+                {isAr ?'المادة الدراسية':'Subject'}
               </label>
               <select
                 value={modalSubjectId}
@@ -822,7 +822,7 @@ export const ExamsModule = () => {
               >
                 {safeSubjects.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.icon || '📚'} {s.name}
+                    {s.icon ||''} {s.name}
                   </option>
                 ))}
               </select>
@@ -830,7 +830,7 @@ export const ExamsModule = () => {
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700">
-                {isAr ? 'عنوان الاختبار (عربي)' : 'Exam Title (Arabic)'} <span className="text-red-500">*</span>
+                {isAr ?'عنوان الاختبار (عربي)':'Exam Title (Arabic)'} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -844,7 +844,7 @@ export const ExamsModule = () => {
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700">
-                {isAr ? 'Exam Title (English)' : 'Exam Title (English)'}
+                {isAr ?'Exam Title (English)':'Exam Title (English)'}
               </label>
               <input
                 type="text"
@@ -867,8 +867,8 @@ export const ExamsModule = () => {
                 type="submit"
                 className="px-5 py-2 btn-mustard rounded-xl text-xs font-bold shadow cursor-pointer flex items-center gap-1"
               >
-                <Plus className="w-4 h-4" />
-                <span>{isAr ? 'إنشاء الاختبار وبدء الرصد ✅' : 'Create & Grade'}</span>
+                <Plus className="w-4 h-4"/>
+                <span>{isAr ?'إنشاء الاختبار وبدء الرصد':'Create & Grade'}</span>
               </button>
             </div>
           </form>

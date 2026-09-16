@@ -1,58 +1,58 @@
-import React from 'react';
-import { useApp } from '../context/AppContext';
+import React from'react';
+import {useApp} from'../context/AppContext';
 
 const hexToRgba = (hex, alpha = 0.15) => {
-  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return null;
-  let c = hex.replace('#', '');
+  if (!hex || typeof hex !=='string'|| !hex.startsWith('#')) return null;
+  let c = hex.replace('#','');
   if (c.length === 3) c = c.split('').map(x => x + x).join('');
   if (c.length !== 6) return null;
   const r = parseInt(c.substring(0, 2), 16);
   const g = parseInt(c.substring(2, 4), 16);
   const b = parseInt(c.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  return`rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const getSubjectColorTheme = (name = '') => {
-  const n = (name || '').toLowerCase();
+const getSubjectColorTheme = (name ='') => {
+  const n = (name ||'').toLowerCase();
   
   if (n.includes('عرب') || n.includes('لغوي')) {
-    return { color: '#E11D48', bgColor: '#FFE4E6', borderColor: '#FDA4AF', icon: '📖' };
+    return {color:'#E11D48', bgColor:'#FFE4E6', borderColor:'#FDA4AF', icon:''};
   }
   if (n.includes('رياضيات') || n.includes('حساب') || n.includes('جبر') || n.includes('math')) {
-    return { color: '#0284C7', bgColor: '#E0F2FE', borderColor: '#7DD3FC', icon: '📐' };
+    return {color:'#0284C7', bgColor:'#E0F2FE', borderColor:'#7DD3FC', icon:''};
   }
   if (n.includes('علوم') || n.includes('فيزياء') || n.includes('كيمياء') || n.includes('أحياء') || n.includes('science')) {
-    return { color: '#059669', bgColor: '#D1FAE5', borderColor: '#6EE7B7', icon: '🧪' };
+    return {color:'#059669', bgColor:'#D1FAE5', borderColor:'#6EE7B7', icon:''};
   }
   if (n.includes('انكليز') || n.includes('إنجليز') || n.includes('english')) {
-    return { color: '#7C3AED', bgColor: '#EDE9FE', borderColor: '#C4B5FD', icon: '🇬🇧' };
+    return {color:'#7C3AED', bgColor:'#EDE9FE', borderColor:'#C4B5FD', icon:'🇬🇧'};
   }
   if (n.includes('قرآن') || n.includes('إسلام') || n.includes('دين') || n.includes('islamic')) {
-    return { color: '#D97706', bgColor: '#FEF3C7', borderColor: '#FCD34D', icon: '🕌' };
+    return {color:'#D97706', bgColor:'#FEF3C7', borderColor:'#FCD34D', icon:''};
   }
   if (n.includes('مدنية') || n.includes('اجتماع') || n.includes('تاريخ') || n.includes('جغراف')) {
-    return { color: '#EA580C', bgColor: '#FFEDD5', borderColor: '#FDBA74', icon: '🏛️' };
+    return {color:'#EA580C', bgColor:'#FFEDD5', borderColor:'#FDBA74', icon:''};
   }
   if (n.includes('برمج') || n.includes('حاسوب') || n.includes('تكنولوجي') || n.includes('coding')) {
-    return { color: '#0891B2', bgColor: '#CFFAFE', borderColor: '#67E8F9', icon: '💻' };
+    return {color:'#0891B2', bgColor:'#CFFAFE', borderColor:'#67E8F9', icon:''};
   }
   if (n.includes('فنون') || n.includes('رسم') || n.includes('موسيق') || n.includes('art')) {
-    return { color: '#DB2777', bgColor: '#FCE7F3', borderColor: '#F472B6', icon: '🎨' };
+    return {color:'#DB2777', bgColor:'#FCE7F3', borderColor:'#F472B6', icon:''};
   }
   if (n.includes('رياضة') || n.includes('بدني') || n.includes('sport')) {
-    return { color: '#16A34A', bgColor: '#DCFCE7', borderColor: '#86EFAC', icon: '⚽' };
+    return {color:'#16A34A', bgColor:'#DCFCE7', borderColor:'#86EFAC', icon:''};
   }
   if (n.includes('تفاعل') || n.includes('مشاركة')) {
-    return { color: '#EA580C', bgColor: '#FFEDD5', borderColor: '#FDBA74', icon: '🌟' };
+    return {color:'#EA580C', bgColor:'#FFEDD5', borderColor:'#FDBA74', icon:''};
   }
 
-  return { color: '#0284C7', bgColor: '#F0F9FF', borderColor: '#BAE6FD', icon: '📚' };
+  return {color:'#0284C7', bgColor:'#F0F9FF', borderColor:'#BAE6FD', icon:''};
 };
 
-export const SubjectBadge = ({ subjectName, subjectId, className = '' }) => {
-  const { lang, subjects = [] } = useApp();
+export const SubjectBadge = ({subjectName, subjectId, className =''}) => {
+  const {lang, subjects = []} = useApp();
 
-  const cleanTargetName = (subjectName || '').trim();
+  const cleanTargetName = (subjectName ||'').trim();
 
   const sub = (subjects || []).find(
     (s) => s.id === subjectId || 
@@ -64,10 +64,10 @@ export const SubjectBadge = ({ subjectName, subjectId, className = '' }) => {
   const fallbackTheme = getSubjectColorTheme(cleanTargetName || sub?.name);
 
   const name = sub
-    ? lang === 'ar'
+    ? lang ==='ar'
       ? sub.name
       : (sub.nameEn || sub.name)
-    : subjectName || 'المادة';
+    : subjectName ||'المادة';
 
   const hexColor = sub?.color || fallbackTheme.color;
   const computedBg = hexToRgba(hexColor, 0.15) || sub?.bgColor || fallbackTheme.bgColor;
@@ -86,7 +86,7 @@ export const SubjectBadge = ({ subjectName, subjectId, className = '' }) => {
       }}
     >
       {image ? (
-        <img src={image} alt={name} className="w-4 h-4 rounded-full object-cover border border-white/60 shrink-0" />
+        <img src={image} alt={name} className="w-4 h-4 rounded-full object-cover border border-white/60 shrink-0"/>
       ) : (
         <span className="text-xs">{icon}</span>
       )}
