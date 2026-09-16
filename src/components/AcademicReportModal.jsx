@@ -13,9 +13,20 @@ export const AcademicReportModal = () => {
 
   const studentGrades = grades.filter(g => g.studentId === selectedStudentForReport.id);
 
-  // Calculate Average
+  // Calculate Average & Pass/Fail Status
   const totalScore = studentGrades.reduce((sum, g) => sum + (Number(g.total) || 0), 0);
   const average = studentGrades.length > 0 ? (totalScore / studentGrades.length).toFixed(1) : '95.0';
+  const numAvg = Number(average);
+  const isFail = numAvg < 40;
+  const gradeStatus = isFail 
+    ? 'راسب (أقل من 40%) 🔴' 
+    : numAvg >= 90 
+    ? 'ممتاز مرتفع 🌟' 
+    : numAvg >= 80 
+    ? 'جيد جداً 👍' 
+    : numAvg >= 65 
+    ? 'جيد' 
+    : 'ناجح ومقبول';
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -78,7 +89,9 @@ export const AcademicReportModal = () => {
             </div>
             <div>
               <span className="text-xs text-slate-500 block">المعدل العام والتقدير:</span>
-              <span className="font-extrabold text-emerald-700 text-base">{average}% (ممتاز مرتفع)</span>
+              <span className={`font-extrabold text-base ${isFail ? 'text-red-600' : 'text-emerald-700'}`}>
+                {average}% ({gradeStatus})
+              </span>
             </div>
           </div>
 
@@ -130,7 +143,9 @@ export const AcademicReportModal = () => {
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>السلوك والمواظبة: <strong>ممتاز (100/100)</strong> - يتمتع الطالب بحسن الخلق والمشاركة الفعالة.</span>
             </div>
-            <span className="font-bold">المرتبة: لوحة شرف الأوائل</span>
+            <span className={`font-bold ${isFail ? 'text-red-600' : 'text-emerald-800'}`}>
+              {isFail ? 'النتيجة الرسمية: راسب (أقل من 40%) 🔴' : 'المرتبة: لوحة شرف الأوائل 🏆'}
+            </span>
           </div>
 
           {/* Signatures */}

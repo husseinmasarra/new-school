@@ -104,6 +104,15 @@ export const ReportsModule = () => {
   const selectedStudent = safeStudents.find((s) => s.id === stuId) || safeStudents[0];
   const dynamicSubjectScores = getStudentSubjectScores ? getStudentSubjectScores(selectedStudent?.id) : [];
   const computedGpa = getStudentOverallGpa ? getStudentOverallGpa(selectedStudent?.id) : 0;
+  
+  // Total marks, overall percentage, and pass/fail status (fail if overall percentage < 40%)
+  const totalMarksSum = (dynamicSubjectScores || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+  const maxPossibleMarks = (dynamicSubjectScores || []).length * 100;
+  const overallPercentage = (dynamicSubjectScores || []).length > 0
+    ? Number((totalMarksSum / dynamicSubjectScores.length).toFixed(1))
+    : Number(computedGpa) || 0;
+  const isOverallFail = overallPercentage > 0 && overallPercentage < 40;
+  const isOverallPass = overallPercentage >= 40;
 
   const computedClassroomRank = (() => {
     if (!selectedStudent) return 'N/A';
@@ -494,14 +503,13 @@ export const ReportsModule = () => {
                 <span className="text-xs font-bold text-[#0284C7] dark:text-[#38BDF8] block">العام الدراسي والمرحلة:</span>
                 <span className="text-sm font-black text-[#0F172A] dark:text-white block">{getDynamicAcademicYear()} (الفصل الثاني)</span>
                 <span className="text-xs block font-bold">
-                  {(() => {
-                    const hasFailedSubject = dynamicSubjectScores.some(s => s.total > 0 && s.total < 40);
-                    const isOverallFail = hasFailedSubject || (Number(computedGpa) > 0 && Number(computedGpa) < 40);
-                    if (isOverallFail) {
-                      return <span className="text-red-600 dark:text-red-400">الحالة: راسب 🔴 (أقل من 40%)</span>;
-                    }
-                    return <span className="text-emerald-600 dark:text-emerald-400">الحالة: ناجح ومجتاز 🟢</span>;
-                  })()}
+                  {isOverallFail ? (
+                    <span className="text-red-600 dark:text-red-400 font-black">الحالة: راسب 🔴 (المجموع العام أقل من 40%)</span>
+                  ) : isOverallPass ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black">الحالة: ناجح ومجتاز 🟢</span>
+                  ) : (
+                    <span className="text-slate-500 font-bold">الحالة: قيد الرصد</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -566,16 +574,53 @@ export const ReportsModule = () => {
                       ))
                     )}
                   </tbody>
+                  {dynamicSubjectScores.length > 0 && (
+                    <tfoot className="border-t-2 border-[#0284C7] bg-[#F8FAFC] dark:bg-[#0F172A] font-bold">
+                      <tr className="text-xs">
+                        <td className="p-3 border border-slate-200 dark:border-[#334155] font-black text-[#0F172A] dark:text-white">
+                          المجموع العام والمعدل:
+                        </td>
+                        <td colSpan="4" className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-slate-600 dark:text-slate-300">
+                          {totalMarksSum} من أصل {maxPossibleMarks} (المعدل: {overallPercentage}%)
+                        </td>
+                        <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-black text-base text-[#0284C7] dark:text-[#38BDF8]">
+                          {totalMarksSum}
+                        </td>
+                        <td className="p-3 border border-slate-200 dark:border-[#334155] text-center">
+                          <span className={`px-3 py-1 rounded-md text-xs font-black inline-flex items-center gap-1 shadow-xs ${
+                            isOverallFail
+                              ? 'bg-red-100 text-red-700 border border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700'
+                              : isOverallPass
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700'
+                              : 'bg-slate-100 text-slate-700 border border-slate-300'
+                          }`}>
+                            {isOverallFail ? 'راسب 🔴 (أقل من 40%)' : isOverallPass ? 'ناجح ومجتاز 🟢' : 'قيد الرصد'}
+                          </span>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
               </div>
             </div>
 
              {/* 🏅 Final Result KPI Summary Cards */}
              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono pt-2">
-               <div className="bg-sky-50 dark:bg-[#1E293B] p-3.5 rounded-2xl border border-sky-200 dark:border-[#334155] text-center space-y-1">
-                 <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">المعدل العام التراكمي:</span>
-                 <span className="text-xl font-black text-[#0284C7] dark:text-[#38BDF8] block">
-                   {Number(computedGpa) > 0 ? `${computedGpa}%` : (isAr ? 'لا يوجد درجات' : 'N/A')}
+               <div className={`p-3.5 rounded-2xl border text-center space-y-1 transition-all ${
+                 isOverallFail
+                   ? 'bg-red-50 border-red-300 dark:bg-red-950/40 dark:border-red-800'
+                   : 'bg-sky-50 dark:bg-[#1E293B] border-sky-200 dark:border-[#334155]'
+               }`}>
+                 <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">المعدل العام والنتيجة:</span>
+                 <span className={`text-xl font-black block ${
+                   isOverallFail ? 'text-red-600 dark:text-red-400' : 'text-[#0284C7] dark:text-[#38BDF8]'
+                 }`}>
+                   {overallPercentage > 0 ? `${overallPercentage}%` : (isAr ? 'لا يوجد درجات' : 'N/A')}
+                 </span>
+                 <span className={`text-[10px] font-extrabold block ${
+                   isOverallFail ? 'text-red-600' : 'text-emerald-600'
+                 }`}>
+                   {isOverallFail ? '🔴 راسب (أقل من 40%)' : isOverallPass ? '🟢 ناجح ومجتاز' : ''}
                  </span>
                </div>
                <div className="bg-purple-50 dark:bg-[#1E293B] p-3.5 rounded-2xl border border-purple-200 dark:border-[#334155] text-center space-y-1">
