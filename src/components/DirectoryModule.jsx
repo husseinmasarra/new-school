@@ -19,7 +19,9 @@ import {
   BookOpen, 
   DoorOpen,
   Printer,
-  Bookmark
+  Bookmark,
+  Link2,
+  Plus
 } from 'lucide-react';
 import { SubjectBadge } from './SubjectBadge';
 
@@ -31,6 +33,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
     currentUser,
     students, 
     teachers, 
+    systemUsers = [],
     grades = [],
     classrooms = [],
     addStudent, 
@@ -185,6 +188,77 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
   const [editStuParentPhone, setEditStuParentPhone] = useState('');
   const [editStuMotherPhone, setEditStuMotherPhone] = useState('');
   const [editStuMinistryClearance, setEditStuMinistryClearance] = useState('');
+  // Siblings added or linked during Student Edit Modal
+  const [editSiblingsList, setEditSiblingsList] = useState([]);
+  const [editLinkedExistingIds, setEditLinkedExistingIds] = useState([]);
+  const [showLinkExistingSelect, setShowLinkExistingSelect] = useState(false);
+  const [selectedStudentToLink, setSelectedStudentToLink] = useState('');
+
+  const handleAddSiblingInEdit = () => {
+    const parentLastName = (editStuName || '').trim().split(' ').slice(-1)[0] || '';
+    const nextRand = Math.floor(100 + Math.random() * 900);
+    const suggestedUsername = parentLastName 
+      ? `sib.${parentLastName.toLowerCase().replace(/[^a-z0-9]/g, '')}.${nextRand}` 
+      : `student.${Date.now().toString().slice(-4)}`;
+
+    const defaultGrade = safeGrades[0]?.name || 'الصف الأول الابتدائي';
+    const defaultGradeEn = safeGrades[0]?.nameEn || 'Grade 1';
+    const defaultTuition = editStuIsSpecialCase ? '0' : (safeGrades[0]?.tuitionFee || 700).toString();
+
+    setEditSiblingsList(prev => [
+      ...prev,
+      {
+        id: `sib-edit-${Date.now()}-${Math.random()}`,
+        name: '',
+        nameEn: '',
+        grade: defaultGrade,
+        gradeEn: defaultGradeEn,
+        classRoom: 'أ',
+        tuitionTotal: defaultTuition,
+        tuitionDiscount: '0',
+        adminFees: '0',
+        hasTransport: false,
+        transportFee: '0',
+        username: suggestedUsername,
+        password: Math.floor(100000 + Math.random() * 900000).toString(),
+        ministryClearance: ''
+      }
+    ]);
+  };
+
+  const handleRemoveSiblingInEdit = (id) => {
+    setEditSiblingsList(prev => prev.filter(s => s.id !== id));
+  };
+
+  const handleUpdateSiblingInEdit = (index, field, val) => {
+    setEditSiblingsList(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: val };
+      if (field === 'grade') {
+        const foundGrd = safeGrades.find(g => g.name === val);
+        if (foundGrd) {
+          updated[index].gradeEn = foundGrd.nameEn || val;
+          if (!editStuIsSpecialCase) {
+            updated[index].tuitionTotal = (foundGrd.tuitionFee || 700).toString();
+          }
+        }
+      }
+      return updated;
+    });
+  };
+
+  const handleLinkExistingStudent = (studentId) => {
+    if (!studentId) return;
+    if (!editLinkedExistingIds.includes(studentId)) {
+      setEditLinkedExistingIds(prev => [...prev, studentId]);
+    }
+    setSelectedStudentToLink('');
+    setShowLinkExistingSelect(false);
+  };
+
+  const handleUnlinkExistingStudent = (studentId) => {
+    setEditLinkedExistingIds(prev => prev.filter(id => id !== studentId));
+  };
 
   // Print Lists States
   const [isPrintingStudentsTable, setIsPrintingStudentsTable] = useState(false);
@@ -285,11 +359,15 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
     setEditStuMotherPhone(student.motherPhone || '');
     setEditStuMinistryClearance(student.ministryClearance || '');
     setEditStuIsSpecialCase(Boolean(student.isSpecialCase));
+    setEditSiblingsList([]);
+    setEditLinkedExistingIds([]);
+    setShowLinkExistingSelect(false);
+    setSelectedStudentToLink('');
   };
 
   const handleEditStudentSubmit = (e) => {
     e.preventDefault();
-    // Verify Parent Phone Number uniqueness on edit (excluding current student and siblings in same family)
+    // Verify Parent Phone Number uniqueness on edit (excluding current student, siblings in same family, and linked siblings)
     if (editStuParentPhone && editStuParentPhone.trim()) {
       const normPhone = (ph) => (ph || '').replace(/[^0-9]/g, '');
       const cleanEditPhone = normPhone(editStuParentPhone);
@@ -297,6 +375,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
         const duplicatePhone = (students || []).find((s) => {
           if (s.id === showEditStudentModal.id) return false;
           if (showEditStudentModal.familyId && s.familyId === showEditStudentModal.familyId) return false;
+          if (editLinkedExistingIds.includes(s.id)) return false;
           const sPhone = normPhone(s.parentPhone || s.phone);
           if (!sPhone || sPhone.length < 6) return false;
           return sPhone === cleanEditPhone ||
@@ -325,6 +404,45 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
       }
     }
 
+    // Validate new siblings in editSiblingsList
+    for (let i = 0; i < editSiblingsList.length; i++) {
+      const sib = editSiblingsList[i];
+      if (!sib.name || !sib.name.trim()) {
+        alert(isAr ? `❌ يرجى إدخال اسم الأخ/الأخت رقم (${i + 1})!` : `Please enter name for sibling #${i + 1}!`);
+        return;
+      }
+      if (!sib.username || !sib.username.trim()) {
+        alert(isAr ? `❌ يرجى إدخال اسم الدخول للأخ/الأخت رقم (${i + 1})!` : `Please enter username for sibling #${i + 1}!`);
+        return;
+      }
+
+      const cleanSibUser = sib.username.trim().toLowerCase();
+      const isUserTaken = (students || []).some(s => s.username?.toLowerCase() === cleanSibUser) ||
+                          (teachers || []).some(t => t.username?.toLowerCase() === cleanSibUser) ||
+                          (systemUsers || []).some(u => u.username?.toLowerCase() === cleanSibUser) ||
+                          editSiblingsList.some((other, idx) => idx !== i && other.username?.trim().toLowerCase() === cleanSibUser) ||
+                          (cleanSibUser === editStuUsername.trim().toLowerCase());
+      if (isUserTaken) {
+        alert(isAr ? `❌ اسم الدخول (${sib.username}) مستخدم بالفعل! يرجى اختيار اسم دخول آخر للأخ/الأخت.` : `Username (${sib.username}) is already taken!`);
+        return;
+      }
+
+      if (sib.ministryClearance && sib.ministryClearance.trim()) {
+        const cleanClr = sib.ministryClearance.trim();
+        const isClrTaken = (students || []).some(s => s.ministryClearance && s.ministryClearance.trim() === cleanClr) ||
+                           editSiblingsList.some((other, idx) => idx !== i && other.ministryClearance && other.ministryClearance.trim() === cleanClr) ||
+                           (editStuMinistryClearance.trim() === cleanClr);
+        if (isClrTaken) {
+          alert(isAr ? `❌ رقم الإفادة الوزارية (${cleanClr}) مسجل مسبقاً لطالب آخر!` : `Ministry clearance (${cleanClr}) is already registered!`);
+          return;
+        }
+      }
+    }
+
+    // Determine target Family ID to unite the student and their siblings
+    const targetFamilyId = showEditStudentModal.familyId || `FAM-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+
+    // 1. Update current edited student
     updateStudent(showEditStudentModal.id, {
       name: editStuName,
       nameEn: editStuNameEn || editStuName,
@@ -345,11 +463,104 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
       parentName: editStuParentName,
       parentNameEn: editStuParentName,
       ministryClearance: editStuMinistryClearance.trim(),
-      isSpecialCase: editStuIsSpecialCase
+      isSpecialCase: editStuIsSpecialCase,
+      familyId: targetFamilyId
+    });
+
+    // 2. Sync any existing siblings in this family
+    const normPhone = (ph) => (ph || '').replace(/[^0-9]/g, '');
+    const cleanOrigPhone = normPhone(showEditStudentModal.parentPhone || showEditStudentModal.phone);
+    (students || []).forEach(s => {
+      if (s.id === showEditStudentModal.id) return;
+      const sharesFamilyId = showEditStudentModal.familyId && s.familyId === showEditStudentModal.familyId;
+      const sPhone = normPhone(s.parentPhone || s.phone);
+      const sharesPhone = cleanOrigPhone && cleanOrigPhone.length >= 7 && sPhone && (sPhone === cleanOrigPhone || sPhone.endsWith(cleanOrigPhone.slice(-7)) || cleanOrigPhone.endsWith(sPhone.slice(-7)));
+
+      if (sharesFamilyId || sharesPhone) {
+        updateStudent(s.id, {
+          familyId: targetFamilyId,
+          parentPhone: editStuParentPhone,
+          phone: editStuParentPhone,
+          parentName: editStuParentName,
+          parentNameEn: editStuParentName,
+          motherPhone: editStuMotherPhone,
+          isSpecialCase: editStuIsSpecialCase,
+          ...(editStuIsSpecialCase ? {
+            tuitionTotal: 0,
+            tuitionPaid: 0,
+            tuitionDiscount: 0,
+            adminFees: 0,
+            hasTransport: false,
+            transportFee: 0
+          } : {})
+        });
+      }
+    });
+
+    // 3. Link any selected existing students into this family
+    editLinkedExistingIds.forEach(linkedId => {
+      updateStudent(linkedId, {
+        familyId: targetFamilyId,
+        parentPhone: editStuParentPhone,
+        phone: editStuParentPhone,
+        parentName: editStuParentName,
+        parentNameEn: editStuParentName,
+        motherPhone: editStuMotherPhone,
+        isSpecialCase: editStuIsSpecialCase,
+        ...(editStuIsSpecialCase ? {
+          tuitionTotal: 0,
+          tuitionPaid: 0,
+          tuitionDiscount: 0,
+          adminFees: 0,
+          hasTransport: false,
+          transportFee: 0
+        } : {})
+      });
+    });
+
+    // 4. Create all newly added siblings
+    editSiblingsList.forEach(sib => {
+      addStudent({
+        name: sib.name.trim(),
+        nameEn: sib.nameEn?.trim() || sib.name.trim(),
+        username: sib.username.trim(),
+        password: sib.password || '123456',
+        grade: sib.grade,
+        gradeEn: sib.gradeEn,
+        classRoom: sib.classRoom || 'أ',
+        avatar: defaultAvatars[0],
+        tuitionTotal: editStuIsSpecialCase ? 0 : Number(sib.tuitionTotal || 0),
+        tuitionPaid: 0,
+        tuitionDiscount: editStuIsSpecialCase ? 0 : Number(sib.tuitionDiscount || 0),
+        adminFees: editStuIsSpecialCase ? 0 : Number(sib.adminFees || 0),
+        hasTransport: editStuIsSpecialCase ? false : !!sib.hasTransport,
+        transportFee: editStuIsSpecialCase ? 0 : Number(sib.transportFee || 0),
+        phone: (editStuParentPhone || '').trim(),
+        parentPhone: (editStuParentPhone || '').trim(),
+        motherPhone: (editStuMotherPhone || '').trim(),
+        parentName: editStuParentName || `والد الطالب ${editStuName}`,
+        parentNameEn: editStuParentName || `Parent of ${editStuNameEn || editStuName}`,
+        ministryClearance: (sib.ministryClearance || '').trim(),
+        isSpecialCase: editStuIsSpecialCase,
+        familyId: targetFamilyId,
+        frozen: false
+      });
     });
 
     setShowEditStudentModal(null);
-    setSuccessMsg(isAr ? 'تم تعديل ملف الطالب بنجاح!' : 'Student file updated successfully!');
+    setEditSiblingsList([]);
+    setEditLinkedExistingIds([]);
+    setShowLinkExistingSelect(false);
+    setSelectedStudentToLink('');
+    const totalAdded = editSiblingsList.length + editLinkedExistingIds.length;
+    if (totalAdded > 0) {
+      setSuccessMsg(isAr 
+        ? `✅ تم حفظ ملف الطالب وإضافة (${totalAdded}) من الإخوة إلى كرت العائلة بنجاح!` 
+        : `Student file updated and (${totalAdded}) siblings joined the family successfully!`
+      );
+    } else {
+      setSuccessMsg(isAr ? 'تم تعديل ملف الطالب بنجاح!' : 'Student file updated successfully!');
+    }
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
@@ -711,6 +922,33 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
     });
     return Object.values(map);
   }, [safeStudents]);
+
+  // Existing siblings already registered in the system for the student currently being edited
+  const currentExistingSiblings = useMemo(() => {
+    if (!showEditStudentModal) return [];
+    const normPhone = (ph) => (ph || '').replace(/[^0-9]/g, '');
+    const stuPhone = normPhone(showEditStudentModal.parentPhone || showEditStudentModal.phone);
+    return (safeStudents || []).filter(s => {
+      if (s.id === showEditStudentModal.id) return false;
+      if (showEditStudentModal.familyId && s.familyId && s.familyId === showEditStudentModal.familyId) return true;
+      if (stuPhone && stuPhone.length >= 7) {
+        const sPhone = normPhone(s.parentPhone || s.phone);
+        if (sPhone && (sPhone === stuPhone || sPhone.endsWith(stuPhone.slice(-7)) || stuPhone.endsWith(sPhone.slice(-7)))) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [showEditStudentModal, safeStudents]);
+
+  // Candidates for linking an enrolled student as sibling to the currently edited student
+  const linkableCandidates = useMemo(() => {
+    if (!showEditStudentModal) return [];
+    const existingIds = new Set(currentExistingSiblings.map(s => s.id));
+    existingIds.add(showEditStudentModal.id);
+    editLinkedExistingIds.forEach(id => existingIds.add(id));
+    return (safeStudents || []).filter(s => !existingIds.has(s.id));
+  }, [showEditStudentModal, currentExistingSiblings, editLinkedExistingIds, safeStudents]);
 
   // Filtered families based on search and grade filter
   const filteredFamilies = useMemo(() => {
@@ -3083,6 +3321,18 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                     setEditStuIsSpecialCase(checked);
                     if (checked) {
                       setEditStuTuitionTotal('0');
+                      setEditStuTuitionDiscount('0');
+                      setEditStuAdminFees('0');
+                      setEditStuHasTransport(false);
+                      setEditStuTransportFee('0');
+                      setEditSiblingsList(prev => prev.map(sib => ({
+                        ...sib,
+                        tuitionTotal: '0',
+                        tuitionDiscount: '0',
+                        adminFees: '0',
+                        hasTransport: false,
+                        transportFee: '0'
+                      })));
                     }
                   }}
                   className="w-4.5 h-4.5 accent-amber-600 rounded cursor-pointer"
@@ -3144,6 +3394,344 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                     placeholder="50..."
                     className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white font-mono rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7] text-right"
                   />
+                </div>
+              )}
+            </div>
+
+            {/* SIBLINGS MANAGEMENT & ADDITION IN EDIT MODAL */}
+            <div className="pt-4 border-t-2 border-dashed border-amber-300 dark:border-amber-900/60 space-y-3.5 text-right">
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 p-3 rounded-2xl border border-amber-200/80 dark:border-amber-800/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">👨‍👩‍👧‍👦</span>
+                  <div>
+                    <h4 className="text-xs font-black text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                      <span>{isAr ? 'إضافة وتوثيق إخوة لهذا الطالب (كرت العائلة)' : 'Family & Sibling Management'}</span>
+                      <span className="text-[10px] bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 px-1.5 py-0.2 rounded-md font-bold">
+                        {isAr ? 'ميزة جديدة' : 'New'}
+                      </span>
+                    </h4>
+                    <p className="text-[10px] text-amber-700/80 dark:text-amber-400 font-bold">
+                      {isAr 
+                        ? 'يمكنك إضافة إخوة جدد أو ربط طالب مسجل بالمدرسة لضمهم معاً في كرت عائلة موحد' 
+                        : 'Add new siblings or link existing students into this family card'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddSiblingInEdit}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <span>➕ {isAr ? 'إضافة أخ / أخت جديد' : 'Add New Sibling'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkExistingSelect(!showLinkExistingSelect)}
+                    className="px-3 py-1.5 bg-sky-100 hover:bg-sky-200 dark:bg-sky-900/40 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-300 rounded-xl text-xs font-black border border-sky-300 dark:border-sky-700 flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <span>🔗 {isAr ? 'ربط طالب مسجل كأخ' : 'Link Enrolled Student'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Already registered siblings badge list */}
+              {currentExistingSiblings.length > 0 && (
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1.5 text-right">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">
+                    {isAr ? '👥 الإخوة المسجلون مسبقاً في هذه العائلة:' : 'Already Registered Siblings in Family:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {currentExistingSiblings.map(sib => (
+                      <span key={sib.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-950 border border-amber-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200">
+                        <span>🎓</span>
+                        <span>{sib.name}</span>
+                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">({sib.grade} - شعبة {sib.classRoom || 'أ'})</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Selector for linking an enrolled student */}
+              {showLinkExistingSelect && (
+                <div className="p-3 bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-xl space-y-2">
+                  <label className="text-xs font-bold text-sky-900 dark:text-sky-300 block">
+                    {isAr ? 'اختر طالباً مسجلاً في المدرسة لربطه كأخ/أخت في كرت هذه العائلة:' : 'Select an enrolled student to link as sibling:'}
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedStudentToLink}
+                      onChange={(e) => setSelectedStudentToLink(e.target.value)}
+                      className="flex-1 bg-white dark:bg-slate-900 border border-sky-300 dark:border-sky-700 text-slate-800 dark:text-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none"
+                    >
+                      <option value="">{isAr ? '-- اختر التلميذ من القائمة --' : '-- Select student --'}</option>
+                      {linkableCandidates.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.grade} - شعبة {c.classRoom || 'أ'}) - هاتف: {c.parentPhone || c.phone || 'N/A'}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!selectedStudentToLink}
+                      onClick={() => handleLinkExistingStudent(selectedStudentToLink)}
+                      className="px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors"
+                    >
+                      {isAr ? 'تأكيد الربط ✓' : 'Confirm Link'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Linked existing students list */}
+              {editLinkedExistingIds.length > 0 && (
+                <div className="space-y-2 p-3 bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800 rounded-2xl">
+                  <h5 className="text-xs font-black text-sky-900 dark:text-sky-300">
+                    {isAr ? '🔗 الطلاب المحدد ربطهم كإخوة لهذه العائلة:' : 'Students to be linked as siblings:'}
+                  </h5>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {editLinkedExistingIds.map(linkedId => {
+                      const stu = (students || []).find(s => s.id === linkedId);
+                      if (!stu) return null;
+                      return (
+                        <div key={linkedId} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 rounded-xl">
+                          <button
+                            type="button"
+                            onClick={() => handleUnlinkExistingStudent(linkedId)}
+                            className="text-[10px] font-bold text-red-500 hover:text-red-700 cursor-pointer"
+                          >
+                            {isAr ? 'إلغاء الربط ✕' : 'Unlink'}
+                          </button>
+                          <div className="text-right">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">{stu.name}</span>
+                            <span className="text-[10px] text-slate-500">{stu.grade} - شعبة ({stu.classRoom || 'أ'})</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Newly added siblings in edit modal */}
+              {editSiblingsList.length > 0 && (
+                <div className="space-y-3 p-3 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/20 dark:bg-amber-950/10">
+                  <h5 className="text-xs font-black text-amber-900 dark:text-amber-300">
+                    {isAr ? `👥 الإخوة الجدد المضافون (${editSiblingsList.length}):` : `New Siblings Added (${editSiblingsList.length}):`}
+                  </h5>
+
+                  {editSiblingsList.map((sib, index) => (
+                    <div key={sib.id} className="relative p-3.5 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/50 rounded-2xl space-y-3 shadow-xs">
+                      {/* Header with remove button */}
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSiblingInEdit(sib.id)}
+                          className="text-[10px] font-bold text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>{isAr ? 'حذف هذا الأخ 🗑️' : 'Remove Sibling'}</span>
+                        </button>
+                        <span className="text-[11px] font-black text-amber-800 dark:text-amber-400">
+                          {isAr ? `👶 الأخ المضاف #${index + 1}` : `Sibling #${index + 1}`}
+                        </span>
+                      </div>
+
+                      {/* Name inputs */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                            {isAr ? 'اسم الأخ/الأخت الكامل' : 'Sibling Full Name'} <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={sib.name}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'name', e.target.value)}
+                            placeholder={isAr ? 'مثال: يوسف محمد مسرة...' : 'Sibling Name...'}
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-right font-bold"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                            {isAr ? 'اسم الأخ/الأخت (English)' : 'Sibling English Name'}
+                          </label>
+                          <input
+                            type="text"
+                            value={sib.nameEn}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'nameEn', e.target.value)}
+                            placeholder="Youssef Masri..."
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-right"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Grade & Classroom */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{t('grade')}</label>
+                          <select
+                            value={sib.grade}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'grade', e.target.value)}
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer font-bold"
+                          >
+                            {safeGrades.map((g) => (
+                              <option key={g.id} value={g.name}>{isAr ? g.name : g.nameEn}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{isAr ? 'الشعبة' : 'Classroom'}</label>
+                          <select
+                            value={sib.classRoom}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'classRoom', e.target.value)}
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer font-bold"
+                          >
+                            {safeClassrooms.map((c) => (
+                              <option key={c.id} value={c.sectionName}>{isAr ? c.sectionName : c.sectionNameEn}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Financial info */}
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{isAr ? 'القسط السنوي ($)' : 'Tuition ($)'}</label>
+                          <input
+                            type="number"
+                            disabled={editStuIsSpecialCase}
+                            value={sib.tuitionTotal}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'tuitionTotal', e.target.value)}
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{isAr ? 'الخصومات ($)' : 'Discount ($)'}</label>
+                          <input
+                            type="number"
+                            disabled={editStuIsSpecialCase}
+                            value={sib.tuitionDiscount}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'tuitionDiscount', e.target.value)}
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-emerald-600 font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{isAr ? 'المصاريف الإدارية ($)' : 'Admin Fees ($)'}</label>
+                          <input
+                            type="number"
+                            disabled={editStuIsSpecialCase}
+                            value={sib.adminFees}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'adminFees', e.target.value)}
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-amber-600 font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{isAr ? 'رقم الإفادة الوزارية' : 'Clearance No.'}</label>
+                          <input
+                            type="text"
+                            value={sib.ministryClearance}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'ministryClearance', e.target.value)}
+                            placeholder={isAr ? 'إفادة فريدة...' : 'Clearance ref...'}
+                            className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Bus transport for sibling */}
+                      {!editStuIsSpecialCase && (
+                        <div className="flex items-center justify-between p-2.5 bg-sky-50/40 dark:bg-sky-950/20 rounded-xl border border-sky-100 dark:border-sky-900/40">
+                          <label className="text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={sib.hasTransport}
+                              onChange={(e) => handleUpdateSiblingInEdit(index, 'hasTransport', e.target.checked)}
+                              className="w-4 h-4 accent-sky-600 rounded"
+                            />
+                            <span>{isAr ? 'تسجيل الأخ في باص / نقل المدرسة' : 'Register for school bus'}</span>
+                          </label>
+                          {sib.hasTransport && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-slate-500 font-bold">{isAr ? 'الرسوم ($):' : 'Fee ($):'}</span>
+                              <input
+                                type="number"
+                                value={sib.transportFee}
+                                onChange={(e) => handleUpdateSiblingInEdit(index, 'transportFee', e.target.value)}
+                                className="w-20 bg-white dark:bg-slate-900 border border-sky-300 text-sky-700 font-mono rounded-lg px-2 py-1 text-xs text-right"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Username & Password */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{t('username')} <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            required
+                            value={sib.username}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'username', e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[#0F172A] dark:text-white font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right font-bold"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateSiblingInEdit(index, 'password', Math.floor(100000 + Math.random() * 900000).toString())}
+                              className="text-[10px] text-amber-600 font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <RefreshCw className="w-2.5 h-2.5" />
+                              <span>{isAr ? 'توليد كلمة سر' : 'Generate'}</span>
+                            </button>
+                            <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{t('password')} <span className="text-red-500">*</span></label>
+                          </div>
+                          <input
+                            type="text"
+                            required
+                            value={sib.password}
+                            onChange={(e) => handleUpdateSiblingInEdit(index, 'password', e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-red-600 font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right font-bold"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Family financial overview if siblings added */}
+              {(editSiblingsList.length > 0 || editLinkedExistingIds.length > 0) && (
+                <div className="p-3 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-2xl flex items-center justify-between text-right">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">📊</span>
+                    <div>
+                      <h4 className="text-xs font-black text-amber-950 dark:text-amber-200">
+                        {isAr ? 'إجمالي طلاب العائلة بعد الحفظ:' : 'Total Family Students after Save:'}
+                      </h4>
+                      <p className="text-[10px] text-amber-800/80 dark:text-amber-400 font-bold">
+                        {1 + currentExistingSiblings.length + editLinkedExistingIds.length + editSiblingsList.length} {isAr ? 'طلاب مسجلين' : 'students'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-left font-mono">
+                    <span className="text-xs font-black text-amber-900 dark:text-amber-200 block">
+                      {editStuIsSpecialCase 
+                        ? (isAr ? '⭐ معفى بالكامل ($0)' : '⭐ Exempt ($0)')
+                        : `$${Number(editStuTuitionTotal || 0) + editSiblingsList.reduce((acc, s) => acc + Number(s.tuitionTotal || 0), 0)} USD`}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
