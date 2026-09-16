@@ -1759,7 +1759,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                                     </div>
                                     <div className="truncate">
                                       <span className="text-slate-400 font-sans">🔒: </span>
-                                      <span className="font-bold text-red-600">{member.password}</span>
+                                      <span className="font-bold text-slate-700 tracking-wider">{'*'.repeat(Math.max(6, String(member.password || '******').length))}</span>
                                     </div>
                                   </div>
 
@@ -1843,7 +1843,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                         </td>
                         <td className="p-3 font-mono text-[#0284C7] font-bold">
                           <div>{tch.username}</div>
-                          <div className="text-[10px] text-red-600 font-extrabold">{tch.password}</div>
+                          <div className="text-[10px] text-slate-700 tracking-wider font-black">{'*'.repeat(Math.max(6, String(tch.password || '******').length))}</div>
                         </td>
                         <td className="p-3">
                           <div className="flex flex-wrap gap-1">
@@ -2306,11 +2306,11 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                         <div className="space-y-0.5">
                           <span className="text-[9px] text-slate-500 block">{t('password')}</span>
                           <input 
-                            type="text" 
+                            type="password" 
                             required 
                             value={sib.password} 
                             onChange={(e) => updateSiblingField(index, 'password', e.target.value)} 
-                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-red-500 font-bold font-mono rounded-lg px-2 py-1 text-[11px] focus:outline-none text-right" 
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 font-bold font-mono rounded-lg px-2 py-1 text-[11px] focus:outline-none text-right" 
                           />
                         </div>
                       </div>
@@ -2692,7 +2692,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                 </div>
                 <div className="bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-sky-200 text-right">
                   <span className="text-slate-500 block font-bold text-[10px]">🔒 كلمة المرور:</span>
-                  <span className="font-mono font-black text-sm text-red-600 dir-ltr block pt-0.5">{showStudentDetailModal.password}</span>
+                  <span className="font-mono font-black text-sm text-slate-700 tracking-widest dir-ltr block pt-0.5">{'*'.repeat(Math.max(6, String(showStudentDetailModal.password || '******').length))}</span>
                 </div>
               </div>
             </div>
@@ -2988,7 +2988,7 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                           </div>
                           <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-0.5">
                             <span>🔑: <b className="text-[#0284C7]">{stu.username}</b></span>
-                            <span>🔒: <b className="text-red-600">{stu.password}</b></span>
+                            <span>🔒: <b className="text-slate-700 tracking-wider">{'*'.repeat(Math.max(6, String(stu.password || '******').length))}</b></span>
                             <span>•</span>
                             <span className="font-bold">
                               {stu.isSpecialCase ? (isAr ? '⭐ معفى' : '⭐ Exempt') : rem === 0 ? (isAr ? '✓ مسدد' : '✓ Paid') : `${isAr ? 'المتبقي:' : 'Due:'} $${rem}`}
@@ -3698,11 +3698,11 @@ export const DirectoryModule = ({ initialSubTab = 'students' }) => {
                             <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{t('password')} <span className="text-red-500">*</span></label>
                           </div>
                           <input
-                            type="text"
+                            type="password"
                             required
                             value={sib.password}
                             onChange={(e) => handleUpdateSiblingInEdit(index, 'password', e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-red-600 font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right font-bold"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right font-bold"
                           />
                         </div>
                       </div>

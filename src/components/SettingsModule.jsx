@@ -304,7 +304,9 @@ export const SettingsModule = () => {
                     <span>{isAr ? usr.name : usr.nameEn}</span>
                   </td>
                   <td className="p-3 font-mono text-[#0284C7] font-bold">{usr.username}</td>
-                  <td className="p-3 font-mono text-red-600 font-extrabold">{usr.password}</td>
+                  <td className="p-3 font-mono text-slate-700 tracking-widest font-black text-sm select-none">
+                    {'*'.repeat(Math.max(6, String(usr.password || '******').length))}
+                  </td>
                   <td className="p-3 font-semibold text-slate-700">
                     <span className="px-2 py-0.5 rounded-md bg-[#0284C7]/10 text-[#0284C7] border border-[#0284C7]/20">
                       {usr.roleTitle || usr.role}
@@ -795,8 +797,8 @@ export const SettingsModule = () => {
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">كلمة السر <span className="text-red-500">*</span></label>
-                <input type="text" required value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)}
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold text-red-600 focus:outline-none focus:border-[#0284C7]" />
+                <input type="password" required value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)}
+                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#0284C7]" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">رقم الهاتف</label>
