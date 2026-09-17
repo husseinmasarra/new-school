@@ -94,6 +94,9 @@ export const systemPermissionOptions = [
   {id:'send_lessons', name:'إرسال الدروس والواجبات المنزلية', nameEn:'Post Lessons & Homework', category:'teacher'},
   {id:'manage_grades', name:'رصد درجات وعلامات الطلاب', nameEn:'Manage Student Grades', category:'teacher'},
   {id:'send_messages', name:'إرسال التنبيهات والرسائل المباشرة', nameEn:'Send Notifications & Messages', category:'teacher'},
+  {id:'view_grades', name:'الاطلاع على كشف العلامات والشهادة', nameEn:'View Report Cards & Grades', category:'student'},
+  {id:'view_lessons', name:'متابعة الدروس والأجندة والواجبات', nameEn:'View Lessons & Agenda', category:'student'},
+  {id:'view_tuition', name:'متابعة الأقساط المدرسية والإيصالات', nameEn:'View Tuition & Receipts', category:'parent'},
   {id:'manage_bus', name:'تتبع الحافلة وتحديث حالة ركوب الطلاب', nameEn:'Track Bus & Update Ride Status', category:'driver'},
   {id:'contact_parents', name:'الاتصال والتواصل مع أولياء الأمور', nameEn:'Direct Contact with Parents', category:'driver'},
   {id:'print_cards', name:'معاينة وطباعة بطاقات الهوية الرقمية', nameEn:'View & Print Digital ID Cards', category:'general'}
@@ -151,12 +154,12 @@ export const AppProvider = ({children}) => {
       recessLabel:"استراحة ووجبة فطور",
       ...parsed, 
       schoolLogo: parsed?.schoolLogo && parsed.schoolLogo.startsWith('data:') ? parsed.schoolLogo : null,
-      schoolName:"مركز الدعم التعليمي", 
-      schoolNameEn:"Educational Support Center", 
-      academicYear:"2026/2027",
-      schoolStartTime:"07:30",
-      schoolEndTime:"12:00",
-      workingHoursStr:"من 07:30 صباحاً حتى 12:00 ظهراً"
+      schoolName: "مدرسة الدعم التعليمي", 
+      schoolNameEn: "Educational Support School", 
+      academicYear: "2026/2027",
+      schoolStartTime: "07:30",
+      schoolEndTime: "12:00",
+      workingHoursStr: "من 07:30 صباحاً حتى 12:00 ظهراً"
     };
     localStorage.setItem('school_settings', JSON.stringify(cleanSettings));
     return cleanSettings;
@@ -519,6 +522,89 @@ export const AppProvider = ({children}) => {
     });
   };
 
+  // Batch saves manual subject grades (hw, quiz, midterm, final) for a student directly into dailyMarks
+  const batchSaveStudentGrades = (studentId, subjectScoresList) => {
+    setDailyMarks((prev) => {
+      const subjectNames = (subjectScoresList || []).map((s) => s.name || s.subjectName).filter(Boolean);
+      // Remove prior entries for this student and these subjects so the new entries overwrite cleanly
+      const filtered = (prev || []).filter(
+        (m) => !(String(m.studentId) === String(studentId) && subjectNames.some((sn) => sn === m.subjectName || sn === m.subject))
+      );
+
+      const newMarks = [];
+      const timestamp = new Date().toISOString().split('T')[0];
+
+      (subjectScoresList || []).forEach((sub) => {
+        const sName = sub.name || sub.subjectName;
+        if (!sName) return;
+
+        const hwVal = Number(sub.hw);
+        if (!isNaN(hwVal) && hwVal >= 0) {
+          newMarks.push({
+            id: `DM-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+            studentId,
+            subjectName: sName,
+            subject: sName,
+            type: 'أعمال السنة',
+            score: Math.min(20, Math.max(0, hwVal)),
+            maxScore: 20,
+            date: timestamp,
+            notes: 'رصد يدوي عبر كشف الدرجات'
+          });
+        }
+
+        const quizVal = Number(sub.quiz);
+        if (!isNaN(quizVal) && quizVal >= 0) {
+          newMarks.push({
+            id: `DM-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+            studentId,
+            subjectName: sName,
+            subject: sName,
+            type: 'اختبار قصير',
+            score: Math.min(20, Math.max(0, quizVal)),
+            maxScore: 20,
+            date: timestamp,
+            notes: 'رصد يدوي عبر كشف الدرجات'
+          });
+        }
+
+        const midtermVal = Number(sub.midterm);
+        if (!isNaN(midtermVal) && midtermVal >= 0) {
+          newMarks.push({
+            id: `DM-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+            studentId,
+            subjectName: sName,
+            subject: sName,
+            type: 'منتصف الفصل',
+            score: Math.min(20, Math.max(0, midtermVal)),
+            maxScore: 20,
+            date: timestamp,
+            notes: 'رصد يدوي عبر كشف الدرجات'
+          });
+        }
+
+        const finalVal = Number(sub.final);
+        if (!isNaN(finalVal) && finalVal >= 0) {
+          newMarks.push({
+            id: `DM-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+            studentId,
+            subjectName: sName,
+            subject: sName,
+            type: 'النهائي',
+            score: Math.min(40, Math.max(0, finalVal)),
+            maxScore: 40,
+            date: timestamp,
+            notes: 'رصد يدوي عبر كشف الدرجات'
+          });
+        }
+      });
+
+      const updated = [...filtered, ...newMarks];
+      dbSaveCollection('school_daily_marks', updated);
+      return updated;
+    });
+  };
+
   // Aggregates real-time subject scores dynamically from dailyMarks and exam results
   const getStudentSubjectScores = (studentId) => {
     const studentMarks = (dailyMarks || []).filter((m) => m.studentId === studentId);
@@ -692,6 +778,38 @@ export const AppProvider = ({children}) => {
   useEffect(() => {
     localStorage.setItem('school_pillar', activePillar);
   }, [activePillar]);
+
+  // Synchronize students with usernames into systemUsers so they are visible in Users Module
+  useEffect(() => {
+    if (!students || students.length === 0) return;
+    setSystemUsers((prev) => {
+      const existingUsernames = new Set((prev || []).map((u) => u.username));
+      const missing = [];
+      students.forEach((s) => {
+        if (s.username && s.password && !existingUsernames.has(s.username)) {
+          missing.push({
+            id: s.id || `USR-STU-${Date.now().toString().slice(-4)}`,
+            name: s.name,
+            nameEn: s.nameEn || s.name,
+            username: s.username,
+            password: s.password,
+            role: 'student',
+            roleTitle: `طالب - ${s.grade || 'المرحلة الدراسية'}`,
+            phone: s.phone || s.parentPhone || '+961 70 000 000',
+            avatar: s.avatar || defaultAvatars[0],
+            permissions: ['view_grades', 'view_lessons', 'print_cards']
+          });
+        }
+      });
+      if (missing.length > 0) {
+        const updated = [...prev, ...missing];
+        localStorage.setItem('school_system_users', JSON.stringify(updated));
+        dbSaveCollection('school_system_users', updated);
+        return updated;
+      }
+      return prev;
+    });
+  }, [students]);
 
   // Ensure every grade has non-duplicate standard sections initially, without re-adding deleted ones
   useEffect(() => {
@@ -2015,7 +2133,7 @@ export const AppProvider = ({children}) => {
 
   const addSystemUser = (user) => {
     const newUser = {
-      id:`USR-${Date.now().toString().slice(-4)}`,
+      id: user.id || `USR-${Date.now().toString().slice(-4)}`,
       ...user
     };
     setSystemUsers((prev) => {
@@ -2024,6 +2142,37 @@ export const AppProvider = ({children}) => {
       dbSaveCollection('school_system_users', updated);
       return updated;
     });
+
+    if (user.role === 'student' && user.username) {
+      setStudents((prev) => {
+        if (prev.some((s) => s.username === user.username)) return prev;
+        const newStu = {
+          id: newUser.id,
+          name: user.name,
+          nameEn: user.nameEn || user.name,
+          username: user.username,
+          password: user.password,
+          grade: user.grade || 'الصف الأول',
+          gradeEn: user.gradeEn || 'Grade 1',
+          classRoom: user.classRoom || 'الشعبة (أ)',
+          avatar: user.avatar || defaultAvatars[0],
+          phone: user.phone || '+961 70 000 000',
+          parentPhone: user.phone || '+961 70 000 000',
+          tuitionTotal: 0,
+          tuitionPaid: 0,
+          tuitionDiscount: 0,
+          adminFees: 0,
+          hasTransport: false,
+          transportFee: 0,
+          isSpecialCase: true,
+          frozen: false
+        };
+        const updatedStudents = [newStu, ...prev];
+        localStorage.setItem('school_students', JSON.stringify(updatedStudents));
+        dbSaveCollection('school_students', updatedStudents);
+        return updatedStudents;
+      });
+    }
   };
 
   const updateSystemUserPermissions = (userId, newPermissions) => {
@@ -2280,6 +2429,7 @@ export const AppProvider = ({children}) => {
     addDailyMark,
     updateDailyMark,
     deleteDailyMark,
+    batchSaveStudentGrades,
     getStudentSubjectScores,
     getStudentOverallGpa,
     themeMode,

@@ -69,7 +69,7 @@ export const SettingsModule = ({setActiveTab}) => {
   const [currency, setCurrency] = useState(siteSettings?.currency ||'USD ($)');
   const [exchangeRate, setExchangeRate] = useState(siteSettings?.exchangeRate || 89500);
   const [schoolPhone, setSchoolPhone] = useState(siteSettings?.schoolPhone ||'+961 01 888 999');
-  const [schoolEmail, setSchoolEmail] = useState(siteSettings?.schoolEmail ||'info@alnoorschool.edu.lb');
+  const [schoolEmail, setSchoolEmail] = useState(siteSettings?.schoolEmail ||'info@school.edu.lb');
   const [schoolAddress, setSchoolAddress] = useState(siteSettings?.schoolAddress ||'بيروت - لبنان');
   const [neonUrl, setNeonUrl] = useState(() => getNeonConnectionUrl());
   const [isNeonLocked, setIsNeonLocked] = useState(true);

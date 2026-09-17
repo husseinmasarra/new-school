@@ -1534,7 +1534,7 @@ export const TuitionModule = () => {
                 @media print {
                   @page {
                     size: A4 portrait;
-                    margin: 8mm 12mm 0 12mm;
+                    margin: 5mm 10mm 0 10mm;
                   }
 
                   html, html.dark, body, html.dark body, 
@@ -1558,8 +1558,10 @@ export const TuitionModule = () => {
                   }
 
                   .receipt-print-backdrop, html.dark .receipt-print-backdrop {
-                    position: static !important;
-                    inset: auto !important;
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
                     width: 100% !important;
                     height: auto !important;
                     background: #ffffff !important;
@@ -1571,6 +1573,15 @@ export const TuitionModule = () => {
                     z-index: 999999 !important;
                     box-shadow: none !important;
                     overflow: visible !important;
+                  }
+
+                  .receipt-print-backdrop > div {
+                    max-width: 100% !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    margin-top: 0 !important;
+                    padding: 0 !important;
+                    padding-top: 0 !important;
                   }
 
                   .receipt-print-wrapper {
@@ -1586,15 +1597,16 @@ export const TuitionModule = () => {
                     border: 1.5px solid #000000 !important;
                     box-shadow: none !important;
                     margin: 0 auto !important;
+                    margin-top: 0 !important;
                     padding: 8px 12px !important;
                     background: #ffffff !important;
                     background-color: #ffffff !important;
                     color: #000000 !important;
                     width: 100% !important;
-                    max-width: 186mm !important;
+                    max-width: 188mm !important;
                     /* Strictly Half of A4 Sheet height (130mm to 134mm max) */
-                    height: 130mm !important;
-                    max-height: 134mm !important;
+                    height: 132mm !important;
+                    max-height: 135mm !important;
                     border-radius: 6px !important;
                     box-sizing: border-box !important;
                     display: flex !important;

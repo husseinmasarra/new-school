@@ -1336,7 +1336,7 @@ export const FinanceModule = () => {
                 {/* Document Header */}
                 <div className="text-center border-b-2 border-slate-900 dark:border-white pb-4 space-y-1">
                   <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider">
-                    {lang ==='ar'?'مدرسة النور للتعليم والدعم الأكاديمي':'Al-Noor Educational Support School'}
+                    {lang === 'ar' ? (siteSettings?.schoolName || 'مدرسة الدعم التعليمي') : (siteSettings?.schoolNameEn || 'Educational Support School')}
                   </h2>
                   <h1 className="text-xl font-black text-slate-900 dark:text-white underline decoration-double">
                     {reportType ==='monthly'

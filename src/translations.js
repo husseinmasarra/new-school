@@ -1,9 +1,9 @@
 export const translations = {
   ar: {
     // App Header & Branding
-    appName:"مركز الدعم التعليمي",
-    appSubName:"",
-    schoolName:"مركز الدعم التعليمي",
+    appName:"مدرسة الدعم التعليمي",
+    appSubName:"المنظومة الرقمية الشاملة للإدارة الأكاديمية والمدرسية",
+    schoolName:"مدرسة الدعم التعليمي",
     roleAdmin:"الإدارة العامة",
     roleTeacher:"كادر المعلمين",
     roleParent:"بوابة الطالب ولي الأمر (خاص)",
@@ -202,9 +202,9 @@ export const translations = {
   },
   en: {
     // App Header & Branding
-    appName:"Educational Support Center",
-    appSubName:"",
-    schoolName:"Educational Support Center",
+    appName:"Educational Support School",
+    appSubName:"Comprehensive Digital Academic & School Management Ecosystem",
+    schoolName:"Educational Support School",
     roleAdmin:"General Administration",
     roleTeacher:"Teaching Faculty",
     roleParent:"Parent & Student Portal (Private)",

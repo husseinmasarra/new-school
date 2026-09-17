@@ -4,7 +4,7 @@ export const initialSchoolInfo = {
   academicYear: "2025 - 2026",
   currency: "USD",
   phone: "+961 70 123 456",
-  email: "admin@al-daam-school.edu",
+  email: "info@school.edu.lb",
   address: "بيروت، لبنان",
   logo: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=120&auto=format&fit=crop&q=80"
 };

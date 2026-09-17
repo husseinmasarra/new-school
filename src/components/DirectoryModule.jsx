@@ -21,9 +21,11 @@ import {
   Printer,
   Bookmark,
   Link2,
-  Plus
-} from'lucide-react';
-import {SubjectBadge} from'./SubjectBadge';
+  Plus,
+  ShieldCheck
+} from 'lucide-react';
+import { SubjectBadge } from './SubjectBadge';
+import { UsersModule } from './UsersModule';
 
 export const DirectoryModule = ({initialSubTab ='students'}) => {
   const {
@@ -1152,33 +1154,47 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
             <button
               onClick={() => setActiveTab('teachers')}
               className={`flex-1 md:flex-none px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                activeTab ==='teachers'?'bg-[#0284C7] text-white shadow-md':'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+                activeTab === 'teachers' ? 'bg-[#0284C7] text-white shadow-md' : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
               }`}
             >
-              <span> {isAr ?`كادر المعلمين (${safeTeachers.length})`:`Teachers (${safeTeachers.length})`}</span>
+              <span> {isAr ? `كادر المعلمين (${safeTeachers.length})` : `Teachers (${safeTeachers.length})`}</span>
             </button>
-          </div>
 
-          {/* Smart Search Bar */}
-          <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-[#0284C7] absolute top-3 right-3 rtl:right-3 ltr:left-3 pointer-events-none"/>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={isAr ?'البحث الذكي (الاسم، المعرف ID، الصف، الشعبة، اسم الدخول...)':'Search by name, ID, grade, username...'}
-              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-2xl px-9 py-2.5 text-xs font-semibold focus:outline-none focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 transition-all shadow-inner"
-            />
-            {searchTerm && (
+            {currentRole === 'admin' && (
               <button
-                onClick={() => setSearchTerm('')}
-                className="absolute top-2.5 left-3 rtl:left-3 ltr:right-3 text-slate-400 hover:text-red-500 text-xs font-bold bg-slate-200 hover:bg-slate-300 w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer"
-                title="مسح البحث"
+                onClick={() => setActiveTab('users')}
+                className={`flex-1 md:flex-none px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  activeTab === 'users' ? 'bg-[#0284C7] text-white shadow-md ring-2 ring-sky-300' : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200 border border-slate-200'
+                }`}
               >
-                ✕
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span> {isAr ? `إدارة المستخدمين والصلاحيات (${systemUsers.length})` : `Users & Roles (${systemUsers.length})`}</span>
               </button>
             )}
           </div>
+
+          {/* Smart Search Bar (for Students, Families, Teachers) */}
+          {activeTab !== 'users' && (
+            <div className="relative w-full md:w-96">
+              <Search className="w-4 h-4 text-[#0284C7] absolute top-3 right-3 rtl:right-3 ltr:left-3 pointer-events-none"/>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={isAr ? 'البحث الذكي (الاسم، المعرف ID، الصف، الشعبة، اسم الدخول...)' : 'Search by name, ID, grade, username...'}
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-2xl px-9 py-2.5 text-xs font-semibold focus:outline-none focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 transition-all shadow-inner"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute top-2.5 left-3 rtl:left-3 ltr:right-3 text-slate-400 hover:text-red-500 text-xs font-bold bg-slate-200 hover:bg-slate-300 w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+                  title="مسح البحث"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Grade Quick Filter Pills & View Mode Toggle (for Students) */}
@@ -1950,6 +1966,13 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* USERS AND PERMISSIONS TAB */}
+      {activeTab === 'users' && (
+        <div className="pt-2 animate-fade-in">
+          <UsersModule />
         </div>
       )}
 

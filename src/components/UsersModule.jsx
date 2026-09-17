@@ -11,13 +11,15 @@ import {
   Lock, 
   Camera, 
   User, 
-  Shield
+  Shield,
+  GraduationCap
 } from'lucide-react';
 
 export const UsersModule = () => {
   const {
     lang,
     systemUsers = [],
+    grades = [],
     addSystemUser,
     updateSystemUserPermissions,
     deleteSystemUser,
@@ -38,6 +40,7 @@ export const UsersModule = () => {
   const [newUserPassword, setNewUserPassword] = useState(() => (generateStrong8CharPassword ? generateStrong8CharPassword() :'User@2026'));
   const [newUserRole, setNewUserRole] = useState('teacher');
   const [newUserRoleTitle, setNewUserRoleTitle] = useState('مدرس معتمد');
+  const [newUserGrade, setNewUserGrade] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserAvatar, setNewUserAvatar] = useState(defaultAvatars?.[1] ||'/avatars/teacher_f.png');
   const [newUserPermissions, setNewUserPermissions] = useState(['send_lessons','manage_grades','send_messages']);
@@ -60,18 +63,30 @@ export const UsersModule = () => {
 
   const handleRoleChange = (role) => {
     setNewUserRole(role);
-    if (role ==='admin') {
+    if (role === 'admin') {
       setNewUserRoleTitle('مدير عام النظام');
-      setNewUserPermissions(['manage_all','manage_finance','manage_users','print_cards']);
-    } else if (role ==='vice_principal') {
+      setNewUserPermissions(['manage_all', 'manage_finance', 'manage_users', 'print_cards']);
+      setNewUserAvatar(defaultAvatars?.[1] || '/avatars/teacher_f.png');
+    } else if (role === 'vice_principal') {
       setNewUserRoleTitle('مساعد مدير');
-      setNewUserPermissions(['add_student','record_payment','send_reminders','print_cards']);
-    } else if (role ==='teacher') {
+      setNewUserPermissions(['add_student', 'record_payment', 'send_reminders', 'print_cards']);
+      setNewUserAvatar(defaultAvatars?.[4] || '/avatars/teacher_m.png');
+    } else if (role === 'teacher') {
       setNewUserRoleTitle('مدرس معتمد');
-      setNewUserPermissions(['send_lessons','manage_grades','send_messages','print_cards']);
-    } else if (role ==='driver') {
+      setNewUserPermissions(['send_lessons', 'manage_grades', 'send_messages', 'print_cards']);
+      setNewUserAvatar(defaultAvatars?.[1] || '/avatars/teacher_f.png');
+    } else if (role === 'student') {
+      setNewUserRoleTitle(newUserGrade ? `طالب - ${newUserGrade}` : 'طالب');
+      setNewUserPermissions(['view_grades', 'view_lessons', 'print_cards']);
+      setNewUserAvatar(defaultAvatars?.[0] || '/avatars/student_m.png');
+    } else if (role === 'parent') {
+      setNewUserRoleTitle('ولي أمر');
+      setNewUserPermissions(['view_grades', 'view_lessons', 'view_tuition', 'print_cards']);
+      setNewUserAvatar(defaultAvatars?.[2] || '/avatars/parent_m.png');
+    } else if (role === 'driver') {
       setNewUserRoleTitle('سائق حافلة مدرسية');
-      setNewUserPermissions(['manage_bus','contact_parents']);
+      setNewUserPermissions(['manage_bus', 'contact_parents']);
+      setNewUserAvatar(defaultAvatars?.[3] || '/avatars/driver_m.png');
     }
   };
 
@@ -108,8 +123,9 @@ export const UsersModule = () => {
       username: newUserUsername,
       password: newUserPassword,
       role: newUserRole,
-      roleTitle: newUserRoleTitle,
-      phone: newUserPhone ||'+961 70 000 000',
+      roleTitle: newUserRole === 'student' && newUserGrade ? `طالب - ${newUserGrade}` : newUserRoleTitle,
+      grade: newUserGrade,
+      phone: newUserPhone || '+961 70 000 000',
       avatar: newUserAvatar,
       permissions: newUserPermissions
     });
@@ -117,10 +133,11 @@ export const UsersModule = () => {
     setNewUserName('');
     setNewUserNameEn('');
     setNewUserUsername('');
+    setNewUserGrade('');
     setNewUserPhone('');
-    setNewUserPassword(generateStrong8CharPassword ? generateStrong8CharPassword() :'User@2026');
+    setNewUserPassword(generateStrong8CharPassword ? generateStrong8CharPassword() : 'User@2026');
     setShowAddUserModal(false);
-    setToastMessage(isAr ?'تم إضافة المستخدم الجديد ومنحه الصلاحيات بنجاح':'User added successfully!');
+    setToastMessage(isAr ? 'تم إضافة المستخدم الجديد ومنحه الصلاحيات بنجاح' : 'User added successfully!');
     setTimeout(() => setToastMessage(''), 3500);
   };
 
@@ -133,33 +150,35 @@ export const UsersModule = () => {
     if (!editingPermissionsUser) return;
     updateSystemUserPermissions(editingPermissionsUser.id, editPermissionsList);
     setEditingPermissionsUser(null);
-    setToastMessage(isAr ?'تم تحديث صلاحيات المستخدم بنجاح':'Permissions updated successfully!');
+    setToastMessage(isAr ? 'تم تحديث صلاحيات المستخدم بنجاح' : 'Permissions updated successfully!');
     setTimeout(() => setToastMessage(''), 3500);
   };
 
   const handleDeleteUser = (userId, userName) => {
-    if (userId ==='USER-ADMIN-01') {
-      alert(isAr ?'لا يمكن حذف الحساب الإداري الأساسي للنظام!':'Primary admin user cannot be deleted!');
+    if (userId === 'USER-ADMIN-01') {
+      alert(isAr ? 'لا يمكن حذف الحساب الإداري الأساسي للنظام!' : 'Primary admin user cannot be deleted!');
       return;
     }
     const confirmed = window.confirm(
       isAr 
-        ?`هل أنت متأكد من رغبتك في حذف حساب المستخدم (${userName}) نهائياً؟`
-        :`Are you sure you want to delete user (${userName})?`
+        ? `هل أنت متأكد من رغبتك في حذف حساب المستخدم (${userName}) نهائياً؟`
+        : `Are you sure you want to delete user (${userName})?`
     );
     if (confirmed) {
       deleteSystemUser(userId);
-      setToastMessage(isAr ?`تم حذف حساب المستخدم (${userName}) بنجاح`:'User deleted successfully');
+      setToastMessage(isAr ? `تم حذف حساب المستخدم (${userName}) بنجاح` : 'User deleted successfully');
       setTimeout(() => setToastMessage(''), 3500);
     }
   };
 
   // Counts by role
   const totalCount = systemUsers.length;
-  const adminCount = systemUsers.filter((u) => u.role ==='admin').length;
-  const teacherCount = systemUsers.filter((u) => u.role ==='teacher').length;
-  const driverCount = systemUsers.filter((u) => u.role ==='driver').length;
-  const vicePrincipalCount = systemUsers.filter((u) => u.role ==='vice_principal').length;
+  const adminCount = systemUsers.filter((u) => u.role === 'admin').length;
+  const vicePrincipalCount = systemUsers.filter((u) => u.role === 'vice_principal').length;
+  const teacherCount = systemUsers.filter((u) => u.role === 'teacher').length;
+  const studentCount = systemUsers.filter((u) => u.role === 'student').length;
+  const parentCount = systemUsers.filter((u) => u.role === 'parent').length;
+  const driverCount = systemUsers.filter((u) => u.role === 'driver').length;
 
   return (
     <div className="space-y-6 animate-fade-in text-[#0F172A]">
@@ -203,18 +222,18 @@ export const UsersModule = () => {
       </div>
 
       {/* Stats Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
         <div 
           onClick={() => setRoleFilter('all')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            roleFilter ==='all'
-              ?'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
-              :'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
+            roleFilter === 'all'
+              ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
+              : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold opacity-80">{isAr ?'إجمالي المستخدمين':'Total Users'}</span>
-            <Users className="w-4 h-4"/>
+            <span className="text-xs font-bold opacity-80">{isAr ? 'إجمالي المستخدمين' : 'Total Users'}</span>
+            <Users className="w-4 h-4" />
           </div>
           <p className="text-2xl font-black mt-2 font-mono">{totalCount}</p>
         </div>
@@ -222,14 +241,14 @@ export const UsersModule = () => {
         <div 
           onClick={() => setRoleFilter('admin')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            roleFilter ==='admin'
-              ?'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
-              :'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
+            roleFilter === 'admin'
+              ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
+              : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold opacity-80">{isAr ?'المدراء':'Admins'}</span>
-            <Shield className="w-4 h-4 text-[#EF4444]"/>
+            <span className="text-xs font-bold opacity-80">{isAr ? 'المدراء' : 'Admins'}</span>
+            <Shield className="w-4 h-4 text-[#EF4444]" />
           </div>
           <p className="text-2xl font-black mt-2 font-mono">{adminCount}</p>
         </div>
@@ -237,29 +256,44 @@ export const UsersModule = () => {
         <div 
           onClick={() => setRoleFilter('teacher')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            roleFilter ==='teacher'
-              ?'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
-              :'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
+            roleFilter === 'teacher'
+              ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
+              : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold opacity-80">{isAr ?'المعلمين':'Teachers'}</span>
-            <User className="w-4 h-4 text-purple-600"/>
+            <span className="text-xs font-bold opacity-80">{isAr ? 'المعلمين' : 'Teachers'}</span>
+            <User className="w-4 h-4 text-purple-600" />
           </div>
           <p className="text-2xl font-black mt-2 font-mono">{teacherCount}</p>
         </div>
 
         <div 
-          onClick={() => setRoleFilter('driver')}
+          onClick={() => setRoleFilter('student')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            roleFilter ==='driver'
-              ?'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
-              :'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
+            roleFilter === 'student'
+              ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
+              : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold opacity-80">{isAr ?'السائقين':'Drivers'}</span>
-            <span className="text-base"></span>
+            <span className="text-xs font-bold opacity-80">{isAr ? 'الطلاب' : 'Students'}</span>
+            <GraduationCap className="w-4 h-4 text-sky-500" />
+          </div>
+          <p className="text-2xl font-black mt-2 font-mono">{studentCount}</p>
+        </div>
+
+        <div 
+          onClick={() => setRoleFilter('driver')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+            roleFilter === 'driver'
+              ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-[1.02]'
+              : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#0284C7]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold opacity-80">{isAr ? 'السائقين' : 'Drivers'}</span>
+            <span className="text-base font-bold text-slate-400">#</span>
           </div>
           <p className="text-2xl font-black mt-2 font-mono">{driverCount}</p>
         </div>
@@ -274,7 +308,7 @@ export const UsersModule = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={isAr ?'بحث بالاسم، اسم المستخدم، الهاتف...':'Search by name, username, phone...'}
+            placeholder={isAr ? 'بحث بالاسم، اسم المستخدم، الهاتف...' : 'Search by name, username, phone...'}
             className="w-full bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] rounded-2xl py-2.5 px-9 focus:outline-none focus:border-[#0284C7]"
           />
           {searchTerm && (
@@ -292,52 +326,72 @@ export const UsersModule = () => {
           <button
             onClick={() => setRoleFilter('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-              roleFilter ==='all'
-                ?'bg-[#0284C7] text-white shadow-sm'
-                :'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+              roleFilter === 'all'
+                ? 'bg-[#0284C7] text-white shadow-sm'
+                : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {isAr ?'الكل':'All'} ({totalCount})
+            {isAr ? 'الكل' : 'All'} ({totalCount})
           </button>
           <button
             onClick={() => setRoleFilter('admin')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-              roleFilter ==='admin'
-                ?'bg-[#0284C7] text-white shadow-sm'
-                :'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+              roleFilter === 'admin'
+                ? 'bg-[#0284C7] text-white shadow-sm'
+                : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {isAr ?'الإدارة':'Admin'} ({adminCount})
+            {isAr ? 'الإدارة' : 'Admin'} ({adminCount})
           </button>
           <button
             onClick={() => setRoleFilter('vice_principal')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-              roleFilter ==='vice_principal'
-                ?'bg-[#0284C7] text-white shadow-sm'
-                :'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+              roleFilter === 'vice_principal'
+                ? 'bg-[#0284C7] text-white shadow-sm'
+                : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {isAr ?'مساعد مدير':'Vice Principal'} ({vicePrincipalCount})
+            {isAr ? 'مساعد مدير' : 'Vice Principal'} ({vicePrincipalCount})
           </button>
           <button
             onClick={() => setRoleFilter('teacher')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-              roleFilter ==='teacher'
-                ?'bg-[#0284C7] text-white shadow-sm'
-                :'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+              roleFilter === 'teacher'
+                ? 'bg-[#0284C7] text-white shadow-sm'
+                : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {isAr ?'المعلمين':'Teachers'} ({teacherCount})
+            {isAr ? 'المعلمين' : 'Teachers'} ({teacherCount})
+          </button>
+          <button
+            onClick={() => setRoleFilter('student')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+              roleFilter === 'student'
+                ? 'bg-[#0284C7] text-white shadow-sm'
+                : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {isAr ? 'الطلاب' : 'Students'} ({studentCount})
+          </button>
+          <button
+            onClick={() => setRoleFilter('parent')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+              roleFilter === 'parent'
+                ? 'bg-[#0284C7] text-white shadow-sm'
+                : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {isAr ? 'أولياء الأمور' : 'Parents'} ({parentCount})
           </button>
           <button
             onClick={() => setRoleFilter('driver')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-              roleFilter ==='driver'
-                ?'bg-[#0284C7] text-white shadow-sm'
-                :'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
+              roleFilter === 'driver'
+                ? 'bg-[#0284C7] text-white shadow-sm'
+                : 'bg-[#F8FAFC] text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {isAr ?'السائقين':'Drivers'} ({driverCount})
+            {isAr ? 'السائقين' : 'Drivers'} ({driverCount})
           </button>
         </div>
       </div>
@@ -414,15 +468,19 @@ export const UsersModule = () => {
                     {/* Role Badge */}
                     <td className="p-3 font-semibold text-slate-700">
                       <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border ${
-                        usr.role ==='admin'
-                          ?'bg-red-50 text-red-700 border-red-200'
-                          : usr.role ==='vice_principal'
-                          ?'bg-amber-50 text-amber-800 border-amber-200'
-                          : usr.role ==='teacher'
-                          ?'bg-purple-50 text-purple-700 border-purple-200'
-                          :'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        usr.role === 'admin'
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : usr.role === 'vice_principal'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : usr.role === 'teacher'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200'
+                          : usr.role === 'student'
+                          ? 'bg-sky-50 text-sky-800 border-sky-200'
+                          : usr.role === 'parent'
+                          ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       }`}>
-                        {usr.roleTitle || usr.role}
+                        {usr.roleTitle || (usr.role === 'student' ? 'طالب' : usr.role === 'parent' ? 'ولي أمر' : usr.role)}
                       </span>
                     </td>
 
@@ -484,7 +542,7 @@ export const UsersModule = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-[#0284C7] flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-[#0284C7]"/>
-                <span>{isAr ?'إضافة مستخدم جديد وتعيين الصلاحيات':'Add New System User'}</span>
+                <span>{isAr ?'إضافة مستخدم جديد وتحديد صلاحياته':'Add New User & Assign Permissions'}</span>
               </h3>
               <button
                 type="button"
@@ -529,7 +587,7 @@ export const UsersModule = () => {
                   required
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
-                  placeholder="أ.حسين علي"
+                  placeholder={newUserRole === 'student' ? 'مثال: نورا إبراهيم' : 'أ.حسين علي'}
                   className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7]"
                 />
               </div>
@@ -542,7 +600,7 @@ export const UsersModule = () => {
                   type="text"
                   value={newUserNameEn}
                   onChange={(e) => setNewUserNameEn(e.target.value)}
-                  placeholder="Hussein Ali"
+                  placeholder={newUserRole === 'student' ? 'Noura Ibrahim' : 'Hussein Ali'}
                   className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0284C7]"
                 />
               </div>
@@ -556,7 +614,7 @@ export const UsersModule = () => {
                   required
                   value={newUserUsername}
                   onChange={(e) => setNewUserUsername(e.target.value)}
-                  placeholder="hussein.ali"
+                  placeholder={newUserRole === 'student' ? 'stu.noura' : 'hussein.ali'}
                   className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#0284C7]"
                 />
               </div>
@@ -594,14 +652,37 @@ export const UsersModule = () => {
                 <select
                   value={newUserRole}
                   onChange={(e) => handleRoleChange(e.target.value)}
-                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer"
+                  className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer font-bold"
                 >
-                  <option value="admin"> مدير عام (Admin)</option>
-                  <option value="vice_principal"> مساعد مدير (Vice Principal)</option>
-                  <option value="teacher"> مدرس (Teacher)</option>
-                  <option value="driver"> سائق (Driver)</option>
+                  <option value="admin">{isAr ? 'مدير عام (Admin)' : 'Admin'}</option>
+                  <option value="vice_principal">{isAr ? 'مساعد مدير (Vice Principal)' : 'Vice Principal'}</option>
+                  <option value="teacher">{isAr ? 'مدرس (Teacher)' : 'Teacher'}</option>
+                  <option value="student">{isAr ? 'طالب (Student)' : 'Student'}</option>
+                  <option value="parent">{isAr ? 'ولي أمر (Parent)' : 'Parent'}</option>
+                  <option value="driver">{isAr ? 'سائق (Driver)' : 'Driver'}</option>
                 </select>
               </div>
+
+              {newUserRole === 'student' && (
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700">
+                    {isAr ? 'الصف والمرحلة الدراسية للطالب' : 'Student Grade'}
+                  </label>
+                  <select
+                    value={newUserGrade}
+                    onChange={(e) => {
+                      setNewUserGrade(e.target.value);
+                      setNewUserRoleTitle(e.target.value ? `طالب - ${e.target.value}` : 'طالب');
+                    }}
+                    className="w-full mt-1 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-xl px-3 py-2 text-xs focus:outline-none cursor-pointer"
+                  >
+                    <option value="">{isAr ? 'اختر الصف الدراسي للطالب...' : 'Select Grade...'}</option>
+                    {(grades || []).map((g) => (
+                      <option key={g.id || g.name} value={g.name}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Permissions Matrix */}

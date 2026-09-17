@@ -117,7 +117,7 @@ export const StudentCardModal = ({student, onClose}) => {
             {/* Bottom Pocket Footer */}
             <div className="absolute bottom-0 left-0 right-0 bg-slate-950 px-3 py-1 border-t border-slate-800 flex items-center justify-between text-[8px] text-slate-400 font-mono z-10">
               <span>العام الدراسي: {siteSettings?.academicYear ||"2026/2027"}</span>
-              <span className="text-blue-400 font-bold">ALNOOR-SMART-PORTAL</span>
+              <span className="text-blue-400 font-bold">SUPPORT-SCHOOL-SMART-PORTAL</span>
             </div>
 
           </div>

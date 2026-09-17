@@ -1,11 +1,11 @@
 import React, {useState} from'react';
 import {useApp} from'../context/AppContext';
-import {Printer, FileSpreadsheet, CheckCircle2, GraduationCap, DollarSign, Search, Users, UserCheck, X} from'lucide-react';
+import {Printer, FileSpreadsheet, CheckCircle2, GraduationCap, DollarSign, Search, Users, UserCheck, X, Save} from'lucide-react';
 
 export const ReportsModule = () => {
   const {
     lang, t, currentRole, currentUser, students = [], subjects = [], selectedStudentId,
-    dailyMarks = [], addDailyMark, deleteDailyMark,
+    dailyMarks = [], addDailyMark, deleteDailyMark, batchSaveStudentGrades,
     getStudentSubjectScores, getStudentOverallGpa, behaviorRecords = []
   } = useApp();
 
@@ -103,13 +103,63 @@ export const ReportsModule = () => {
 
   const selectedStudent = safeStudents.find((s) => s.id === stuId) || safeStudents[0];
   const dynamicSubjectScores = getStudentSubjectScores ? getStudentSubjectScores(selectedStudent?.id) : [];
+
+  // Local state for interactive in-place manual editing of student grades
+  const [studentGradesMap, setStudentGradesMap] = useState({});
+  const [saveStatus, setSaveStatus] = useState(null);
+
+  const activeScores = studentGradesMap[selectedStudent?.id] || dynamicSubjectScores;
+
+  const handleScoreChange = (subIdOrName, field, val) => {
+    const rawNum = val === '' ? 0 : Number(val);
+    const maxVal = field === 'final' ? 40 : 20;
+    const clamped = Math.min(maxVal, Math.max(0, isNaN(rawNum) ? 0 : rawNum));
+
+    const baseList = studentGradesMap[selectedStudent?.id] || dynamicSubjectScores;
+    const updated = baseList.map((sub) => {
+      if ((sub.id && sub.id === subIdOrName) || sub.name === subIdOrName) {
+        const item = { ...sub, [field]: clamped };
+        const hw = Number(field === 'hw' ? clamped : item.hw || 0);
+        const quiz = Number(field === 'quiz' ? clamped : item.quiz || 0);
+        const midterm = Number(field === 'midterm' ? clamped : item.midterm || 0);
+        const final = Number(field === 'final' ? clamped : item.final || 0);
+        const total = Math.min(100, Math.max(0, hw + quiz + midterm + final));
+
+        let grade = 'ناجح - ممتاز (A+)';
+        if (total >= 90) grade = 'ناجح - ممتاز (A+)';
+        else if (total >= 80) grade = 'ناجح - جيد جداً (A)';
+        else if (total >= 65) grade = 'ناجح - جيد (B)';
+        else if (total >= 40) grade = 'ناجح - مقبول (C)';
+        else if (total > 0) grade = 'راسب (F)';
+        else grade = 'غير مرصود';
+
+        return { ...item, total, grade };
+      }
+      return sub;
+    });
+
+    setStudentGradesMap((prev) => ({
+      ...prev,
+      [selectedStudent?.id]: updated
+    }));
+    setSaveStatus(null);
+  };
+
+  const handleSaveGrades = () => {
+    if (!selectedStudent?.id || !batchSaveStudentGrades) return;
+    const scoresToSave = studentGradesMap[selectedStudent?.id] || dynamicSubjectScores;
+    batchSaveStudentGrades(selectedStudent.id, scoresToSave);
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus(null), 3500);
+  };
+
   const computedGpa = getStudentOverallGpa ? getStudentOverallGpa(selectedStudent?.id) : 0;
   
   // Total marks, overall percentage, and pass/fail status (fail if overall percentage < 40%)
-  const totalMarksSum = (dynamicSubjectScores || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0);
-  const maxPossibleMarks = (dynamicSubjectScores || []).length * 100;
-  const overallPercentage = (dynamicSubjectScores || []).length > 0
-    ? Number((totalMarksSum / dynamicSubjectScores.length).toFixed(1))
+  const totalMarksSum = (activeScores || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+  const maxPossibleMarks = (activeScores || []).length * 100;
+  const overallPercentage = (activeScores || []).length > 0
+    ? Number((totalMarksSum / activeScores.length).toFixed(1))
     : Number(computedGpa) || 0;
   const isOverallFail = overallPercentage > 0 && overallPercentage < 40;
   const isOverallPass = overallPercentage >= 40;
@@ -515,19 +565,40 @@ export const ReportsModule = () => {
             </div>
 
             {/* Official Detailed Marks Table */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-black text-[#0284C7] dark:text-[#38BDF8] flex items-center justify-between border-b border-slate-200 dark:border-[#334155] pb-2">
-                <span className="font-extrabold">جدول تفاصيل درجات المواد الدراسية للعام الحالي:</span>
-                <span className="font-mono text-slate-500 dark:text-slate-400 font-extrabold">العلامة الكلية للمادة (100)</span>
-              </h3>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-[#334155] pb-2.5">
+                <h3 className="text-xs font-black text-[#0284C7] dark:text-[#38BDF8] flex items-center gap-2">
+                  <span className="font-extrabold">{isAr ? 'جدول تفاصيل درجات المواد الدراسية للعام الحالي:' : 'Current Year Subject Grades Details:'}</span>
+                  <span className="font-mono text-slate-500 dark:text-slate-400 font-extrabold text-[11px]">
+                    ({isAr ? 'رصد يدوي مباشر للمواد' : 'Direct manual grade entry'})
+                  </span>
+                </h3>
+
+                <div className="flex items-center gap-2 no-print">
+                  {saveStatus === 'saved' && (
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <span>{isAr ? 'تم حفظ واعتماد الدرجات بنجاح!' : 'Grades saved successfully!'}</span>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveGrades}
+                    className="px-4 py-2 bg-[#0284C7] hover:bg-[#0369A1] active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{isAr ? 'حفظ وتثبيت الدرجات' : 'Save & Commit Grades'}</span>
+                  </button>
+                </div>
+              </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-right rtl:text-right border-collapse border border-slate-200 dark:border-[#334155] text-xs">
                   <thead>
                     <tr className="bg-[#0284C7] text-white text-xs font-black">
                       <th className="p-3 border border-sky-700 text-right">المادة الدراسية</th>
-                      <th className="p-3 border border-sky-700 text-center print:hidden">أعمال السنة (20)</th>
-                      <th className="p-3 border border-sky-700 text-center print:hidden">الاختبارات (20)</th>
+                      <th className="p-3 border border-sky-700 text-center">أعمال السنة (20)</th>
+                      <th className="p-3 border border-sky-700 text-center">الاختبارات (20)</th>
                       <th className="p-3 border border-sky-700 text-center">منتصف الفصل (20)</th>
                       <th className="p-3 border border-sky-700 text-center">النهائي (40)</th>
                       <th className="p-3 border border-sky-700 text-center">المجموع (100)</th>
@@ -535,38 +606,76 @@ export const ReportsModule = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-[#334155]">
-                    {dynamicSubjectScores.length === 0 ? (
+                    {activeScores.length === 0 ? (
                       <tr>
-                        <td colSpan="7"className="p-8 text-center text-slate-400 font-bold">
-                          {isAr ?'لم يتم إضافة أي مواد دراسية للنظام بعد. يمكنك إضافة المواد من قسم دليل المواد.':'No active subjects added yet.'}
+                        <td colSpan="7" className="p-8 text-center text-slate-400 font-bold">
+                          {isAr ? 'لم يتم إضافة أي مواد دراسية للنظام بعد. يمكنك إضافة المواد من قسم دليل المواد.' : 'No active subjects added yet.'}
                         </td>
                       </tr>
                     ) : (
-                      dynamicSubjectScores.map((row, idx) => (
+                      activeScores.map((row, idx) => (
                         <tr 
-                          key={row.id || idx} 
+                          key={row.id || row.name || idx} 
                           className="bg-white dark:bg-[#1E293B] border-b border-slate-200 dark:border-[#334155] transition-colors"
                         >
                           <td className="p-3 border border-slate-200 dark:border-[#334155] font-black text-sm text-[#0F172A] dark:text-white">
                             {row.name}
                           </td>
-                          <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-sm text-slate-800 dark:text-slate-200 print:hidden">
-                            {row.hw}
+                          <td className="p-2 border border-slate-200 dark:border-[#334155] text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="20"
+                              value={row.hw ?? 0}
+                              onChange={(e) => handleScoreChange(row.id || row.name, 'hw', e.target.value)}
+                              className="w-16 px-1.5 py-1 text-center font-mono font-bold rounded-lg border border-slate-300 dark:border-[#475569] bg-slate-50 dark:bg-[#0F172A] text-slate-800 dark:text-slate-100 focus:bg-white focus:ring-2 focus:ring-[#0284C7] focus:border-[#0284C7] outline-hidden text-sm print:border-none print:bg-transparent print:p-0 print:text-center print:shadow-none"
+                              title="أعمال السنة (الحد الأقصى 20)"
+                            />
                           </td>
-                          <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-sm text-slate-800 dark:text-slate-200 print:hidden">
-                            {row.quiz}
+                          <td className="p-2 border border-slate-200 dark:border-[#334155] text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="20"
+                              value={row.quiz ?? 0}
+                              onChange={(e) => handleScoreChange(row.id || row.name, 'quiz', e.target.value)}
+                              className="w-16 px-1.5 py-1 text-center font-mono font-bold rounded-lg border border-slate-300 dark:border-[#475569] bg-slate-50 dark:bg-[#0F172A] text-slate-800 dark:text-slate-100 focus:bg-white focus:ring-2 focus:ring-[#0284C7] focus:border-[#0284C7] outline-hidden text-sm print:border-none print:bg-transparent print:p-0 print:text-center print:shadow-none"
+                              title="الاختبارات (الحد الأقصى 20)"
+                            />
                           </td>
-                          <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-sm text-slate-800 dark:text-slate-200">
-                            {row.midterm}
+                          <td className="p-2 border border-slate-200 dark:border-[#334155] text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="20"
+                              value={row.midterm ?? 0}
+                              onChange={(e) => handleScoreChange(row.id || row.name, 'midterm', e.target.value)}
+                              className="w-16 px-1.5 py-1 text-center font-mono font-bold rounded-lg border border-slate-300 dark:border-[#475569] bg-slate-50 dark:bg-[#0F172A] text-slate-800 dark:text-slate-100 focus:bg-white focus:ring-2 focus:ring-[#0284C7] focus:border-[#0284C7] outline-hidden text-sm print:border-none print:bg-transparent print:p-0 print:text-center print:shadow-none"
+                              title="منتصف الفصل (الحد الأقصى 20)"
+                            />
                           </td>
-                          <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-sm text-slate-800 dark:text-slate-200">
-                            {row.final}
+                          <td className="p-2 border border-slate-200 dark:border-[#334155] text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="40"
+                              value={row.final ?? 0}
+                              onChange={(e) => handleScoreChange(row.id || row.name, 'final', e.target.value)}
+                              className="w-16 px-1.5 py-1 text-center font-mono font-bold rounded-lg border border-slate-300 dark:border-[#475569] bg-slate-50 dark:bg-[#0F172A] text-slate-800 dark:text-slate-100 focus:bg-white focus:ring-2 focus:ring-[#0284C7] focus:border-[#0284C7] outline-hidden text-sm print:border-none print:bg-transparent print:p-0 print:text-center print:shadow-none"
+                              title="النهائي (الحد الأقصى 40)"
+                            />
                           </td>
                           <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-black text-base text-[#0284C7] dark:text-[#38BDF8]">
                             {row.total}
                           </td>
                           <td className="p-3 border border-slate-200 dark:border-[#334155] text-center">
-                            <span className="px-2.5 py-1 rounded-md text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-black border ${
+                              row.total >= 40
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                                : row.total > 0
+                                ? 'bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300 border-red-300 dark:border-red-700'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-600'
+                            }`}>
                               {row.grade}
                             </span>
                           </td>
@@ -574,13 +683,13 @@ export const ReportsModule = () => {
                       ))
                     )}
                   </tbody>
-                  {dynamicSubjectScores.length > 0 && (
+                  {activeScores.length > 0 && (
                     <tfoot className="border-t-2 border-[#0284C7] bg-[#F8FAFC] dark:bg-[#0F172A] font-bold">
                       <tr className="text-xs">
                         <td className="p-3 border border-slate-200 dark:border-[#334155] font-black text-[#0F172A] dark:text-white">
                           المجموع العام والمعدل:
                         </td>
-                        <td colSpan="4"className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-slate-600 dark:text-slate-300">
+                        <td colSpan="4" className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-bold text-slate-600 dark:text-slate-300">
                           {totalMarksSum} من أصل {maxPossibleMarks} (المعدل: {overallPercentage}%)
                         </td>
                         <td className="p-3 border border-slate-200 dark:border-[#334155] text-center font-mono font-black text-base text-[#0284C7] dark:text-[#38BDF8]">
@@ -589,12 +698,12 @@ export const ReportsModule = () => {
                         <td className="p-3 border border-slate-200 dark:border-[#334155] text-center">
                           <span className={`px-3 py-1 rounded-md text-xs font-black inline-flex items-center gap-1 shadow-xs ${
                             isOverallFail
-                              ?'bg-red-100 text-red-700 border border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700'
+                              ? 'bg-red-100 text-red-700 border border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700'
                               : isOverallPass
-                              ?'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700'
-                              :'bg-slate-100 text-slate-700 border border-slate-300'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700'
+                              : 'bg-slate-100 text-slate-700 border border-slate-300'
                           }`}>
-                            {isOverallFail ?'راسب (أقل من 40%)': isOverallPass ?'ناجح ومجتاز':'قيد الرصد'}
+                            {isOverallFail ? 'راسب (أقل من 40%)' : isOverallPass ? 'ناجح ومجتاز' : 'قيد الرصد'}
                           </span>
                         </td>
                       </tr>

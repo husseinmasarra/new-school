@@ -108,9 +108,10 @@ export const Header = ({activeTab, setActiveTab, setIsSidebarOpen}) => {
       {name:'سجل السلوك والبطاقة السلوكية والتقديرات', nameEn:'Behavioral Records & Conduct', tab:'behavior', icon:''},
       {name:'شؤون الطلاب والدليل المدرسي والبيانات', nameEn:'Students Directory & Documents', tab:'directory', icon:''},
     ] : []),
-    ...(currentRole ==='admin'? [
-      {name:'المالية، الأقساط المدرسية ورواتب الموظفين', nameEn:'Tuition Fees & Financials', tab:'tuition', icon:''},
-      {name:'إعدادات المنصة العامة واللوجو والاسم', nameEn:'Platform General Settings', tab:'settings', icon:''},
+    ...(currentRole === 'admin' ? [
+      { name: 'إدارة المستخدمين وحسابات الطلاب والمعلمين والصلاحيات', nameEn: 'Users & Permissions Management', tab: 'users', icon: '' },
+      { name: 'المالية، الأقساط المدرسية ورواتب الموظفين', nameEn: 'Tuition Fees & Financials', tab: 'tuition', icon: '' },
+      { name: 'إعدادات المنصة العامة واللوجو والاسم', nameEn: 'Platform General Settings', tab: 'settings', icon: '' },
     ] : []),
     ...(currentRole ==='student'|| currentRole ==='parent'? [
       {name:'جدول الحصص الدراسي الأسبوعي المخصص', nameEn:'Weekly Timetable Schedule', tab:'schedule', icon:''},

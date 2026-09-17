@@ -376,10 +376,25 @@ export const Sidebar = ({activeTab: activeTabProp, setActiveTab: setActiveTabPro
             </div>
           )}
 
-
-
-
-          {/* ── 5. الشؤون المالية والرواتب (للإدارة ومساعد المدير) ── */}
+          {/* 4.3 إدارة المستخدمين والصلاحيات (للإدارة فقط) */}
+          {currentRole === 'admin' && (
+            <button
+              onClick={() => handleNavClick('users', 'settings')}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'users'
+                  ? 'bg-[#032541] dark:bg-zinc-900 text-white border border-[#EF4444] shadow-md ring-2 ring-[#EF4444]'
+                  : 'text-white dark:text-slate-300 hover:bg-white/15 dark:hover:bg-zinc-900/60 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <span>{isAr ? 'المستخدمين والصلاحيات' : 'Users & Permissions'}</span>
+              </div>
+              <span className="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
+                {isAr ? 'الحسابات' : 'Users'}
+              </span>
+            </button>
+          )}
           {(currentRole ==='admin'|| currentRole ==='vice_principal') && (
             <div className="space-y-1">
               <button
