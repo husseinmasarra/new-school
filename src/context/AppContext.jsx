@@ -1127,8 +1127,9 @@ export const AppProvider = ({children}) => {
       };
       const teacherUser = {
         ...teacherObj,
-        role:'teacher',
-        roleTitle:`معلم - ${teacherObj.subject ||'المحتوى التعليمي'}`
+        role: 'teacher',
+        roleTitle: `معلم - ${teacherObj.subject || 'المحتوى التعليمي'}`,
+        permissions: teacherObj.permissions || ['send_lessons', 'manage_grades', 'send_messages', 'print_cards']
       };
       setCurrentUser(teacherUser);
       return {success: true, user: teacherUser};
@@ -1136,29 +1137,29 @@ export const AppProvider = ({children}) => {
 
     // 3. Search students collection (students roster)
     const foundStudent = (students || []).find((s) => {
-      const matchId = (s.id ||'').toLowerCase() === cleanUser;
-      const matchUsername = (s.username ||'').toLowerCase() === cleanUser;
-      const matchName = (s.name ||'').toLowerCase() === cleanUser;
-      const matchPass = s.password ? s.password === passwordInput : (passwordInput ==='123456'|| passwordInput ==='student123'|| passwordInput === s.id);
+      const matchId = (s.id || '').toLowerCase() === cleanUser;
+      const matchUsername = (s.username || '').toLowerCase() === cleanUser;
+      const matchName = (s.name || '').toLowerCase() === cleanUser;
+      const matchPass = s.password ? s.password === passwordInput : (passwordInput === '123456' || passwordInput === 'student123' || passwordInput === s.id);
       return (matchId || matchUsername || matchName) && matchPass;
     });
 
     if (foundStudent && foundStudent.frozen) {
       return {
         success: false,
-        message: lang ==='ar'
-          ?'تم تجميد حساب هذا الطالب مؤقتاً! يرجى مراجعة إدارة المدرسة.'
-          :'This student account has been frozen. Please contact school administration.'
+        message: lang === 'ar'
+          ? 'تم تجميد حساب هذا الطالب مؤقتاً! يرجى مراجعة إدارة المدرسة.'
+          : 'This student account has been frozen. Please contact school administration.'
       };
     }
 
-    if (foundStudent || cleanUser ==='student'|| cleanUser.startsWith('stu')) {
+    if (foundStudent || cleanUser === 'student' || cleanUser.startsWith('stu')) {
       const stuObj = foundStudent || (students && students[0]) || {
-        id:"STU-101",
-        name:"محمد خالد مسرة",
-        nameEn:"Mohammad Khaled",
-        grade:"الصف السادس الابتدائي",
-        classRoom:"أ"
+        id: "STU-101",
+        name: "محمد خالد مسرة",
+        nameEn: "Mohammad Khaled",
+        grade: "الصف السادس الابتدائي",
+        classRoom: "أ"
       };
       const studentUser = {
         id: stuObj.id,
@@ -1166,15 +1167,35 @@ export const AppProvider = ({children}) => {
         name: stuObj.name,
         nameEn: stuObj.nameEn || stuObj.name,
         username: stuObj.username || stuObj.id,
-        role:'student',
-        roleTitle:`طالب (${stuObj.grade ||'مدرسة الدعم'})`,
-        avatar: stuObj.avatar ||"https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80",
+        role: 'student',
+        roleTitle: `طالب (${stuObj.grade || 'مدرسة الدعم'})`,
+        avatar: stuObj.avatar || "https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80",
         grade: stuObj.grade,
-        classRoom: stuObj.classRoom
+        classRoom: stuObj.classRoom,
+        permissions: ['view_grades', 'view_lessons', 'print_cards']
       };
       setCurrentUser(studentUser);
       setSelectedStudentId(stuObj.id);
       return {success: true, user: studentUser};
+    }
+
+    // 4. Parent fallback
+    if (cleanUser === 'parent' || cleanUser.startsWith('par')) {
+      const stuObj = (students && students[0]) || { id: "STU-101", name: "محمد خالد مسرة" };
+      const parentUser = {
+        id: "PAR-101",
+        studentId: stuObj.id,
+        name: stuObj.parentName || `ولي أمر الطالب ${stuObj.name}`,
+        nameEn: stuObj.parentNameEn || `Parent of ${stuObj.name}`,
+        username: "parent",
+        role: 'parent',
+        roleTitle: 'ولي أمر',
+        avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
+        permissions: ['view_grades', 'view_lessons', 'view_tuition', 'print_cards']
+      };
+      setCurrentUser(parentUser);
+      setSelectedStudentId(stuObj.id);
+      return {success: true, user: parentUser};
     }
 
     // 4. Admin fallback

@@ -14,6 +14,8 @@ import {
   Bell,
   Smartphone,
   Search,
+  UserCheck,
+  Users,
   X
 } from'lucide-react';
 
@@ -26,6 +28,7 @@ export const Header = ({activeTab, setActiveTab, setIsSidebarOpen}) => {
     switchLang, 
     currentUser, 
     currentRole, 
+    login,
     logout, 
     updateUserAvatar,
     students,
@@ -472,6 +475,94 @@ export const Header = ({activeTab, setActiveTab, setIsSidebarOpen}) => {
                 onChange={handleAvatarFileUpload}
                 className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#0284C7] file:text-white hover:file:bg-[#0369A1] cursor-pointer"
               />
+            </div>
+
+            {/* Role & Permissions Switcher (Instant preview for Admin) */}
+            <div className="space-y-2 pt-3 border-t border-slate-100">
+              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                <span>{lang === 'ar' ? 'تبديل الدور ومعاينة الصلاحيات فوراً:' : 'Switch Role & Test Permissions:'}</span>
+                <span className="text-[10px] text-emerald-600 font-mono bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
+                  {currentUser?.roleTitle || currentUser?.role}
+                </span>
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    login('admin', '123123123');
+                    setShowAvatarModal(false);
+                  }}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                    currentRole === 'admin'
+                      ? 'border-[#0284C7] bg-sky-50 text-[#0284C7] ring-2 ring-[#0284C7]'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#0284C7] shrink-0" />
+                  <div className="text-right">
+                    <div className="leading-tight">مدير عام</div>
+                    <div className="text-[9px] text-slate-400 font-normal">صلاحيات كاملة</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    login('teacher', '123456');
+                    setShowAvatarModal(false);
+                  }}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                    currentRole === 'teacher'
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div className="text-right">
+                    <div className="leading-tight">معلم المادة</div>
+                    <div className="text-[9px] text-slate-400 font-normal">الصفوف والدروس</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    login('student', '123456');
+                    setShowAvatarModal(false);
+                  }}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                    currentRole === 'student'
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-800 ring-2 ring-indigo-500'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <GraduationCap className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <div className="text-right">
+                    <div className="leading-tight">طالب</div>
+                    <div className="text-[9px] text-slate-400 font-normal">النتائج والأجندة</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    login('parent', '123456');
+                    setShowAvatarModal(false);
+                  }}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                    currentRole === 'parent'
+                      ? 'border-amber-600 bg-amber-50 text-amber-800 ring-2 ring-amber-500'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <Users className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div className="text-right">
+                    <div className="leading-tight">ولي أمر</div>
+                    <div className="text-[9px] text-slate-400 font-normal">متابعة الأبناء</div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">

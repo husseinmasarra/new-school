@@ -122,10 +122,78 @@ export const LoginView = () => {
 
           </form>
 
+          {/* Direct Role Login / Testing Panel */}
+          <div className="pt-4 border-t border-slate-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-slate-700">
+                {lang === 'ar' ? 'تسجيل دخول تجريبي مباشر حسب الدور:' : 'Direct Login by Role:'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">تجربة الصلاحيات</span>
+            </div>
 
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('admin', '123123123')}
+                className="flex items-center gap-2 p-2.5 rounded-2xl border border-sky-200 bg-sky-50/80 hover:bg-sky-100 text-[#0284C7] text-xs font-bold transition-all cursor-pointer shadow-xs text-right rtl:text-right"
+              >
+                <div className="p-1.5 bg-white text-[#0284C7] rounded-xl border border-sky-100 shadow-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="leading-tight font-extrabold">مدير عام</div>
+                  <div className="text-[9px] text-slate-500 font-mono">admin</div>
+                </div>
+              </button>
 
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('teacher', '123456')}
+                className="flex items-center gap-2 p-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all cursor-pointer shadow-xs text-right rtl:text-right"
+              >
+                <div className="p-1.5 bg-white text-emerald-600 rounded-xl border border-emerald-100 shadow-xs">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="leading-tight font-extrabold">مدرس / معلم</div>
+                  <div className="text-[9px] text-slate-500 font-mono">teacher</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('student', '123456')}
+                className="flex items-center gap-2 p-2.5 rounded-2xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-800 text-xs font-bold transition-all cursor-pointer shadow-xs text-right rtl:text-right"
+              >
+                <div className="p-1.5 bg-white text-indigo-600 rounded-xl border border-indigo-100 shadow-xs">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="leading-tight font-extrabold">تلميذ / طالب</div>
+                  <div className="text-[9px] text-slate-500 font-mono">student</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('parent', '123456')}
+                className="flex items-center gap-2 p-2.5 rounded-2xl border border-amber-200 bg-amber-50/80 hover:bg-amber-100 text-amber-900 text-xs font-bold transition-all cursor-pointer shadow-xs text-right rtl:text-right"
+              >
+                <div className="p-1.5 bg-white text-amber-600 rounded-xl border border-amber-100 shadow-xs">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="leading-tight font-extrabold">ولي أمر</div>
+                  <div className="text-[9px] text-slate-500 font-mono">parent</div>
+                </div>
+              </button>
+            </div>
+
+            <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+              يمكن لأي طالب أو مدرس مسجل بالمنظومة كتابة اسم المستخدم وكلمة المرور المسجلة له في الحقول أعلاه لتسجيل الدخول الفوري.
+            </p>
+          </div>
         </div>
-
       </div>
 
       {/* Footer */}
