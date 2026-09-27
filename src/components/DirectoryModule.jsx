@@ -190,7 +190,6 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   };
 
   const addSiblingRow = () => {
-    const familySurname = stuLastName.trim() || (stuParentName ? stuParentName.trim().split(/\s+/).slice(-1)[0] : '');
     setSiblingsList(prev => [
       ...prev,
       {
@@ -203,7 +202,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         tuitionTotal: (safeGrades[0]?.tuitionFee || 700).toString(),
         tuitionDiscount: '0',
         adminFees: '0',
-        username: familySurname ? ` ${familySurname}` : '',
+        username: '',
         password: Math.floor(100000 + Math.random() * 900000).toString(),
         ministryClearance: ''
       }
@@ -219,11 +218,13 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
     updated[index][field] = val;
     if (field === 'name') {
       const familySurname = stuLastName.trim() || (stuParentName ? stuParentName.trim().split(/\s+/).slice(-1)[0] : '');
-      const firstOnly = val.trim().split(/\s+/)[0] || val.trim();
-      if (firstOnly && familySurname) {
-        updated[index].username = `${firstOnly} ${familySurname}`;
-      } else if (val.trim()) {
-        updated[index].username = val.trim();
+      const parts = val.trim().split(/\s+/).filter(Boolean);
+      if (parts.length > 0) {
+        const firstOnly = parts[0];
+        const surname = familySurname || (parts.length > 1 ? parts[parts.length - 1] : '');
+        updated[index].username = surname ? `${firstOnly} ${surname}`.trim() : firstOnly;
+      } else {
+        updated[index].username = '';
       }
     }
     if (field === 'grade') {
@@ -262,9 +263,6 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const [selectedStudentToLink, setSelectedStudentToLink] = useState('');
 
   const handleAddSiblingInEdit = () => {
-    const familySurname = (showEditStudentModal?.familyName || '').trim() ||
-                          (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] ||
-                          (editStuName || '').trim().split(/\s+/).slice(-1)[0] || '';
     const defaultGrade = safeGrades[0]?.name || 'الصف الأول الابتدائي';
     const defaultGradeEn = safeGrades[0]?.nameEn || 'Grade 1';
     const defaultTuition = editStuIsSpecialCase ? '0' : (safeGrades[0]?.tuitionFee || 700).toString();
@@ -283,7 +281,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         adminFees: '0',
         hasTransport: false,
         transportFee: '0',
-        username: familySurname ? ` ${familySurname}` : '',
+        username: '',
         password: Math.floor(100000 + Math.random() * 900000).toString(),
         ministryClearance: ''
       }
@@ -302,11 +300,13 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         const familySurname = (showEditStudentModal?.familyName || '').trim() ||
                               (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] ||
                               (editStuName || '').trim().split(/\s+/).slice(-1)[0] || '';
-        const firstOnly = val.trim().split(/\s+/)[0] || val.trim();
-        if (firstOnly && familySurname) {
-          updated[index].username = `${firstOnly} ${familySurname}`;
-        } else if (val.trim()) {
-          updated[index].username = val.trim();
+        const parts = val.trim().split(/\s+/).filter(Boolean);
+        if (parts.length > 0) {
+          const firstOnly = parts[0];
+          const surname = familySurname || (parts.length > 1 ? parts[parts.length - 1] : '');
+          updated[index].username = surname ? `${firstOnly} ${surname}`.trim() : firstOnly;
+        } else {
+          updated[index].username = '';
         }
       }
       if (field === 'grade') {
@@ -611,10 +611,20 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
 
     // 4. Create all newly added siblings
     editSiblingsList.forEach(sib => {
+      const familySurname = (showEditStudentModal?.familyName || '').trim() ||
+                            (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] ||
+                            (editStuName || '').trim().split(/\s+/).slice(-1)[0] || '';
+      let finalUsername = (sib.username || '').trim();
+      if (!finalUsername || finalUsername.startsWith('sib.') || finalUsername.includes('..')) {
+        const parts = (sib.name || '').trim().split(/\s+/).filter(Boolean);
+        const firstName = parts[0] || '';
+        const surname = familySurname || (parts.length > 1 ? parts[parts.length - 1] : '');
+        finalUsername = surname ? `${firstName} ${surname}`.trim() : firstName;
+      }
       addStudent({
         name: sib.name.trim(),
         nameEn: sib.nameEn?.trim() || sib.name.trim(),
-        username: sib.username.trim(),
+        username: finalUsername,
         password: sib.password ||'123456',
         grade: sib.grade,
         gradeEn: sib.gradeEn,
@@ -631,6 +641,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         motherPhone: (editStuMotherPhone ||'').trim(),
         parentName: editStuParentName ||`والد الطالب ${editStuName}`,
         parentNameEn: editStuParentName ||`Parent of ${editStuNameEn || editStuName}`,
+        familyName: familySurname,
         ministryClearance: (sib.ministryClearance ||'').trim(),
         isSpecialCase: editStuIsSpecialCase,
         familyId: targetFamilyId,
@@ -793,10 +804,18 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
 
     // 6. Save all added siblings
     siblingsList.forEach(sib => {
+      const familySurname = stuLastName.trim() || (stuParentName ? stuParentName.trim().split(/\s+/).slice(-1)[0] : '');
+      let finalUsername = (sib.username || '').trim();
+      if (!finalUsername || finalUsername.startsWith('sib.') || finalUsername.includes('..')) {
+        const parts = (sib.name || '').trim().split(/\s+/).filter(Boolean);
+        const firstName = parts[0] || '';
+        const surname = familySurname || (parts.length > 1 ? parts[parts.length - 1] : '');
+        finalUsername = surname ? `${firstName} ${surname}`.trim() : firstName;
+      }
       addStudent({
         name: sib.name,
         nameEn: sib.nameEn || sib.name,
-        username: sib.username,
+        username: finalUsername,
         password: sib.password,
         grade: sib.grade,
         gradeEn: sib.gradeEn,
@@ -2616,7 +2635,8 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
                             required 
                             value={sib.username} 
                             onChange={(e) => updateSiblingField(index,'username', e.target.value)} 
-                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-[#0F172A] dark:text-white font-mono rounded-lg px-2 py-1 text-[11px] focus:outline-none text-right"
+                            placeholder={isAr ? "مثال: بتول مسرة" : "e.g. Batoul Masri"}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-[#0F172A] dark:text-white font-mono rounded-lg px-2 py-1 text-[11px] focus:outline-none text-right font-bold"
                           />
                         </div>
                         <div className="space-y-0.5">
@@ -4014,6 +4034,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
                             required
                             value={sib.username}
                             onChange={(e) => handleUpdateSiblingInEdit(index,'username', e.target.value)}
+                            placeholder={isAr ? "مثال: بتول مسرة" : "e.g. Batoul Masri"}
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[#0F172A] dark:text-white font-mono rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-right font-bold"
                           />
                         </div>
