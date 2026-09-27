@@ -151,50 +151,63 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const [quickEditAdminPass, setQuickEditAdminPass] = useState('');
   const [quickEditAdminError, setQuickEditAdminError] = useState('');
 
-  // Auto-fill handlers for student name, parent name, and username
+  // Auto-fill handlers for student name, parent name, and username (اسم التلميذ مع الكنية)
   const handleFirstNameChange = (val) => {
     setStuFirstName(val);
-    const fullName = [val.trim(), stuFatherName.trim(), stuLastName.trim()].filter(Boolean).join('');
+    const fullName = [val.trim(), stuFatherName.trim(), stuLastName.trim()].filter(Boolean).join(' ');
     setStuName(fullName);
-    const autoUser = [val.trim(), stuLastName.trim()].filter(Boolean).join('');
+    const autoUser = [val.trim(), stuLastName.trim()].filter(Boolean).join(' ');
     setStuUsername(autoUser);
   };
 
   const handleFatherNameChange = (val) => {
     setStuFatherName(val);
-    const fullName = [stuFirstName.trim(), val.trim(), stuLastName.trim()].filter(Boolean).join('');
+    const fullName = [stuFirstName.trim(), val.trim(), stuLastName.trim()].filter(Boolean).join(' ');
     setStuName(fullName);
-    const autoParent = [val.trim(), stuLastName.trim()].filter(Boolean).join('');
+    const autoParent = [val.trim(), stuLastName.trim()].filter(Boolean).join(' ');
     setStuParentName(autoParent);
   };
 
   const handleLastNameChange = (val) => {
     setStuLastName(val);
-    const fullName = [stuFirstName.trim(), stuFatherName.trim(), val.trim()].filter(Boolean).join('');
+    const fullName = [stuFirstName.trim(), stuFatherName.trim(), val.trim()].filter(Boolean).join(' ');
     setStuName(fullName);
-    const autoUser = [stuFirstName.trim(), val.trim()].filter(Boolean).join('');
+    const autoUser = [stuFirstName.trim(), val.trim()].filter(Boolean).join(' ');
     setStuUsername(autoUser);
-    const autoParent = [stuFatherName.trim(), val.trim()].filter(Boolean).join('');
+    const autoParent = [stuFatherName.trim(), val.trim()].filter(Boolean).join(' ');
     setStuParentName(autoParent);
+
+    // Auto-update username for any added siblings: sibling name + surname
+    if (val.trim()) {
+      setSiblingsList(prev => prev.map(sib => {
+        const sibFirst = sib.name ? sib.name.trim().split(/\s+/)[0] : '';
+        return {
+          ...sib,
+          username: sibFirst ? `${sibFirst} ${val.trim()}` : sib.username
+        };
+      }));
+    }
   };
 
   const addSiblingRow = () => {
-    const nextRand = Math.floor(100 + Math.random() * 900);
-    const suggestedUsername = stuLastName ?`sib.${stuLastName.toLowerCase().replace(/\s+/g,'')}.${nextRand}`:`student.${Date.now().toString().slice(-4)}`;
-    setSiblingsList([...siblingsList, {
-      id: Math.random().toString(),
-      name:'',
-      nameEn:'',
-      grade: safeGrades[0]?.name ||'الصف الأول الابتدائي',
-      gradeEn: safeGrades[0]?.nameEn ||'Grade 1',
-      classRoom:'أ',
-      tuitionTotal: (safeGrades[0]?.tuitionFee || 700).toString(),
-      tuitionDiscount:'0',
-      adminFees:'0',
-      username: suggestedUsername,
-      password: Math.floor(100000 + Math.random() * 900000).toString(),
-      ministryClearance:''
-    }]);
+    const familySurname = stuLastName.trim() || (stuParentName ? stuParentName.trim().split(/\s+/).slice(-1)[0] : '');
+    setSiblingsList(prev => [
+      ...prev,
+      {
+        id: Math.random().toString(),
+        name: '',
+        nameEn: '',
+        grade: safeGrades[0]?.name || 'الصف الأول الابتدائي',
+        gradeEn: safeGrades[0]?.nameEn || 'Grade 1',
+        classRoom: 'أ',
+        tuitionTotal: (safeGrades[0]?.tuitionFee || 700).toString(),
+        tuitionDiscount: '0',
+        adminFees: '0',
+        username: familySurname ? ` ${familySurname}` : '',
+        password: Math.floor(100000 + Math.random() * 900000).toString(),
+        ministryClearance: ''
+      }
+    ]);
   };
 
   const removeSiblingRow = (id) => {
@@ -204,7 +217,16 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const updateSiblingField = (index, field, val) => {
     const updated = [...siblingsList];
     updated[index][field] = val;
-    if (field ==='grade') {
+    if (field === 'name') {
+      const familySurname = stuLastName.trim() || (stuParentName ? stuParentName.trim().split(/\s+/).slice(-1)[0] : '');
+      const firstOnly = val.trim().split(/\s+/)[0] || val.trim();
+      if (firstOnly && familySurname) {
+        updated[index].username = `${firstOnly} ${familySurname}`;
+      } else if (val.trim()) {
+        updated[index].username = val.trim();
+      }
+    }
+    if (field === 'grade') {
       const foundGrd = safeGrades.find(g => g.name === val);
       if (foundGrd) {
         updated[index].gradeEn = foundGrd.nameEn || val;
@@ -240,33 +262,28 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const [selectedStudentToLink, setSelectedStudentToLink] = useState('');
 
   const handleAddSiblingInEdit = () => {
-    const parentLastName = (editStuName ||'').trim().split('').slice(-1)[0] ||'';
-    const nextRand = Math.floor(100 + Math.random() * 900);
-    const suggestedUsername = parentLastName 
-      ?`sib.${parentLastName.toLowerCase().replace(/[^a-z0-9]/g,'')}.${nextRand}`
-      :`student.${Date.now().toString().slice(-4)}`;
-
-    const defaultGrade = safeGrades[0]?.name ||'الصف الأول الابتدائي';
-    const defaultGradeEn = safeGrades[0]?.nameEn ||'Grade 1';
-    const defaultTuition = editStuIsSpecialCase ?'0': (safeGrades[0]?.tuitionFee || 700).toString();
+    const parentLastName = (editStuName || '').trim().split(/\s+/).slice(-1)[0] || (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] || '';
+    const defaultGrade = safeGrades[0]?.name || 'الصف الأول الابتدائي';
+    const defaultGradeEn = safeGrades[0]?.nameEn || 'Grade 1';
+    const defaultTuition = editStuIsSpecialCase ? '0' : (safeGrades[0]?.tuitionFee || 700).toString();
 
     setEditSiblingsList(prev => [
       ...prev,
       {
-        id:`sib-edit-${Date.now()}-${Math.random()}`,
-        name:'',
-        nameEn:'',
+        id: `sib-edit-${Date.now()}-${Math.random()}`,
+        name: '',
+        nameEn: '',
         grade: defaultGrade,
         gradeEn: defaultGradeEn,
-        classRoom:'أ',
+        classRoom: 'أ',
         tuitionTotal: defaultTuition,
-        tuitionDiscount:'0',
-        adminFees:'0',
+        tuitionDiscount: '0',
+        adminFees: '0',
         hasTransport: false,
-        transportFee:'0',
-        username: suggestedUsername,
+        transportFee: '0',
+        username: parentLastName ? ` ${parentLastName}` : '',
         password: Math.floor(100000 + Math.random() * 900000).toString(),
-        ministryClearance:''
+        ministryClearance: ''
       }
     ]);
   };
@@ -279,7 +296,16 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
     setEditSiblingsList(prev => {
       const updated = [...prev];
       updated[index] = {...updated[index], [field]: val};
-      if (field ==='grade') {
+      if (field === 'name') {
+        const parentLastName = (editStuName || '').trim().split(/\s+/).slice(-1)[0] || (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] || '';
+        const firstOnly = val.trim().split(/\s+/)[0] || val.trim();
+        if (firstOnly && parentLastName) {
+          updated[index].username = `${firstOnly} ${parentLastName}`;
+        } else if (val.trim()) {
+          updated[index].username = val.trim();
+        }
+      }
+      if (field === 'grade') {
         const foundGrd = safeGrades.find(g => g.name === val);
         if (foundGrd) {
           updated[index].gradeEn = foundGrd.nameEn || val;
