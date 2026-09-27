@@ -221,8 +221,8 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
       const parts = val.trim().split(/\s+/).filter(Boolean);
       if (parts.length > 0) {
         const firstOnly = parts[0];
-        const surname = familySurname || (parts.length > 1 ? parts[parts.length - 1] : '');
-        updated[index].username = surname ? `${firstOnly} ${surname}`.trim() : firstOnly;
+        const lastWord = parts.length > 1 ? parts[parts.length - 1] : familySurname;
+        updated[index].username = lastWord ? `${firstOnly} ${lastWord}`.trim() : firstOnly;
       } else {
         updated[index].username = '';
       }
@@ -261,6 +261,28 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const [editLinkedExistingIds, setEditLinkedExistingIds] = useState([]);
   const [showLinkExistingSelect, setShowLinkExistingSelect] = useState(false);
   const [selectedStudentToLink, setSelectedStudentToLink] = useState('');
+
+  const handleEditStuNameChange = (val) => {
+    setEditStuName(val);
+    const parts = val.trim().split(/\s+/).filter(Boolean);
+    const parentSurname = (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] || '';
+    if (parts.length >= 2) {
+      setEditStuUsername(`${parts[0]} ${parts[parts.length - 1]}`);
+    } else if (parts.length === 1 && parentSurname) {
+      setEditStuUsername(`${parts[0]} ${parentSurname}`);
+    }
+  };
+
+  const handleEditStuParentNameChange = (val) => {
+    setEditStuParentName(val);
+    const surname = val.trim().split(/\s+/).slice(-1)[0] || '';
+    if (surname && editStuName) {
+      const parts = editStuName.trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 1) {
+        setEditStuUsername(`${parts[0]} ${surname}`);
+      }
+    }
+  };
 
   const handleAddSiblingInEdit = () => {
     const defaultGrade = safeGrades[0]?.name || 'الصف الأول الابتدائي';
@@ -303,8 +325,8 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         const parts = val.trim().split(/\s+/).filter(Boolean);
         if (parts.length > 0) {
           const firstOnly = parts[0];
-          const surname = familySurname || (parts.length > 1 ? parts[parts.length - 1] : '');
-          updated[index].username = surname ? `${firstOnly} ${surname}`.trim() : firstOnly;
+          const lastWord = parts.length > 1 ? parts[parts.length - 1] : familySurname;
+          updated[index].username = lastWord ? `${firstOnly} ${lastWord}`.trim() : firstOnly;
         } else {
           updated[index].username = '';
         }
@@ -2629,7 +2651,26 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100 dark:border-slate-800 text-right">
                         <div className="space-y-0.5">
-                          <span className="text-[9px] text-slate-500 block">{t('username')}</span>
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const familySurname = stuLastName.trim() || (stuParentName ? stuParentName.trim().split(/\s+/).slice(-1)[0] : '');
+                                const parts = (sib.name || '').trim().split(/\s+/).filter(Boolean);
+                                if (parts.length > 0) {
+                                  const firstOnly = parts[0];
+                                  const lastWord = parts.length > 1 ? parts[parts.length - 1] : familySurname;
+                                  const auto = lastWord ? `${firstOnly} ${lastWord}`.trim() : firstOnly;
+                                  updateSiblingField(index, 'username', auto);
+                                }
+                              }}
+                              className="text-[9px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1 cursor-pointer hover:underline"
+                            >
+                              <RefreshCw className="w-2.5 h-2.5"/>
+                              <span>{isAr ? 'توليد تلقائي' : 'Auto'}</span>
+                            </button>
+                            <span className="text-[9px] text-slate-500 block">{t('username')}</span>
+                          </div>
                           <input 
                             type="text"
                             required 
@@ -3574,7 +3615,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isAr ?'اسم الطالب الكامل':'Student Name'} <span className="text-red-500">*</span></label>
-                <input type="text"required value={editStuName} onChange={(e) => setEditStuName(e.target.value)} className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-right"/>
+                <input type="text"required value={editStuName} onChange={(e) => handleEditStuNameChange(e.target.value)} className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-right font-bold"/>
               </div>
 
               <div className="space-y-1">
@@ -3587,7 +3628,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-right">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isAr ?'اسم ولي الأمر':'Parent Name'}</label>
-                <input type="text"value={editStuParentName} onChange={(e) => setEditStuParentName(e.target.value)} className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-right"/>
+                <input type="text"value={editStuParentName} onChange={(e) => handleEditStuParentNameChange(e.target.value)} className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-right"/>
               </div>
 
               <div className="space-y-1">
@@ -3618,8 +3659,26 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('username')} <span className="text-red-500">*</span></label>
-                <input type="text"required value={editStuUsername} onChange={(e) => setEditStuUsername(e.target.value)} className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-amber-500 text-right"/>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const parts = (editStuName || '').trim().split(/\s+/).filter(Boolean);
+                      const surname = (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] || '';
+                      if (parts.length >= 2) {
+                        setEditStuUsername(`${parts[0]} ${parts[parts.length - 1]}`);
+                      } else if (parts.length === 1) {
+                        setEditStuUsername(surname ? `${parts[0]} ${surname}` : parts[0]);
+                      }
+                    }}
+                    className="text-[10px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1 cursor-pointer hover:underline"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5"/>
+                    <span>{isAr ? 'توليد اسم المستخدم' : 'Auto Username'}</span>
+                  </button>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('username')} <span className="text-red-500">*</span></label>
+                </div>
+                <input type="text"required value={editStuUsername} onChange={(e) => setEditStuUsername(e.target.value)} className="w-full bg-[#F8FAFC] dark:bg-slate-900 border border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white font-mono font-bold rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-right"/>
               </div>
 
               <div className="space-y-1">
@@ -4028,7 +4087,28 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
                       {/* Username & Password */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{t('username')} <span className="text-red-500">*</span></label>
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const familySurname = (showEditStudentModal?.familyName || '').trim() ||
+                                                      (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] ||
+                                                      (editStuName || '').trim().split(/\s+/).slice(-1)[0] || '';
+                                const parts = (sib.name || '').trim().split(/\s+/).filter(Boolean);
+                                if (parts.length > 0) {
+                                  const firstOnly = parts[0];
+                                  const lastWord = parts.length > 1 ? parts[parts.length - 1] : familySurname;
+                                  const auto = lastWord ? `${firstOnly} ${lastWord}`.trim() : firstOnly;
+                                  handleUpdateSiblingInEdit(index, 'username', auto);
+                                }
+                              }}
+                              className="text-[10px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1 cursor-pointer hover:underline"
+                            >
+                              <RefreshCw className="w-2.5 h-2.5"/>
+                              <span>{isAr ? 'توليد اسم المستخدم' : 'Auto Username'}</span>
+                            </button>
+                            <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{t('username')} <span className="text-red-500">*</span></label>
+                          </div>
                           <input
                             type="text"
                             required
