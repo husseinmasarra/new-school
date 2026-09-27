@@ -262,7 +262,9 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const [selectedStudentToLink, setSelectedStudentToLink] = useState('');
 
   const handleAddSiblingInEdit = () => {
-    const parentLastName = (editStuName || '').trim().split(/\s+/).slice(-1)[0] || (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] || '';
+    const familySurname = (showEditStudentModal?.familyName || '').trim() ||
+                          (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] ||
+                          (editStuName || '').trim().split(/\s+/).slice(-1)[0] || '';
     const defaultGrade = safeGrades[0]?.name || 'الصف الأول الابتدائي';
     const defaultGradeEn = safeGrades[0]?.nameEn || 'Grade 1';
     const defaultTuition = editStuIsSpecialCase ? '0' : (safeGrades[0]?.tuitionFee || 700).toString();
@@ -281,7 +283,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         adminFees: '0',
         hasTransport: false,
         transportFee: '0',
-        username: parentLastName ? ` ${parentLastName}` : '',
+        username: familySurname ? ` ${familySurname}` : '',
         password: Math.floor(100000 + Math.random() * 900000).toString(),
         ministryClearance: ''
       }
@@ -297,10 +299,12 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
       const updated = [...prev];
       updated[index] = {...updated[index], [field]: val};
       if (field === 'name') {
-        const parentLastName = (editStuName || '').trim().split(/\s+/).slice(-1)[0] || (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] || '';
+        const familySurname = (showEditStudentModal?.familyName || '').trim() ||
+                              (editStuParentName || '').trim().split(/\s+/).slice(-1)[0] ||
+                              (editStuName || '').trim().split(/\s+/).slice(-1)[0] || '';
         const firstOnly = val.trim().split(/\s+/)[0] || val.trim();
-        if (firstOnly && parentLastName) {
-          updated[index].username = `${firstOnly} ${parentLastName}`;
+        if (firstOnly && familySurname) {
+          updated[index].username = `${firstOnly} ${familySurname}`;
         } else if (val.trim()) {
           updated[index].username = val.trim();
         }
@@ -479,31 +483,6 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
 
   const handleEditStudentSubmit = (e) => {
     e.preventDefault();
-    // Verify Parent Phone Number uniqueness on edit (excluding current student, siblings in same family, and linked siblings)
-    if (editStuParentPhone && editStuParentPhone.trim()) {
-      const normPhone = (ph) => (ph ||'').replace(/[^0-9]/g,'');
-      const cleanEditPhone = normPhone(editStuParentPhone);
-      if (cleanEditPhone.length >= 6) {
-        const duplicatePhone = (students || []).find((s) => {
-          if (s.id === showEditStudentModal.id) return false;
-          if (showEditStudentModal.familyId && s.familyId === showEditStudentModal.familyId) return false;
-          if (editLinkedExistingIds.includes(s.id)) return false;
-          const sPhone = normPhone(s.parentPhone || s.phone);
-          if (!sPhone || sPhone.length < 6) return false;
-          return sPhone === cleanEditPhone ||
-            (sPhone.length >= 7 && cleanEditPhone.length >= 7 &&
-             (sPhone.endsWith(cleanEditPhone.slice(-7)) || cleanEditPhone.endsWith(sPhone.slice(-7))));
-        });
-
-        if (duplicatePhone) {
-          alert(isAr 
-            ?`هذا الحساب موجود بالفعل!\n\nرقم هاتف ولي الأمر (${editStuParentPhone}) مسجل مسبقاً لطالب آخر:"${duplicatePhone.name}". لا يمكن استخدام نفس الهاتف.`
-            :`This account already exists!\n\nThis parent phone is already registered to student:"${duplicatePhone.name}".`
-          );
-          return;
-        }
-      }
-    }
 
     // Verify Ministry Clearance uniqueness (excluding current student)
     if (editStuMinistryClearance.trim()) {
