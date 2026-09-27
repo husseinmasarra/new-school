@@ -115,58 +115,101 @@ export const TuitionModule = () => {
     localStorage.setItem('school_payment_history', JSON.stringify(updated));
   };
 
-  // Helper to extract a normalized family key (linking siblings under one family)
-  const getStudentFamilyKey = (student) => {
-    // 1. If student has explicit familyId, group strictly by that familyId
-    if (student.familyId && String(student.familyId).trim()) {
-      return`fam_${String(student.familyId).trim()}`;
-    }
-
-    // 2. Fallback: match by parentPhone if available (clean non-empty numbers >= 8 digits)
-    const phone = String(student.parentPhone || student.phone ||'')
-      .replace(/[^0-9]/g,'');
-    const parentName = String(student.parentName || student.guardianName ||'')
-      .trim().toLowerCase();
-
-    const isGenericParent = !parentName || parentName.length < 3 || ['ولي امر','ولي أمر','غير محدد','اب','أم','أب'].includes(parentName);
-
-    if (phone.length >= 8) {
-      if (!isGenericParent) {
-        return`family_${parentName}_${phone}`;
-      }
-      return`phone_${phone}`;
-    }
-
-    // 3. Independent individual student
-    return`stu_${student.id}`;
-  };
-
-  // Group all students into unified Family Units
+  // Group all students into unified Family Units (Unifying brothers/siblings under exactly ONE family by parent/phone/familyId)
   const allFamilies = useMemo(() => {
-    const map = new Map();
+    if (!safeStudents || safeStudents.length === 0) return [];
 
-    safeStudents.forEach(stu => {
-      const key = getStudentFamilyKey(stu);
-      if (!map.has(key)) {
-        map.set(key, {
-          key: key,
-          familyName: stu.parentName || (isAr ?`عائلة ${stu.name}`:`${stu.name}'s Family`),
-          parentName: stu.parentName || stu.guardianName || (isAr ?'ولي الأمر':'Parent'),
-          parentPhone: stu.parentPhone || stu.phone ||'',
-          members: [],
-          isSpecialCase: true, // will be flipped to false if any member is non-special
-          hasFrozen: false
-        });
+    const cleanDigits = (ph) => {
+      if (!ph) return '';
+      const digits = String(ph).replace(/[^0-9]/g, '');
+      if (digits.length < 6 || digits === '123456' || digits === '0000000') return '';
+      return digits.length >= 7 ? digits.slice(-7) : digits;
+    };
+
+    const cleanPName = (name) => {
+      if (!name) return '';
+      const n = String(name).trim().toLowerCase();
+      const generic = ['ولي امر', 'ولي أمر', 'غير محدد', 'اب', 'أم', 'أب', 'parent', 'guardian', ''];
+      if (generic.includes(n) || n.startsWith('والد الطالب') || n.startsWith('parent of') || n.length < 3) return '';
+      return n;
+    };
+
+    // Union-Find data structure
+    const parent = {};
+    const find = (i) => {
+      if (parent[i] === undefined) parent[i] = i;
+      if (parent[i] === i) return i;
+      parent[i] = find(parent[i]);
+      return parent[i];
+    };
+    const union = (i, j) => {
+      const rootI = find(i);
+      const rootJ = find(j);
+      if (rootI !== rootJ) {
+        parent[rootI] = rootJ;
       }
+    };
 
-      const fam = map.get(key);
-      fam.members.push(stu);
-      if (!stu.isSpecialCase) fam.isSpecialCase = false;
-      if (stu.frozen) fam.hasFrozen = true;
+    const familyIdMap = new Map();
+    const phoneMap = new Map();
+    const parentNameMap = new Map();
+
+    safeStudents.forEach((stu, idx) => {
+      const fId = stu.familyId ? String(stu.familyId).trim() : '';
+      const phone = cleanDigits(stu.parentPhone || stu.phone);
+      const pName = cleanPName(stu.parentName || stu.guardianName);
+
+      if (fId) {
+        if (familyIdMap.has(fId)) union(idx, familyIdMap.get(fId));
+        else familyIdMap.set(fId, idx);
+      }
+      if (phone) {
+        if (phoneMap.has(phone)) union(idx, phoneMap.get(phone));
+        else phoneMap.set(phone, idx);
+      }
+      if (pName) {
+        if (parentNameMap.has(pName)) union(idx, parentNameMap.get(pName));
+        else parentNameMap.set(pName, idx);
+      }
     });
 
-    return Array.from(map.values());
+    const groups = new Map();
+    safeStudents.forEach((stu, idx) => {
+      const root = find(idx);
+      if (!groups.has(root)) groups.set(root, []);
+      groups.get(root).push(stu);
+    });
+
+    return Array.from(groups.values()).map((members, gIdx) => {
+      const firstWithPName = members.find(m => cleanPName(m.parentName || m.guardianName)) || members[0];
+      const firstWithPhone = members.find(m => cleanDigits(m.parentPhone || m.phone)) || members[0];
+      const firstWithFName = members.find(m => m.familyName && m.familyName.trim());
+
+      const parentName = firstWithPName.parentName || firstWithPName.guardianName || (isAr ? `ولي أمر الطالب ${members[0].name}` : `Guardian of ${members[0].name}`);
+      const parentPhone = (firstWithPhone.parentPhone || firstWithPhone.phone || '').trim();
+      const familyName = firstWithFName?.familyName || (firstWithPName.parentName ? `عائلة ${firstWithPName.parentName}` : `عائلة الطالب ${members[0].name}`);
+      const fKey = members[0].familyId ? `fam_${members[0].familyId}` : (parentPhone ? `ph_${cleanDigits(parentPhone)}` : `grp_${gIdx}_${members[0].id}`);
+
+      const isSpecialCase = members.every(s => s.isSpecialCase);
+      const hasFrozen = members.some(s => s.frozen);
+
+      return {
+        key: fKey,
+        familyName,
+        parentName,
+        parentPhone,
+        motherPhone: members.find(m => m.motherPhone)?.motherPhone || '',
+        members,
+        isSpecialCase,
+        hasFrozen
+      };
+    });
   }, [safeStudents, isAr]);
+
+  const getStudentFamilyKey = (student) => {
+    const found = allFamilies.find(f => f.members.some(m => m.id === student.id));
+    return found ? found.key : `stu_${student.id}`;
+  };
 
   // Filtered Families based on search term
   const filteredFamilies = useMemo(() => {

@@ -22,7 +22,9 @@ import {
   Bookmark,
   Link2,
   Plus,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { SubjectBadge } from './SubjectBadge';
 import { UsersModule } from './UsersModule';
@@ -59,6 +61,15 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState(() => localStorage.getItem('school_students_grade_filter') ||'all');
   const [studentsViewMode, setStudentsViewMode] = useState(() => localStorage.getItem('school_students_view_mode') ||'table'); //'table'(default) or'cards'
+  const [expandedFamilyKeys, setExpandedFamilyKeys] = useState(new Set());
+
+  const toggleFamilyExpand = (key) => {
+    setExpandedFamilyKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) { next.delete(key); } else { next.add(key); }
+      return next;
+    });
+  };
 
   useEffect(() => {
     localStorage.setItem('school_students_grade_filter', selectedGradeFilter);
@@ -923,48 +934,96 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
            teacherSubjectsStr.includes(searchTerm.toLowerCase());
   });
 
-  // Helper to extract a normalized family key (linking siblings under one family)
-  const getStudentFamilyKey = (student) => {
-    // 1. If student has explicit familyId, group strictly by that familyId
-    if (student.familyId && String(student.familyId).trim()) {
-      return`fam_${String(student.familyId).trim()}`;
-    }
-
-    // 2. Never merge students into old cards by generic/dummy phone or generic parent name!
-    const rawPhone = (student.parentPhone || student.phone ||'').replace(/[^0-9]/g,'');
-    const isGenericPhone = !rawPhone || rawPhone ==='96103123456'|| rawPhone ==='123456'|| rawPhone.length < 8;
-    
-    const pName = (student.parentName ||'').trim().toLowerCase();
-    const isGenericParent = !pName || pName.startsWith('والد الطالب') || pName.startsWith('parent of');
-
-    // Only group if BOTH a specific custom phone AND an identical parent name exist AND familyName matches
-    if (!isGenericPhone && !isGenericParent && student.familyName) {
-      return`family_${student.familyName.trim().toLowerCase()}_${rawPhone}`;
-    }
-
-    // 3. Otherwise, each student has their own distinct separate card!
-    return`stu_${student.id}`;
-  };
-
-  // Group unique families across all students (exactly ONE entry per family)
+  // Group unique families across all students (Unifying brothers/siblings under exactly ONE card by parent)
   const allUniqueFamilies = useMemo(() => {
-    const map = {};
-    (safeStudents || []).forEach(stu => {
-      const fKey = getStudentFamilyKey(stu);
-      if (!map[fKey]) {
-        map[fKey] = {
-          key: fKey,
-          familyName: stu.familyName || (stu.parentName ?`عائلة ${stu.parentName.split('').slice(-1)[0] || stu.parentName}`:`عائلة الطالب ${stu.name}`),
-          parentName: stu.parentName ||`والد الطالب ${stu.name}`,
-          parentPhone: (stu.parentPhone || stu.phone ||'').trim(),
-          motherPhone: stu.motherPhone ||'',
-          members: []
-        };
+    if (!safeStudents || safeStudents.length === 0) return [];
+
+    const cleanDigits = (ph) => {
+      if (!ph) return '';
+      const digits = String(ph).replace(/[^0-9]/g, '');
+      if (digits.length < 6 || digits === '123456' || digits === '0000000') return '';
+      return digits.length >= 7 ? digits.slice(-7) : digits;
+    };
+
+    const cleanPName = (name) => {
+      if (!name) return '';
+      const n = String(name).trim().toLowerCase();
+      const generic = ['ولي امر', 'ولي أمر', 'غير محدد', 'اب', 'أم', 'أب', 'parent', 'guardian', ''];
+      if (generic.includes(n) || n.startsWith('والد الطالب') || n.startsWith('parent of') || n.length < 3) return '';
+      return n;
+    };
+
+    // Union-Find data structure to group related students
+    const parent = {};
+    const find = (i) => {
+      if (parent[i] === undefined) parent[i] = i;
+      if (parent[i] === i) return i;
+      parent[i] = find(parent[i]);
+      return parent[i];
+    };
+    const union = (i, j) => {
+      const rootI = find(i);
+      const rootJ = find(j);
+      if (rootI !== rootJ) {
+        parent[rootI] = rootJ;
       }
-      map[fKey].members.push(stu);
+    };
+
+    const familyIdMap = new Map();
+    const phoneMap = new Map();
+    const parentNameMap = new Map();
+
+    safeStudents.forEach((stu, idx) => {
+      const fId = stu.familyId ? String(stu.familyId).trim() : '';
+      const phone = cleanDigits(stu.parentPhone || stu.phone);
+      const pName = cleanPName(stu.parentName || stu.guardianName);
+
+      if (fId) {
+        if (familyIdMap.has(fId)) union(idx, familyIdMap.get(fId));
+        else familyIdMap.set(fId, idx);
+      }
+      if (phone) {
+        if (phoneMap.has(phone)) union(idx, phoneMap.get(phone));
+        else phoneMap.set(phone, idx);
+      }
+      if (pName) {
+        if (parentNameMap.has(pName)) union(idx, parentNameMap.get(pName));
+        else parentNameMap.set(pName, idx);
+      }
     });
-    return Object.values(map);
-  }, [safeStudents]);
+
+    const groups = new Map();
+    safeStudents.forEach((stu, idx) => {
+      const root = find(idx);
+      if (!groups.has(root)) groups.set(root, []);
+      groups.get(root).push(stu);
+    });
+
+    return Array.from(groups.values()).map((members, gIdx) => {
+      const firstWithPName = members.find(m => cleanPName(m.parentName || m.guardianName)) || members[0];
+      const firstWithPhone = members.find(m => cleanDigits(m.parentPhone || m.phone)) || members[0];
+      const firstWithFName = members.find(m => m.familyName && m.familyName.trim());
+
+      const parentName = firstWithPName.parentName || firstWithPName.guardianName || (isAr ? `ولي أمر الطالب ${members[0].name}` : `Guardian of ${members[0].name}`);
+      const parentPhone = (firstWithPhone.parentPhone || firstWithPhone.phone || '').trim();
+      const familyName = firstWithFName?.familyName || (firstWithPName.parentName ? `عائلة ${firstWithPName.parentName}` : `عائلة الطالب ${members[0].name}`);
+      const fKey = members[0].familyId ? `fam_${members[0].familyId}` : (parentPhone ? `ph_${cleanDigits(parentPhone)}` : `grp_${gIdx}_${members[0].id}`);
+
+      return {
+        key: fKey,
+        familyName,
+        parentName,
+        parentPhone,
+        motherPhone: members.find(m => m.motherPhone)?.motherPhone || '',
+        members
+      };
+    });
+  }, [safeStudents, isAr]);
+
+  const getStudentFamilyKey = (student) => {
+    const found = allUniqueFamilies.find(f => f.members.some(m => m.id === student.id));
+    return found ? found.key : `stu_${student.id}`;
+  };
 
   // Existing siblings already registered in the system for the student currently being edited
   const currentExistingSiblings = useMemo(() => {
@@ -1303,106 +1362,124 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
               </div>
 
               {studentsViewMode ==='table'? (
-                /* كل كرت بسطر: اسم الأب، رقم الهاتف، القسط المتبقي فقط للعائلة (والباقي داخل الكرت) */
-                <div className="space-y-2.5">
+                /* كروت عائلات بأسلوب أكورديون */
+                <div className="space-y-3">
                   {filteredFamilies.map((family, fIdx) => {
                     const isFamilySpecialCase = family.members.every(s => s.isSpecialCase) || (family.members.length === 1 && family.members[0].isSpecialCase);
-                    const combinedTotalUSD = isFamilySpecialCase
-                      ? 0
-                      : family.members.reduce((sum, s) => {
-                          const trans = s.hasTransport ? (Number(s.transportFee) || 0) : 0;
-                          const tTotal = s.isSpecialCase ? 0 : (s.tuitionTotal ?? 700);
-                          return sum + Number(tTotal) + trans;
-                        }, 0);
+                    const combinedTotalUSD = isFamilySpecialCase ? 0 : family.members.reduce((sum, s) => { const trans = s.hasTransport ? (Number(s.transportFee) || 0) : 0; const tTotal = s.isSpecialCase ? 0 : (s.tuitionTotal ?? 700); return sum + Number(tTotal) + trans; }, 0);
                     const combinedDiscountUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionDiscount) || 0), 0);
                     const combinedPaidUSD = family.members.reduce((sum, s) => sum + (Number(s.tuitionPaid) || 0), 0);
                     const combinedRemUSD = Math.max(0, combinedTotalUSD - combinedDiscountUSD - combinedPaidUSD);
                     const cleanPhone = (family.parentPhone ||'').replace(/[^0-9]/g,'');
+                    const isExpanded = expandedFamilyKeys.has(family.key);
 
                     return (
-                      <div
-                        key={family.key}
-                        onClick={() => {
-                          if (family.members.length === 1) {
-                            setShowStudentDetailModal(family.members[0]);
-                          } else {
-                            setShowFamilyDetailModal(family);
-                          }
-                        }}
-                        className="w-full bg-white hover:bg-sky-50/70 border border-slate-200 hover:border-[#0284C7] rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 transition-all cursor-pointer shadow-2xs hover:shadow-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4 group"
-                        title={isAr ?'اضغط لعرض كافة التفاصيل الكاملة':'Click to view full details'}
-                      >
-                        {/* 1. اسم الأب (ولي الأمر) */}
-                        <div className="flex items-center gap-3 min-w-[200px] flex-1">
-                          <span className="font-mono text-slate-400 font-bold text-xs w-6 text-center shrink-0">
-                            {fIdx + 1}
-                          </span>
-                          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-base shrink-0 border group-hover:scale-105 transition-transform ${
-                            family.members.length > 1 ?'bg-amber-100 text-amber-800 border-amber-300':'bg-sky-100 text-[#0284C7] border-sky-200/80'
-                          }`}>
-                            {family.members.length > 1 ?'':''}
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-[10px] text-slate-400 font-bold block">
-                              {isAr ?'اسم الأب / ولي الأمر':'Father / Guardian'}
-                            </span>
-                            <div className="flex items-center gap-2 truncate">
-                              <h4 className="font-extrabold text-[#0F172A] text-sm group-hover:text-[#0284C7] transition-colors truncate">
-                                {family.parentName || (isAr ?'غير مسجل':'Not Registered')}
-                              </h4>
-                              {family.members.length > 1 && (
-                                <span className="text-[9px] bg-amber-50 text-amber-900 border border-amber-300 font-black px-1.5 py-0.5 rounded-md shrink-0">
-                                  {family.members.length} {isAr ?'أبناء':'children'}
+                      <div key={family.key} className={`bg-white border-2 rounded-3xl shadow-xs transition-all overflow-hidden ${isExpanded ? 'border-[#0284C7] shadow-md ring-1 ring-[#0284C7]/20' : family.members.length > 1 ? 'border-amber-300 hover:border-amber-400 hover:shadow-md' : 'border-slate-200 hover:border-[#0284C7] hover:shadow-md'}`}>
+                        {/* ─── رأس الكرت ─── */}
+                        <div onClick={() => toggleFamilyExpand(family.key)} className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5 cursor-pointer group select-none">
+                          <div className="flex items-center gap-3 min-w-[180px] flex-1">
+                            <span className="font-mono text-slate-400 font-bold text-xs w-6 text-center shrink-0">{fIdx + 1}</span>
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg shrink-0 border transition-transform group-hover:scale-105 ${family.members.length > 1 ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-sky-100 text-[#0284C7] border-sky-200/80'}`}>
+                              {family.members.length > 1 ? family.members.length : ''}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[10px] text-slate-400 font-bold block">{isAr ? 'اسم ولي الأمر' : 'Parent / Guardian'}</span>
+                              <div className="flex items-center gap-2 truncate">
+                                <h4 className="font-extrabold text-[#0F172A] text-sm group-hover:text-[#0284C7] transition-colors truncate">{family.parentName || (isAr ? 'غير مسجل' : 'Not Registered')}</h4>
+                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${family.members.length > 1 ? 'bg-amber-50 text-amber-900 border border-amber-300' : 'bg-sky-50 text-[#0284C7] border border-sky-200'}`}>
+                                  {family.members.length > 1 ? `${family.members.length} ${isAr ? 'ابناء' : 'children'}` : (isAr ? 'تلميذ واحد' : '1 child')}
                                 </span>
-                              )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        {/* 2. رقم الهاتف مع زر واتساب السريع */}
-                        <div className="flex items-center gap-2 shrink-0"onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-1.5 text-slate-700 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl font-mono font-bold text-xs dir-ltr">
-                            <span></span>
-                            <span>{family.parentPhone || (isAr ?'بدون هاتف':'No Phone')}</span>
+                          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1.5 text-slate-700 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl font-mono font-bold text-xs dir-ltr">
+                              <Phone className="w-3 h-3 text-slate-400" />
+                              <span>{family.parentPhone || (isAr ? 'بدون هاتف' : 'No Phone')}</span>
+                            </div>
+                            {cleanPhone && (
+                              <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors inline-flex items-center justify-center border border-emerald-200 shadow-2xs" title={isAr ? 'مراسلة ولي الأمر عبر واتساب' : 'Chat on WhatsApp'}>
+                                <Send className="w-3.5 h-3.5" />
+                              </a>
+                            )}
                           </div>
-                          {cleanPhone && (
-                            <a
-                              href={`https://wa.me/${cleanPhone}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors inline-flex items-center justify-center border border-emerald-200 shadow-2xs"
-                              title={isAr ?'مراسلة ولي الأمر عبر واتساب':'Chat on WhatsApp'}
-                            >
-                              <span className="text-sm leading-none"></span>
-                            </a>
-                          )}
+                          <div className="shrink-0 text-center sm:text-right">
+                            {isFamilySpecialCase ? (
+                              <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">{isAr ? 'حالة خاصة (معفى)' : 'Exempt'}</span>
+                            ) : combinedRemUSD === 0 ? (
+                              <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">{isAr ? 'مسدد' : 'Paid'}</span>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-50 text-red-700 border border-red-200 font-mono inline-flex items-center gap-1.5 shadow-2xs">
+                                <span className="text-slate-400 font-sans text-[11px] font-normal">{isAr ? 'المتبقي:' : 'Due:'}</span>
+                                <span className="text-sm font-black">${combinedRemUSD}</span>
+                              </span>
+                            )}
+                          </div>
+                          <div className={`flex items-center gap-1.5 text-xs font-bold shrink-0 px-3 py-2 rounded-xl border transition-all ${isExpanded ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-md' : 'bg-sky-50 text-[#0284C7] border-sky-200/60 group-hover:bg-sky-100'}`}>
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            <span className="hidden sm:inline">{isExpanded ? (isAr ? 'اخفاء' : 'Hide') : (isAr ? 'عرض الابناء' : 'Show')}</span>
+                          </div>
                         </div>
-
-                        {/* 3. القسط المتبقي للعائلة فقط */}
-                        <div className="shrink-0 text-center sm:text-right">
-                          {isFamilySpecialCase ? (
-                            <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">
-                              <span></span>
-                              <span>{isAr ?'حالة خاصة (معفى)':'Special Case (Exempt)'}</span>
-                            </span>
-                          ) : combinedRemUSD === 0 ? (
-                            <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
-                              <span>✓</span>
-                              <span>{isAr ?'مسدد بالكامل':'Paid in Full'}</span>
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-50 text-red-700 border border-red-200 font-mono inline-flex items-center gap-1.5 shadow-2xs">
-                              <span className="text-slate-400 font-sans text-[11px] font-normal">{isAr ?'المتبقي:':'Due:'}</span>
-                              <span className="text-sm font-black">${combinedRemUSD}</span>
-                            </span>
-                          )}
-                        </div>
-
-                        {/* مؤشر الضغط للتفاصيل */}
-                        <div className="flex items-center gap-1 text-xs text-[#0284C7] font-bold shrink-0 bg-sky-50 group-hover:bg-sky-100 px-2.5 py-1.5 rounded-xl border border-sky-200/60 transition-colors">
-                          <Eye className="w-3.5 h-3.5"/>
-                          <span className="hidden sm:inline">{isAr ?'التفاصيل':'Details'}</span>
-                        </div>
+                        {/* ─── محتوى الأبناء ─── */}
+                        {isExpanded && (
+                          <div className="border-t-2 border-[#0284C7]/20 bg-[#F8FAFC] px-4 py-4 sm:px-5 space-y-3">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                              <span>{isAr ? `ابناء ${family.parentName}:` : `Children of ${family.parentName}:`}</span>
+                              <span className="bg-white text-[#0284C7] px-2.5 py-0.5 rounded-lg border border-sky-200 font-mono font-black text-[10px]">{family.members.length} {isAr ? 'تلاميذ' : 'students'}</span>
+                            </div>
+                            <div className="space-y-2">
+                              {family.members.map((member) => {
+                                const memTuition = member.isSpecialCase ? 0 : (member.tuitionTotal ?? 700);
+                                const memPaid = Number(member.tuitionPaid) || 0;
+                                const memDiscount = Number(member.tuitionDiscount) || 0;
+                                const memRem = Math.max(0, Number(memTuition) - memDiscount - memPaid);
+                                return (
+                                  <div key={member.id} className="bg-white border border-slate-200 hover:border-[#0284C7]/50 rounded-2xl p-3 sm:p-4 transition-all hover:shadow-sm">
+                                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
+                                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-9 h-9 rounded-xl bg-[#0284C7]/10 text-[#0284C7] font-black text-sm flex items-center justify-center shrink-0 border border-[#0284C7]/30">{(member.name || '')[0]}</div>
+                                        <div className="min-w-0">
+                                          <h5 className="text-sm font-extrabold text-[#0F172A] truncate">{isAr ? member.name : member.nameEn}</h5>
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-[10px] text-[#0284C7] font-bold bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">{member.grade || (isAr ? 'غير محدد' : 'N/A')}</span>
+                                            <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-mono">{member.classRoom ? `${isAr ? 'شعبة' : 'Sec'} ${member.classRoom}` : (isAr ? 'شعبة أ' : 'Sec A')}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="shrink-0 text-center">
+                                        {member.isSpecialCase ? (
+                                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">{isAr ? 'حالة خاصة' : 'Exempt'}</span>
+                                        ) : memRem === 0 ? (
+                                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">{isAr ? 'مسدد' : 'Paid'}</span>
+                                        ) : (
+                                          <div className="flex items-center gap-2 text-[10px] font-mono">
+                                            <span className="text-slate-500">{isAr ? 'قسط:' : 'Fee:'} ${memTuition}</span>
+                                            <span className="text-red-600 font-black bg-red-50 px-1.5 py-0.5 rounded border border-red-200">{isAr ? 'متبقي:' : 'Due:'} ${memRem}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <button onClick={(e) => { e.stopPropagation(); setShowStudentDetailModal(member); }} className="p-1.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] rounded-lg cursor-pointer transition-colors" title={isAr ? 'معاينة' : 'View'}>
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
+                                        {currentRole === 'admin' && (
+                                          <>
+                                            <button onClick={(e) => { e.stopPropagation(); handleOpenEditStudentModal(member); }} className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg cursor-pointer transition-colors" title={isAr ? 'تعديل' : 'Edit'}>
+                                              <Edit3 className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button onClick={(e) => { e.stopPropagation(); if (window.confirm(isAr ? `هل أنت متأكد من حذف "${member.name}"?` : `Delete "${member.name}"?`)) { deleteStudent(member.id); setSuccessMsg(isAr ? `تم حذف (${member.name}) بنجاح` : `Deleted (${member.name})`); setTimeout(() => setSuccessMsg(''), 3500); }}} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg cursor-pointer transition-colors" title={isAr ? 'حذف' : 'Delete'}>
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
