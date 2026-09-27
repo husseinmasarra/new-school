@@ -126,9 +126,21 @@ export const TuitionModule = () => {
       return digits.length >= 7 ? digits.slice(-7) : digits;
     };
 
+    const normalizeAr = (text) => {
+      if (!text) return '';
+      return String(text)
+        .trim()
+        .toLowerCase()
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .replace(/[إأآا]/g, 'ا')
+        .replace(/[ة]/g, 'ه')
+        .replace(/[ى]/g, 'ي')
+        .replace(/\s+/g, ' ');
+    };
+
     const cleanPName = (name) => {
       if (!name) return '';
-      const n = String(name).trim().toLowerCase();
+      const n = normalizeAr(name);
       const generic = ['ولي امر', 'ولي أمر', 'غير محدد', 'اب', 'أم', 'أب', 'parent', 'guardian', ''];
       if (generic.includes(n) || n.startsWith('والد الطالب') || n.startsWith('parent of') || n.length < 3) return '';
       return n;

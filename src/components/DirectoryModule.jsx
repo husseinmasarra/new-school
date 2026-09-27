@@ -111,6 +111,33 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
   const [studentToPrint, setStudentToPrint] = useState(null);
   const [addAnotherSibling, setAddAnotherSibling] = useState(false);
   const [siblingsList, setSiblingsList] = useState([]);
+  const [selectedExistingFamilyKey, setSelectedExistingFamilyKey] = useState('');
+
+  const handleSelectExistingFamily = (fKey) => {
+    setSelectedExistingFamilyKey(fKey);
+    if (!fKey) return;
+    const fam = allUniqueFamilies.find(f => f.key === fKey);
+    if (fam) {
+      setStuParentName(fam.parentName || '');
+      setStuParentPhone(fam.parentPhone || '');
+      setStuMotherPhone(fam.motherPhone || '');
+      if (fam.members && fam.members.length > 0) {
+        const m = fam.members[0];
+        if (m.familyName) setStuLastName(m.familyName);
+        else if (fam.parentName) {
+          const pParts = fam.parentName.trim().split(/\s+/);
+          if (pParts.length >= 2) {
+            setStuFatherName(pParts.slice(0, -1).join(' '));
+            setStuLastName(pParts.slice(-1)[0]);
+          }
+        }
+      }
+      if (fam.members.some(m => m.isSpecialCase)) {
+        setStuIsSpecialCase(true);
+        setStuTuitionTotal('0');
+      }
+    }
+  };
 
   // Special Case & Quick Edit Paid States
   const [editStuIsSpecialCase, setEditStuIsSpecialCase] = useState(false);
@@ -620,40 +647,26 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
 
   const handleAddStudentSubmit = (e) => {
     e.preventDefault();
-    const finalStuName = stuName.trim() || [stuFirstName.trim(), stuFatherName.trim(), stuLastName.trim()].filter(Boolean).join('');
+    const finalStuName = stuName.trim() || [stuFirstName.trim(), stuFatherName.trim(), stuLastName.trim()].filter(Boolean).join(' ');
     if (!finalStuName || !stuUsername.trim()) {
-      alert(isAr ?'يرجى ملء اسم التلميذ واسم المستخدم!':'Please enter student name and username!');
+      alert(isAr ? 'يرجى ملء اسم التلميذ واسم المستخدم!' : 'Please enter student name and username!');
       return;
     }
 
-    // 0. Primary Check: Parent Phone Number uniqueness (المفتاح المعتمد لمنع التكرار)
-    const normPhone = (ph) => (ph ||'').replace(/[^0-9]/g,'');
+    const normPhone = (ph) => (ph || '').replace(/[^0-9]/g, '');
     const cleanNewPhone = normPhone(stuParentPhone);
 
-    if (!cleanNewPhone || cleanNewPhone.length < 6) {
-      alert(isAr 
-        ?'يرجى إدخال رقم هاتف ولي الأمر بشكل صحيح! (هو المفتاح المعتمد لمنع تكرار الحسابات).'
-        :'Please enter a valid parent phone number! (It is the required key to prevent duplicate accounts).'
-      );
-      return;
-    }
-
-    // Verify if this parent phone is already registered for any student
-    const existingStudentWithPhone = (students || []).find((s) => {
-      const sPhone = normPhone(s.parentPhone || s.phone);
-      if (!sPhone || sPhone.length < 6) return false;
-      return sPhone === cleanNewPhone ||
-        (sPhone.length >= 7 && cleanNewPhone.length >= 7 &&
-         (sPhone.endsWith(cleanNewPhone.slice(-7)) || cleanNewPhone.endsWith(sPhone.slice(-7))));
-    });
-
-    if (existingStudentWithPhone) {
-      alert(isAr 
-        ?`هذا الحساب موجود بالفعل!\n\nرقم هاتف ولي الأمر (${stuParentPhone}) مسجل مسبقاً في النظام للطالب:"${existingStudentWithPhone.name}"(${existingStudentWithPhone.grade ||''}). لا يمكن تسجيل تلميذ مكرر بنفس رقم الهاتف.`
-        :`This account already exists!\n\nThis parent phone (${stuParentPhone}) is already registered for student:"${existingStudentWithPhone.name}". Duplicate accounts are not allowed.`
-      );
-      return;
-    }
+    const normalizeAr = (text) => {
+      if (!text) return '';
+      return String(text)
+        .trim()
+        .toLowerCase()
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .replace(/[إأآا]/g, 'ا')
+        .replace(/[ة]/g, 'ه')
+        .replace(/[ى]/g, 'ي')
+        .replace(/\s+/g, ' ');
+    };
 
     // 1. Verify primary student Ministry Clearance Number uniqueness
     if (stuMinistryClearance.trim()) {
@@ -661,7 +674,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         s => s.ministryClearance && s.ministryClearance.trim() === stuMinistryClearance.trim()
       );
       if (isDuplicate) {
-        alert(isAr ?'رقم الإفادة للطالب الرئيسي مسجل بالفعل لطالب آخر!':'Primary student Ministry Clearance number is already assigned!');
+        alert(isAr ? 'رقم الإفادة للطالب الرئيسي مسجل بالفعل لطالب آخر!' : 'Primary student Ministry Clearance number is already assigned!');
         return;
       }
     }
@@ -671,7 +684,7 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
       s => s.username && s.username.toLowerCase().trim() === stuUsername.toLowerCase().trim()
     );
     if (usernameDuplicate) {
-      alert(isAr ?'اسم المستخدم للطالب الرئيسي غير متاح!':'Primary student username is not available!');
+      alert(isAr ? 'اسم المستخدم للطالب الرئيسي غير متاح أو مكرر!' : 'Primary student username is not available!');
       return;
     }
 
@@ -679,47 +692,76 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
     for (let i = 0; i < siblingsList.length; i++) {
       const sib = siblingsList[i];
       if (!sib.name.trim()) {
-        alert(isAr ?`يرجى إدخال اسم الأخ/الأخت المضاف رقم ${i + 1}`:`Please enter name for sibling #${i + 1}`);
+        alert(isAr ? `يرجى إدخال اسم الأخ/الأخت المضاف رقم ${i + 1}` : `Please enter name for sibling #${i + 1}`);
         return;
       }
       if (!sib.username.trim()) {
-        alert(isAr ?`يرجى إدخال اسم مستخدم للأخ/الأخت رقم ${i + 1}`:`Please enter username for sibling #${i + 1}`);
+        alert(isAr ? `يرجى إدخال اسم مستخدم للأخ/الأخت رقم ${i + 1}` : `Please enter username for sibling #${i + 1}`);
         return;
       }
 
-      // Verify sibling username uniqueness
       const sibUsernameDuplicate = (students || []).some(
         s => s.username && s.username.toLowerCase().trim() === sib.username.toLowerCase().trim()
       ) || siblingsList.some((s, idx) => idx !== i && s.username.toLowerCase().trim() === sib.username.toLowerCase().trim()) || sib.username.toLowerCase().trim() === stuUsername.toLowerCase().trim();
       if (sibUsernameDuplicate) {
-        alert(isAr ?`اسم المستخدم للأخ/الأخت"${sib.name}"غير متاح أو مكرر!`:`Username for sibling"${sib.name}"is already taken or duplicate!`);
+        alert(isAr ? `اسم المستخدم للأخ/الأخت "${sib.name}" غير متاح أو مكرر!` : `Username for sibling "${sib.name}" is already taken!`);
         return;
       }
 
-      // Verify sibling ministry clearance uniqueness
       if (sib.ministryClearance.trim()) {
         const sibMCIsDuplicate = (students || []).some(
           s => s.ministryClearance && s.ministryClearance.trim() === sib.ministryClearance.trim()
         ) || siblingsList.some((s, idx) => idx !== i && s.ministryClearance && s.ministryClearance.trim() === sib.ministryClearance.trim()) || sib.ministryClearance.trim() === stuMinistryClearance.trim();
         if (sibMCIsDuplicate) {
-          alert(isAr ?`رقم الإفادة للأخ/الأخت"${sib.name}"مسجل بالفعل أو مكرر!`:`Ministry Clearance for sibling"${sib.name}"is duplicate!`);
+          alert(isAr ? `رقم الإفادة للأخ/الأخت "${sib.name}" مسجل بالفعل أو مكرر!` : `Ministry Clearance for sibling "${sib.name}" is duplicate!`);
           return;
         }
       }
     }
 
-    // 4. Save primary student
-    const isFamilySpecialCase = stuIsSpecialCase || siblingsList.some(s => s.isSpecialCase);
-    const newFamilyId =`FAM-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    // 4. Resolve Family ID (reuse existing family ID if sibling or matching guardian found)
+    let targetFamilyId = '';
+    if (selectedExistingFamilyKey) {
+      const selectedFam = allUniqueFamilies.find(f => f.key === selectedExistingFamilyKey);
+      if (selectedFam && selectedFam.members.length > 0) {
+        targetFamilyId = selectedFam.members[0].familyId || selectedFam.key;
+      }
+    }
 
+    if (!targetFamilyId) {
+      const matchingFam = allUniqueFamilies.find(fam => {
+        const p1 = normPhone(fam.parentPhone);
+        if (p1 && cleanNewPhone && (p1 === cleanNewPhone || (p1.length >= 7 && cleanNewPhone.length >= 7 && p1.endsWith(cleanNewPhone.slice(-7))))) {
+          return true;
+        }
+        const n1 = normalizeAr(fam.parentName);
+        const n2 = normalizeAr(stuParentName);
+        if (n1 && n2 && n1 === n2 && n1.length >= 3) {
+          return true;
+        }
+        return false;
+      });
+
+      if (matchingFam && matchingFam.members.length > 0) {
+        targetFamilyId = matchingFam.members[0].familyId || matchingFam.key;
+      }
+    }
+
+    if (!targetFamilyId) {
+      targetFamilyId = `FAM-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    const isFamilySpecialCase = stuIsSpecialCase || siblingsList.some(s => s.isSpecialCase);
+
+    // 5. Save primary student
     addStudent({
       name: finalStuName,
       nameEn: stuNameEn || finalStuName,
       username: stuUsername,
       password: stuPassword,
-      grade: stuGrade || (safeGrades[0]?.name ||'الصف الأول الابتدائي'),
-      gradeEn: stuGradeEn || (safeGrades[0]?.nameEn ||'Grade 1'),
-      classRoom: stuClassRoom ||'أ',
+      grade: stuGrade || (safeGrades[0]?.name || 'الصف الأول الابتدائي'),
+      gradeEn: stuGradeEn || (safeGrades[0]?.nameEn || 'Grade 1'),
+      classRoom: stuClassRoom || 'أ',
       avatar: stuAvatar,
       tuitionTotal: isFamilySpecialCase ? 0 : Number(stuTuitionTotal),
       tuitionPaid: 0,
@@ -727,18 +769,19 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
       adminFees: isFamilySpecialCase ? 0 : Number(stuAdminFees || 0),
       hasTransport: isFamilySpecialCase ? false : stuHasTransport,
       transportFee: isFamilySpecialCase ? 0 : Number(stuTransportFee || 0),
-      phone: (stuParentPhone ||'').trim(),
-      parentPhone: (stuParentPhone ||'').trim(),
-      motherPhone: (stuMotherPhone ||'').trim(),
-      parentName: stuParentName ||`والد الطالب ${finalStuName}`,
-      parentNameEn: stuParentName ||`Parent of ${stuNameEn || finalStuName}`,
+      phone: (stuParentPhone || '').trim(),
+      parentPhone: (stuParentPhone || '').trim(),
+      motherPhone: (stuMotherPhone || '').trim(),
+      parentName: stuParentName || `والد الطالب ${finalStuName}`,
+      parentNameEn: stuParentName || `Parent of ${stuNameEn || finalStuName}`,
+      familyName: stuLastName.trim() || '',
       ministryClearance: stuMinistryClearance.trim(),
       isSpecialCase: isFamilySpecialCase,
-      familyId: newFamilyId,
+      familyId: targetFamilyId,
       frozen: false
     });
 
-    // 5. Save all added siblings
+    // 6. Save all added siblings
     siblingsList.forEach(sib => {
       addStudent({
         name: sib.name,
@@ -755,19 +798,20 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
         adminFees: isFamilySpecialCase ? 0 : Number(sib.adminFees || 0),
         hasTransport: isFamilySpecialCase ? false : !!sib.hasTransport,
         transportFee: isFamilySpecialCase ? 0 : Number(sib.transportFee || 0),
-        phone: (stuParentPhone ||'').trim(),
-        parentPhone: (stuParentPhone ||'').trim(),
-        motherPhone: (stuMotherPhone ||'').trim(),
-        parentName: stuParentName ||`والد الطالب ${finalStuName}`,
-        parentNameEn: stuParentName ||`Parent of ${stuNameEn || finalStuName}`,
+        phone: (stuParentPhone || '').trim(),
+        parentPhone: (stuParentPhone || '').trim(),
+        motherPhone: (stuMotherPhone || '').trim(),
+        parentName: stuParentName || `والد الطالب ${finalStuName}`,
+        parentNameEn: stuParentName || `Parent of ${stuNameEn || finalStuName}`,
+        familyName: stuLastName.trim() || '',
         ministryClearance: sib.ministryClearance.trim(),
         isSpecialCase: isFamilySpecialCase,
-        familyId: newFamilyId,
+        familyId: targetFamilyId,
         frozen: false
       });
     });
 
-    // 6. Reset Form
+    // 7. Reset Form
     setStuFirstName('');
     setStuFatherName('');
     setStuLastName('');
@@ -785,8 +829,9 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
     setStuHasTransport(false);
     setStuTransportFee('0');
     setSiblingsList([]);
+    setSelectedExistingFamilyKey('');
     setShowAddStudentModal(false);
-    setSuccessMsg(isAr ?'تم إضافة الطالب وإخوته وتوثيق بيانات العائلة بنجاح!':'Students added successfully!');
+    setSuccessMsg(isAr ? 'تم إضافة الطالب وتوحيد الكرت العائلي بنجاح!' : 'Student added to family successfully!');
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
@@ -945,9 +990,21 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
       return digits.length >= 7 ? digits.slice(-7) : digits;
     };
 
+    const normalizeAr = (text) => {
+      if (!text) return '';
+      return String(text)
+        .trim()
+        .toLowerCase()
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .replace(/[إأآا]/g, 'ا')
+        .replace(/[ة]/g, 'ه')
+        .replace(/[ى]/g, 'ي')
+        .replace(/\s+/g, ' ');
+    };
+
     const cleanPName = (name) => {
       if (!name) return '';
-      const n = String(name).trim().toLowerCase();
+      const n = normalizeAr(name);
       const generic = ['ولي امر', 'ولي أمر', 'غير محدد', 'اب', 'أم', 'أب', 'parent', 'guardian', ''];
       if (generic.includes(n) || n.startsWith('والد الطالب') || n.startsWith('parent of') || n.length < 3) return '';
       return n;
@@ -2075,6 +2132,47 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
             </div>
 
 
+
+            {/* Quick Sibling / Existing Family Selector */}
+            <div className="bg-sky-50/70 border border-sky-200 p-3.5 rounded-2xl space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black text-[#0284C7] flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-[#0284C7]" />
+                  <span>{isAr ? 'هل التلميذ أخ لطالب مسجل مسبقاً؟ (اختر العائلة لتوحيد الكرت)' : 'Is this student a sibling of an enrolled student? (Select Family)'}</span>
+                </label>
+                {selectedExistingFamilyKey && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedExistingFamilyKey('');
+                    }}
+                    className="text-[10px] text-slate-500 hover:text-red-500 font-bold cursor-pointer"
+                  >
+                    {isAr ? 'إلغاء التحديد (تسجيل عائلة جديدة)' : 'Clear (New Family)'}
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={selectedExistingFamilyKey}
+                onChange={(e) => handleSelectExistingFamily(e.target.value)}
+                className="w-full bg-white border border-sky-300 text-[#0F172A] rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#0284C7]/20 cursor-pointer"
+              >
+                <option value="">{isAr ? '-- تلميذ جديد (عائلة جديدة) أو اختر العائلة لربطه كأخ --' : '-- New Student (New Family) or Select Existing Family --'}</option>
+                {allUniqueFamilies.map((fam) => (
+                  <option key={fam.key} value={fam.key}>
+                    {fam.parentName} {fam.parentPhone ? `(${fam.parentPhone})` : ''} — [{fam.members.map(m => m.name).join(', ')}]
+                  </option>
+                ))}
+              </select>
+
+              {selectedExistingFamilyKey && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 animate-fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{isAr ? `سيتم ربط هذا التلميذ تلقائياً في نفس الكرت العائلي لـ (${allUniqueFamilies.find(f => f.key === selectedExistingFamilyKey)?.parentName})` : 'Student will be linked to this family card automatically'}</span>
+                </div>
+              )}
+            </div>
 
             {/* Student Name: Split into 3 columns: First Name, Father Name, Family/Surname */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
