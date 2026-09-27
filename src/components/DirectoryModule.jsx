@@ -139,6 +139,11 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
     }
   };
 
+  const handleAddSiblingToFamily = (family) => {
+    handleSelectExistingFamily(family.key);
+    setShowAddStudentModal(true);
+  };
+
   // Special Case & Quick Edit Paid States
   const [editStuIsSpecialCase, setEditStuIsSpecialCase] = useState(false);
   const [quickEditPaidStudent, setQuickEditPaidStudent] = useState(null);
@@ -1482,7 +1487,23 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
                           <div className="border-t-2 border-[#0284C7]/20 bg-[#F8FAFC] px-4 py-4 sm:px-5 space-y-3">
                             <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
                               <span>{isAr ? `ابناء ${family.parentName}:` : `Children of ${family.parentName}:`}</span>
-                              <span className="bg-white text-[#0284C7] px-2.5 py-0.5 rounded-lg border border-sky-200 font-mono font-black text-[10px]">{family.members.length} {isAr ? 'تلاميذ' : 'students'}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="bg-white text-[#0284C7] px-2.5 py-0.5 rounded-lg border border-sky-200 font-mono font-black text-[10px]">{family.members.length} {isAr ? 'تلاميذ' : 'students'}</span>
+                                {currentRole === 'admin' && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddSiblingToFamily(family);
+                                    }}
+                                    className="inline-flex items-center gap-1 bg-[#0284C7] hover:bg-sky-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-xs"
+                                    title={isAr ? 'إضافة أخ جديد لهذا الكرت العائلي' : 'Add sibling to this family'}
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>{isAr ? 'إضافة أخ جديد' : 'Add Sibling'}</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <div className="space-y-2">
                               {family.members.map((member) => {
@@ -1534,6 +1555,21 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
                                   </div>
                                 );
                               })}
+
+                              {/* زر إضافة أخ جديد أسفل قائمة الأبناء */}
+                              {currentRole === 'admin' && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddSiblingToFamily(family);
+                                  }}
+                                  className="w-full py-2.5 border-2 border-dashed border-sky-300 hover:border-[#0284C7] hover:bg-sky-50 text-[#0284C7] rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  <span>{isAr ? `+ إضافة تلميذ أخ جديد لعائلة (${family.parentName})` : `+ Add Sibling to (${family.parentName})`}</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1602,6 +1638,20 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
                             <span className="font-mono font-black text-red-600">${combinedRemUSD}</span>
                           )}
                         </div>
+
+                        {currentRole === 'admin' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddSiblingToFamily(family);
+                            }}
+                            className="w-full py-1.5 bg-sky-50 hover:bg-sky-100 text-[#0284C7] font-bold text-xs rounded-xl border border-sky-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{isAr ? 'إضافة أخ جديد للعائلة' : 'Add Sibling'}</span>
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -1991,6 +2041,22 @@ export const DirectoryModule = ({initialSubTab ='students'}) => {
                           </div>
                         ));
                       })()}
+                      {/* زر إضافة أخ جديد للعائلة */}
+                      {currentRole === 'admin' && (
+                        <div className="pt-2 border-t border-slate-100 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddSiblingToFamily(family);
+                            }}
+                            className="w-full py-2 bg-sky-50 hover:bg-sky-100 text-[#0284C7] font-bold text-xs rounded-xl border border-sky-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{isAr ? `+ إضافة تلميذ أخ جديد للعائلة` : `+ Add Sibling`}</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
