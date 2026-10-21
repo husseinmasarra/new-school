@@ -1048,7 +1048,7 @@ export const AppProvider = ({children}) => {
     };
   }, []);
 
-  // 2. Save database to Supabase & localStorage whenever any collection changes
+  // 2. Save database to Neon Cloud & localStorage whenever any collection changes
   useEffect(() => {
     if (isInitializingSync) return;
 
