@@ -457,7 +457,16 @@ export const SettingsModule = ({setActiveTab}) => {
               // Export all localStorage data as a JSON backup file
               const backup = {};
               const keys = ['school_subjects','school_grades','school_classrooms','school_students','school_teachers','school_staff','school_exams','school_expenses','school_buses','school_messages','school_agenda','school_tutoring','school_push_notifs','school_system_users','school_settings','school_academic_years_archive','school_db_init','school_db_version'];
-              keys.forEach(k => {const v = localStorage.getItem(k); if (v) backup[k] = JSON.parse(v);});
+              keys.forEach(k => {
+                const v = localStorage.getItem(k);
+                if (v) {
+                  try {
+                    backup[k] = JSON.parse(v);
+                  } catch {
+                    backup[k] = v;
+                  }
+                }
+              });
               const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a'); a.href = url; a.download =`school-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();

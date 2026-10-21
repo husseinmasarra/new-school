@@ -161,3 +161,52 @@ export function isValidNeonUrl(url) {
   if (!url) return false;
   return url.startsWith('postgres://') || url.startsWith('postgresql://');
 }
+
+import { neon } from '@neondatabase/serverless';
+
+function getSqlClient() {
+  const url = getNeonConnectionUrl();
+  return neon(url);
+}
+
+export async function neonGet(key) {
+  try {
+    const sql = getSqlClient();
+    const rows = await sql`SELECT payload FROM school_sync WHERE key = ${key} LIMIT 1`;
+    return rows && rows.length > 0 ? rows[0].payload : null;
+  } catch (err) {
+    console.warn(`[Neon DB] Read error for "${key}":`, err.message);
+    return null;
+  }
+}
+
+export async function neonSet(key, value) {
+  try {
+    const sql = getSqlClient();
+    await sql`
+      INSERT INTO school_sync (key, payload, updated_at)
+      VALUES (${key}, ${value}, NOW())
+      ON CONFLICT (key)
+      DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW();
+    `;
+    return true;
+  } catch (err) {
+    console.warn(`[Neon DB] Write error for "${key}":`, err.message);
+    return false;
+  }
+}
+
+export async function neonGetAll() {
+  try {
+    const sql = getSqlClient();
+    const rows = await sql`SELECT key, payload FROM school_sync`;
+    const map = {};
+    (rows || []).forEach(r => {
+      map[r.key] = r.payload;
+    });
+    return map;
+  } catch (err) {
+    console.warn('[Neon DB] Exception fetching all:', err.message);
+    return {};
+  }
+}

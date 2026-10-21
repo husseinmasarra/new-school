@@ -66,7 +66,7 @@ export function dbInitOnce(seedData) {
   return true;
 }
 
-import { supabaseGet, supabaseSet, supabaseGetAll } from './supabaseClient';
+import { neonGet, neonSet, neonGetAll } from './neonDbService';
 
 /**
  * Load a collection from localStorage with cloud fallback.
@@ -76,32 +76,32 @@ export function dbLoadCollection(key, defaultValue) {
   if (data === null) {
     dbWrite(key, defaultValue);
     // Background sync initial seed to cloud
-    supabaseSet(key, defaultValue).catch(() => {});
+    neonSet(key, defaultValue).catch(() => {});
     return defaultValue;
   }
   return data;
 }
 
 /**
- * Save a collection immediately to LocalStorage AND sync to Supabase Cloud
+ * Save a collection immediately to LocalStorage AND sync to Neon Cloud
  */
 export function dbSaveCollection(key, value) {
   // 1. Instant local write for 0ms UI lag
   dbWrite(key, value);
 
-  // 2. Cloud sync in background to Supabase
-  supabaseSet(key, value).catch(err => {
-    console.warn(`[Cloud Sync] Failed to sync ${key} to Supabase:`, err);
+  // 2. Cloud sync in background to Neon PostgreSQL
+  neonSet(key, value).catch(err => {
+    console.warn(`[Neon Cloud Sync] Failed to sync ${key}:`, err);
   });
 }
 
 /**
- * Sync all data from Supabase Cloud down to local browser
+ * Sync all data from Neon Cloud down to local browser
  * Used when app opens or on mobile
  */
 export async function syncFromCloud() {
   try {
-    const cloudData = await supabaseGetAll();
+    const cloudData = await neonGetAll();
     if (!cloudData || Object.keys(cloudData).length === 0) {
       return null;
     }
@@ -114,7 +114,7 @@ export async function syncFromCloud() {
 
     return cloudData;
   } catch (err) {
-    console.warn('[Cloud Sync] Error downloading cloud data:', err);
+    console.warn('[Neon Cloud Sync] Error downloading cloud data:', err);
     return null;
   }
 }
