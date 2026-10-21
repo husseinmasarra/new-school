@@ -23,7 +23,7 @@ import {
   initialNotificationsList,
   initialStudyResources
 } from'../initialData';
-import {initialSchoolSettings, dbLoadCollection, dbSaveCollection, dbInitOnce, syncFromCloud} from'../services/dbService';
+import {initialSchoolSettings, dbLoadCollection, dbSaveCollection, dbInitOnce, syncFromCloud, uploadAllToNeonCloud, dbRead} from'../services/dbService';
 
 // Run one-time seed on very first app launch (never runs again after that)
 dbInitOnce({
@@ -899,6 +899,63 @@ export const AppProvider = ({children}) => {
   }, []);
 
   const [isInitializingSync, setIsInitializingSync] = useState(true);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [lastCloudSyncTime, setLastCloudSyncTime] = useState(null);
+
+  const applyCloudData = (cloudData) => {
+    if (!cloudData) return;
+    if (cloudData.school_subjects) setSubjects(cloudData.school_subjects);
+    if (cloudData.school_grades) setGrades(cloudData.school_grades);
+    if (cloudData.school_classrooms) setClassrooms(cloudData.school_classrooms);
+    if (cloudData.school_students) setStudents(cloudData.school_students);
+    if (cloudData.school_teachers) setTeachers(cloudData.school_teachers);
+    if (cloudData.school_staff) setStaffEmployees(cloudData.school_staff);
+    if (cloudData.school_exams) setExams(cloudData.school_exams);
+    if (cloudData.school_expenses) setExpenses(cloudData.school_expenses);
+    if (cloudData.school_buses) setBuses(cloudData.school_buses);
+    if (cloudData.school_messages) setMessages(cloudData.school_messages);
+    if (cloudData.school_agenda) setAgenda(cloudData.school_agenda);
+    if (cloudData.school_tutoring) setTutoringCourses(cloudData.school_tutoring);
+    if (cloudData.school_tutoring_payments) setTutoringPayments(cloudData.school_tutoring_payments);
+    if (cloudData.school_push_notifs) setPushNotifs(cloudData.school_push_notifs);
+    if (cloudData.school_system_users) setSystemUsers(cloudData.school_system_users);
+    if (cloudData.school_settings) setSiteSettings(cloudData.school_settings);
+    if (cloudData.school_daily_marks) setDailyMarks(cloudData.school_daily_marks);
+    if (cloudData.school_attendance) setAttendance(cloudData.school_attendance);
+    if (cloudData.school_behavior) setBehaviorRecords(cloudData.school_behavior);
+  };
+
+  const triggerCloudUpload = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const ok = await uploadAllToNeonCloud();
+      setLastCloudSyncTime(new Date());
+      return { success: ok };
+    } catch (e) {
+      console.error('[Cloud Sync] Upload error:', e);
+      return { success: false, error: e.message };
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  const triggerCloudDownload = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const data = await syncFromCloud();
+      if (data) {
+        applyCloudData(data);
+        setLastCloudSyncTime(new Date());
+        return { success: true, count: data.school_students?.length || 0 };
+      }
+      return { success: false, error: 'No data in cloud' };
+    } catch (e) {
+      console.error('[Cloud Sync] Download error:', e);
+      return { success: false, error: e.message };
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
 
   // 1. Load database from Neon PostgreSQL Cloud on mount & keep in live sync
   useEffect(() => {
@@ -907,85 +964,22 @@ export const AppProvider = ({children}) => {
     async function initCloudSync() {
       try {
         const cloudData = await syncFromCloud();
-        if (cloudData && Object.keys(cloudData).length > 0) {
-          const localStudents = students || [];
-          const cloudStudents = cloudData.school_students || [];
+        const localStudents = dbRead('school_students') || students || [];
+        const cloudStudents = cloudData?.school_students || [];
 
-          if (localStudents.length > cloudStudents.length) {
-            // Local device has richer student data -> seed cloud from master device
-            console.log('[Neon Cloud] Seeding cloud from master device (count:', localStudents.length, ')');
-            const seedPayload = {
-              school_subjects: subjects,
-              school_grades: grades,
-              school_classrooms: classrooms,
-              school_students: students,
-              school_teachers: teachers,
-              school_staff: staffEmployees,
-              school_exams: exams,
-              school_expenses: expenses,
-              school_buses: buses,
-              school_messages: messages,
-              school_agenda: agenda,
-              school_tutoring: tutoringCourses,
-              school_tutoring_payments: tutoringPayments,
-              school_push_notifs: pushNotifs,
-              school_system_users: systemUsers,
-              school_settings: siteSettings,
-              school_daily_marks: dailyMarks,
-              school_attendance: attendance,
-              school_behavior: behaviorRecords
-            };
-            Object.entries(seedPayload).forEach(([key, val]) => {
-              dbSaveCollection(key, val);
-            });
-          } else {
-            // Cloud has data -> update local state
-            if (cloudData.school_subjects) setSubjects(cloudData.school_subjects);
-            if (cloudData.school_grades) setGrades(cloudData.school_grades);
-            if (cloudData.school_classrooms) setClassrooms(cloudData.school_classrooms);
-            if (cloudData.school_students) setStudents(cloudData.school_students);
-            if (cloudData.school_teachers) setTeachers(cloudData.school_teachers);
-            if (cloudData.school_staff) setStaffEmployees(cloudData.school_staff);
-            if (cloudData.school_exams) setExams(cloudData.school_exams);
-            if (cloudData.school_expenses) setExpenses(cloudData.school_expenses);
-            if (cloudData.school_buses) setBuses(cloudData.school_buses);
-            if (cloudData.school_messages) setMessages(cloudData.school_messages);
-            if (cloudData.school_agenda) setAgenda(cloudData.school_agenda);
-            if (cloudData.school_tutoring) setTutoringCourses(cloudData.school_tutoring);
-            if (cloudData.school_tutoring_payments) setTutoringPayments(cloudData.school_tutoring_payments);
-            if (cloudData.school_push_notifs) setPushNotifs(cloudData.school_push_notifs);
-            if (cloudData.school_system_users) setSystemUsers(cloudData.school_system_users);
-            if (cloudData.school_settings) setSiteSettings(cloudData.school_settings);
-            if (cloudData.school_daily_marks) setDailyMarks(cloudData.school_daily_marks);
-            if (cloudData.school_attendance) setAttendance(cloudData.school_attendance);
-            if (cloudData.school_behavior) setBehaviorRecords(cloudData.school_behavior);
+        console.log('[Neon Cloud] Init check -> Local students:', localStudents.length, 'Cloud students:', cloudStudents.length);
+
+        if (localStudents.length > cloudStudents.length) {
+          // Master device has data -> automatically upload everything to Neon cloud
+          console.log('[Neon Cloud] Auto-uploading master data to cloud...');
+          await uploadAllToNeonCloud();
+          setLastCloudSyncTime(new Date());
+        } else if (cloudStudents.length > 0) {
+          // Other device -> apply cloud data to local state
+          if (cloudData) {
+            applyCloudData(cloudData);
+            setLastCloudSyncTime(new Date());
           }
-        } else {
-          // Cloud empty -> initial upload of current state
-          const seedPayload = {
-            school_subjects: subjects,
-            school_grades: grades,
-            school_classrooms: classrooms,
-            school_students: students,
-            school_teachers: teachers,
-            school_staff: staffEmployees,
-            school_exams: exams,
-            school_expenses: expenses,
-            school_buses: buses,
-            school_messages: messages,
-            school_agenda: agenda,
-            school_tutoring: tutoringCourses,
-            school_tutoring_payments: tutoringPayments,
-            school_push_notifs: pushNotifs,
-            school_system_users: systemUsers,
-            school_settings: siteSettings,
-            school_daily_marks: dailyMarks,
-            school_attendance: attendance,
-            school_behavior: behaviorRecords
-          };
-          Object.entries(seedPayload).forEach(([key, val]) => {
-            dbSaveCollection(key, val);
-          });
         }
       } catch (err) {
         console.error('[Neon Cloud] Init error:', err);
@@ -996,42 +990,19 @@ export const AppProvider = ({children}) => {
 
     initCloudSync();
 
-    // Live sync polling: check cloud updates every 8 seconds and on window focus
+    // Live sync polling: check cloud updates every 6 seconds and on window focus/visibility
     const checkLiveUpdates = async () => {
       try {
         const cloudData = await syncFromCloud();
         if (!cloudData || !isMounted) return;
-
-        if (cloudData.school_students && JSON.stringify(cloudData.school_students) !== localStorage.getItem('school_students')) {
-          setStudents(cloudData.school_students);
-        }
-        if (cloudData.school_subjects && JSON.stringify(cloudData.school_subjects) !== localStorage.getItem('school_subjects')) {
-          setSubjects(cloudData.school_subjects);
-        }
-        if (cloudData.school_grades && JSON.stringify(cloudData.school_grades) !== localStorage.getItem('school_grades')) {
-          setGrades(cloudData.school_grades);
-        }
-        if (cloudData.school_classrooms && JSON.stringify(cloudData.school_classrooms) !== localStorage.getItem('school_classrooms')) {
-          setClassrooms(cloudData.school_classrooms);
-        }
-        if (cloudData.school_teachers && JSON.stringify(cloudData.school_teachers) !== localStorage.getItem('school_teachers')) {
-          setTeachers(cloudData.school_teachers);
-        }
-        if (cloudData.school_daily_marks && JSON.stringify(cloudData.school_daily_marks) !== localStorage.getItem('school_daily_marks')) {
-          setDailyMarks(cloudData.school_daily_marks);
-        }
-        if (cloudData.school_agenda && JSON.stringify(cloudData.school_agenda) !== localStorage.getItem('school_agenda')) {
-          setAgenda(cloudData.school_agenda);
-        }
-        if (cloudData.school_settings && JSON.stringify(cloudData.school_settings) !== localStorage.getItem('school_settings')) {
-          setSiteSettings(cloudData.school_settings);
-        }
+        applyCloudData(cloudData);
+        setLastCloudSyncTime(new Date());
       } catch (e) {
         // quiet error handling
       }
     };
 
-    const interval = setInterval(checkLiveUpdates, 8000);
+    const interval = setInterval(checkLiveUpdates, 6000);
     const handleFocus = () => checkLiveUpdates();
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') checkLiveUpdates();
@@ -2517,7 +2488,11 @@ export const AppProvider = ({children}) => {
     updateTeacherSalary,
     resetFinancialAccounts,
     clearDemoData,
-    startNewAcademicYear
+    startNewAcademicYear,
+    triggerCloudUpload,
+    triggerCloudDownload,
+    isCloudSyncing,
+    lastCloudSyncTime
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

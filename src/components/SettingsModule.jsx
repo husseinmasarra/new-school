@@ -23,7 +23,9 @@ import {
   KeyRound, 
   Trash2, 
   Edit,
-  Users 
+  Users,
+  Cloud,
+  RefreshCw
 } from'lucide-react';
 
 export const SettingsModule = ({setActiveTab}) => {
@@ -35,10 +37,19 @@ export const SettingsModule = ({setActiveTab}) => {
     systemUsers,
     clearDemoData,
     startNewAcademicYear,
-    academicYearsArchive = []
+    academicYearsArchive = [],
+    students = [],
+    subjects = [],
+    grades = [],
+    triggerCloudUpload,
+    triggerCloudDownload,
+    isCloudSyncing,
+    lastCloudSyncTime
   } = useApp();
 
   const isAr = lang ==='ar';
+
+  const [syncStatusMsg, setSyncStatusMsg] = useState('');
 
   const [showNewYearModal, setShowNewYearModal] = useState(false);
   const [newYearNameInput, setNewYearNameInput] = useState('2027/2028');
@@ -506,6 +517,75 @@ export const SettingsModule = ({setActiveTab}) => {
           <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold">
             Serverless PostgreSQL Ready 
           </span>
+        </div>
+
+        {/* LIVE MULTI-DEVICE CLOUD SYNC ACTIONS */}
+        <div className="bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 border-2 border-sky-300 p-5 rounded-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-sm font-extrabold text-[#0284C7] flex items-center gap-2">
+                <Cloud className="w-5 h-5 text-[#0284C7]" />
+                <span>المزامنة السحابية المباشرة بين جميع الأجهزة (Live Cloud Sync)</span>
+              </h4>
+              <p className="text-xs text-slate-600 mt-1">
+                البيانات في هذا الجهاز: <b>{students.length} تلميذ</b> | <b>{subjects.length} مادة</b> | <b>{grades.length} مرحلة دراسية</b>.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>المزامنة التلقائية نشطة 🟢</span>
+              </span>
+            </div>
+          </div>
+
+          {syncStatusMsg && (
+            <div className="p-3 bg-emerald-100 border border-emerald-400 text-emerald-900 rounded-xl text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{syncStatusMsg}</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3 pt-1">
+            <button
+              type="button"
+              disabled={isCloudSyncing}
+              onClick={async () => {
+                setSyncStatusMsg(isAr ? 'جاري رفع وتثبيت بيانات المدرسة إلى السحابة...' : 'Uploading...');
+                const res = await triggerCloudUpload();
+                if (res?.success) {
+                  setSyncStatusMsg(isAr ? `✅ تم رفع وتثبيت بيانات ${students.length} تلميذ و ${subjects.length} مادة في السحابة بنجاح! افتح الآن أي جهاز آخر لتجدها متزامنة فوراً.` : 'Uploaded to cloud successfully!');
+                } else {
+                  setSyncStatusMsg(isAr ? `❌ تعذر الرفع: ${res?.error || 'يرجى التحقق من اتصال الإنترنت'}` : 'Upload failed');
+                }
+                setTimeout(() => setSyncStatusMsg(''), 7000);
+              }}
+              className="px-5 py-3 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-xl text-xs font-extrabold shadow-md flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+            >
+              <Upload className={`w-4 h-4 ${isCloudSyncing ? 'animate-spin' : ''}`} />
+              <span>🚀 رفع وتثبيت بيانات هذا الجهاز في السحابة الآن</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isCloudSyncing}
+              onClick={async () => {
+                setSyncStatusMsg(isAr ? 'جاري سحب وتحديث البيانات من السحابة...' : 'Downloading...');
+                const res = await triggerCloudDownload();
+                if (res?.success) {
+                  setSyncStatusMsg(isAr ? `✅ تم سحب وتحديث البيانات من السحابة بنجاح! (عدد التلاميذ المستلمين: ${res.count || students.length})` : 'Downloaded from cloud successfully!');
+                } else {
+                  setSyncStatusMsg(isAr ? `❌ تعذر السحب: ${res?.error || 'السحابة فارغة حالياً'}` : 'Download failed');
+                }
+                setTimeout(() => setSyncStatusMsg(''), 7000);
+              }}
+              className="px-5 py-3 bg-white hover:bg-slate-50 text-[#0284C7] border-2 border-[#0284C7] rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isCloudSyncing ? 'animate-spin' : ''}`} />
+              <span>🔄 سحب وتحديث البيانات من السحابة الآن</span>
+            </button>
+          </div>
         </div>
 
         {/* Connection String Input (PROTECTED BY DEFAULT) */}

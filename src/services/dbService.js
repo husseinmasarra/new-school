@@ -66,7 +66,7 @@ export function dbInitOnce(seedData) {
   return true;
 }
 
-import { neonGet, neonSet, neonGetAll } from './neonDbService';
+import { neonGet, neonSet, neonGetAll, neonSaveAllCollections } from './neonDbService';
 
 /**
  * Load a collection from localStorage with cloud fallback.
@@ -93,6 +93,25 @@ export function dbSaveCollection(key, value) {
   neonSet(key, value).catch(err => {
     console.warn(`[Neon Cloud Sync] Failed to sync ${key}:`, err);
   });
+}
+
+/**
+ * Upload all current local collections to Neon Cloud
+ */
+export async function uploadAllToNeonCloud() {
+  const keys = [
+    'school_subjects', 'school_grades', 'school_classrooms', 'school_students',
+    'school_teachers', 'school_staff', 'school_exams', 'school_expenses',
+    'school_buses', 'school_messages', 'school_agenda', 'school_tutoring',
+    'school_tutoring_payments', 'school_push_notifs', 'school_system_users',
+    'school_settings', 'school_daily_marks', 'school_attendance', 'school_behavior'
+  ];
+  const payload = {};
+  keys.forEach(k => {
+    const v = dbRead(k);
+    if (v !== null && v !== undefined) payload[k] = v;
+  });
+  return await neonSaveAllCollections(payload);
 }
 
 /**

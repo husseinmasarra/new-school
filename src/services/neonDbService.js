@@ -169,9 +169,27 @@ function getSqlClient() {
   return neon(url);
 }
 
+let tableChecked = false;
+async function ensureTable(sql) {
+  if (tableChecked) return;
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS school_sync (
+        key VARCHAR(100) PRIMARY KEY,
+        payload JSONB,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    tableChecked = true;
+  } catch (e) {
+    // ignore
+  }
+}
+
 export async function neonGet(key) {
   try {
     const sql = getSqlClient();
+    await ensureTable(sql);
     const rows = await sql`SELECT payload FROM school_sync WHERE key = ${key} LIMIT 1`;
     return rows && rows.length > 0 ? rows[0].payload : null;
   } catch (err) {
@@ -183,9 +201,11 @@ export async function neonGet(key) {
 export async function neonSet(key, value) {
   try {
     const sql = getSqlClient();
+    await ensureTable(sql);
+    const jsonStr = JSON.stringify(value !== undefined ? value : null);
     await sql`
       INSERT INTO school_sync (key, payload, updated_at)
-      VALUES (${key}, ${value}, NOW())
+      VALUES (${key}, ${jsonStr}::jsonb, NOW())
       ON CONFLICT (key)
       DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW();
     `;
@@ -196,13 +216,42 @@ export async function neonSet(key, value) {
   }
 }
 
+export async function neonSaveAllCollections(collectionsMap) {
+  try {
+    const sql = getSqlClient();
+    await ensureTable(sql);
+    for (const [key, val] of Object.entries(collectionsMap)) {
+      const jsonStr = JSON.stringify(val !== undefined ? val : null);
+      await sql`
+        INSERT INTO school_sync (key, payload, updated_at)
+        VALUES (${key}, ${jsonStr}::jsonb, NOW())
+        ON CONFLICT (key)
+        DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW();
+      `;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Neon DB] Batch save error:', err.message);
+    return false;
+  }
+}
+
 export async function neonGetAll() {
   try {
     const sql = getSqlClient();
+    await ensureTable(sql);
     const rows = await sql`SELECT key, payload FROM school_sync`;
     const map = {};
     (rows || []).forEach(r => {
-      map[r.key] = r.payload;
+      if (r.key === 'main_payload' && r.payload && typeof r.payload === 'object' && !Array.isArray(r.payload)) {
+        Object.entries(r.payload).forEach(([subKey, subVal]) => {
+          if (map[subKey] === undefined) {
+            map[subKey] = subVal;
+          }
+        });
+      } else {
+        map[r.key] = r.payload;
+      }
     });
     return map;
   } catch (err) {
