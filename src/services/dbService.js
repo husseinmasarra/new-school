@@ -9,7 +9,7 @@
  * - Version upgrades only ADD missing records, never overwrite existing ones
  */
 
-const DB_VERSION = "school_v2";
+const DB_VERSION = "school_v3";
 const DB_INIT_KEY = "school_db_init";
 const DB_VERSION_KEY = "school_db_version";
 
