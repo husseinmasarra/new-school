@@ -1,7 +1,7 @@
 import React, {useState} from'react';
 import {createPortal} from'react-dom';
 import {useApp, defaultAvatars, systemPermissionOptions} from'../context/AppContext';
-import {dbFactoryReset} from'../services/dbService';
+import {dbFactoryReset, uploadAllToNeonCloud} from'../services/dbService';
 import {NEON_POSTGRES_SCHEMA_SQL, getNeonConnectionUrl, saveNeonConnectionUrl} from'../services/neonDbService';
 import {
   Settings, 
@@ -41,6 +41,8 @@ export const SettingsModule = ({setActiveTab}) => {
     students = [],
     subjects = [],
     grades = [],
+    classrooms = [],
+    teachers = [],
     triggerCloudUpload,
     triggerCloudDownload,
     isCloudSyncing,
@@ -130,18 +132,126 @@ export const SettingsModule = ({setActiveTab}) => {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
+  const handleExportBackup = () => {
+    try {
+      const backup = {};
+      // 1. Gather all collections from localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('school_') || k.startsWith('app_'))) {
+          try {
+            backup[k] = JSON.parse(localStorage.getItem(k));
+          } catch {
+            backup[k] = localStorage.getItem(k);
+          }
+        }
+      }
+
+      // 2. Ensure core collections are preserved from active state if missing/empty in localStorage
+      if ((!backup.school_students || backup.school_students.length === 0) && students?.length > 0) {
+        backup.school_students = students;
+      }
+      if ((!backup.school_subjects || backup.school_subjects.length === 0) && subjects?.length > 0) {
+        backup.school_subjects = subjects;
+      }
+      if ((!backup.school_grades || backup.school_grades.length === 0) && grades?.length > 0) {
+        backup.school_grades = grades;
+      }
+      if ((!backup.school_classrooms || backup.school_classrooms.length === 0) && classrooms?.length > 0) {
+        backup.school_classrooms = classrooms;
+      }
+      if ((!backup.school_teachers || backup.school_teachers.length === 0) && teachers?.length > 0) {
+        backup.school_teachers = teachers;
+      }
+      if (siteSettings && !backup.school_settings) {
+        backup.school_settings = siteSettings;
+      }
+      if (systemUsers?.length > 0 && !backup.school_system_users) {
+        backup.school_system_users = systemUsers;
+      }
+      if (academicYearsArchive?.length > 0 && !backup.school_academic_years_archive) {
+        backup.school_academic_years_archive = academicYearsArchive;
+      }
+
+      const jsonStr = JSON.stringify(backup, null, 2);
+      const fileName = `school-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+      // 3. Multi-strategy download to guarantee working in every browser, iframe, PWA, and mobile
+      let downloaded = false;
+
+      // Strategy A: Blob URL with DOM attachment and delayed revoke
+      try {
+        const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = url;
+        link.download = fileName;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        downloaded = true;
+
+        setTimeout(() => {
+          try {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          } catch (e) {}
+        }, 8000); // Wait 8 seconds before revoking!
+      } catch (blobErr) {
+        console.warn('Blob URL download failed, falling back to data URI:', blobErr);
+      }
+
+      // Strategy B Fallback: Data URI
+      if (!downloaded) {
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonStr);
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = dataUri;
+        link.download = fileName;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          try { document.body.removeChild(link); } catch (e) {}
+        }, 3000);
+      }
+
+      const successNotice = isAr 
+        ? `تم بدء تحميل ملف النسخة الاحتياطية (${fileName}) بنجاح!` 
+        : `Backup file download initiated: ${fileName}`;
+      setToastMessage(successNotice);
+      setTimeout(() => setToastMessage(''), 4000);
+    } catch (err) {
+      console.error('Export backup failed:', err);
+      alert(isAr ? `حدث خطأ أثناء تحميل النسخة الاحتياطية: ${err.message}` : `Error exporting backup: ${err.message}`);
+    }
+  };
+
   const handleRestoreFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         try {
           const data = JSON.parse(event.target.result);
-          Object.entries(data).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
-          alert(isAr ?'تم استرجاع قاعدة البيانات بنجاح! سيتم تحديث الصفحة الآن.':'Database restored successfully!');
+          Object.entries(data).forEach(([k, v]) => {
+            if (typeof v === 'string') {
+              localStorage.setItem(k, v);
+            } else {
+              localStorage.setItem(k, JSON.stringify(v));
+            }
+          });
+          // Also sync to cloud automatically
+          try {
+            await uploadAllToNeonCloud();
+          } catch (cloudErr) {
+            console.warn('[Restore] Cloud sync warning:', cloudErr);
+          }
+          alert(isAr ? 'تم استرجاع قاعدة البيانات ومزامنتها بنجاح! سيتم تحديث الصفحة الآن.' : 'Database restored successfully!');
           window.location.reload();
-        } catch {
-          alert(isAr ?'فشل استيراد الملف. يرجى التأكد من أن الملف بصيغة JSON صحيحة.':'Import failed!');
+        } catch (err) {
+          alert(isAr ? `فشل استيراد الملف: ${err.message}` : `Import failed: ${err.message}`);
         }
       };
       reader.readAsText(file);
@@ -464,26 +574,9 @@ export const SettingsModule = ({setActiveTab}) => {
 
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => {
-              // Export all localStorage data as a JSON backup file
-              const backup = {};
-              const keys = ['school_subjects','school_grades','school_classrooms','school_students','school_teachers','school_staff','school_exams','school_expenses','school_buses','school_messages','school_agenda','school_tutoring','school_push_notifs','school_system_users','school_settings','school_academic_years_archive','school_db_init','school_db_version'];
-              keys.forEach(k => {
-                const v = localStorage.getItem(k);
-                if (v) {
-                  try {
-                    backup[k] = JSON.parse(v);
-                  } catch {
-                    backup[k] = v;
-                  }
-                }
-              });
-              const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a'); a.href = url; a.download =`school-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-sky-50 text-[#0284C7] border border-sky-200 hover:bg-sky-100 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            type="button"
+            onClick={handleExportBackup}
+            className="flex items-center gap-2 px-4 py-2.5 bg-sky-50 text-[#0284C7] border border-sky-200 hover:bg-sky-100 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
           >
             <Download className="w-4 h-4"/>
             <span>تحميل نسخة احتياطية (Export Backup JSON)</span>
